@@ -1,0 +1,35 @@
+Package: forecastML
+Type: Package
+Title: Time Series Forecasting with Machine Learning Methods
+Version: 0.1.0
+Author: Nick Redell
+Maintainer: Nick Redell <nickredell@hotmail.com>
+Description: The purpose of forecastML is to simplify the process of multi-step-ahead direct 
+    forecasting with standard machine learning algorithms. It's aimed at helping the user 
+    quickly assess the (a) accuracy, (b) stability, 
+    and (c) generalizability of single-outcome forecasts produced from potentially high-dimensional 
+    modeling datasets. This package is inspired by Bergmeir, Hyndman, and Koo's 2018 paper 
+    "A note on the validity of cross-validation for evaluating autoregressive time series prediction" 
+    <https://robjhyndman.com/papers/cv-wp.pdf>. 
+License: MIT + file LICENSE
+URL: https://github.com/nredell/forecastML/
+Encoding: UTF-8
+LazyData: true
+Imports: 
+    tidyr (>= 0.8.1),
+    purrr (>= 0.2.4),
+    dplyr (>= 0.7.8),
+    rlang (>= 0.3.0.1),
+    stats,
+    magrittr (>= 1.5)
+RoxygenNote: 6.1.1
+Collate: 
+    'create_windows.R'
+    'lagged_df.R'
+    'return_error.R'
+    'return_hyper.R'
+    'train_model.R'
+    'zzz.R'
+Depends: 
+    R (>= 3.4.0),
+    ggplot2 (>= 3.1.0)
