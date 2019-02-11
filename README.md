@@ -23,9 +23,6 @@ The following quote from Bergmeir et al.'s article nicely sums up the aim of thi
 > (e.g., when using Machine Learning methods), the aforementioned problems of CV are largely
 > irrelevant, and CV can and should be used without modification, as in the independent case."
 
-This package is inspired by Bergmeir, Hyndman, and Koo's 2018 paper 
-[A note on the validity of cross-validation for evaluating autoregressive time series prediction](https://robjhyndman.com/papers/cv-wp.pdf).
-
 ## Install
 
 ``` r
