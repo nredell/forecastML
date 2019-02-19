@@ -6,7 +6,7 @@
 \usage{
 \method{plot}{validation_error}(data_error, data_results,
   type = c("time", "horizon", "global"), models = NULL,
-  horizons = NULL, window_lengths = NULL, windows = NULL)
+  horizons = NULL, windows = NULL)
 }
 \arguments{
 \item{data_error}{An object of class 'validation_error' from return_error().}

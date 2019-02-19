@@ -5,7 +5,7 @@
 \title{Compute forecast error}
 \usage{
 return_error(data_results, data_test = NULL, metrics = c("mae", "mape",
-  "smape"), models = NULL, horizons = NULL, windows = NULL)
+  "mdape", "smape"), models = NULL, horizons = NULL, windows = NULL)
 }
 \arguments{
 \item{data_results}{An object of class 'training_results' or 'forecast_results'.}
@@ -39,6 +39,7 @@ Compute forecast error metrics on the validation datasets or a test dataset
 
 mae = Means absolute error \cr
 mape = Mean absolute percentage error \cr
+mdape = Median absolute percentage error \cr
 smape = Symmetrical mean absolute percentage error
 }
 

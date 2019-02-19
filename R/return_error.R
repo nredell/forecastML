@@ -16,6 +16,7 @@
 #' @section Error Metrics:
 #' mae = Means absolute error \cr
 #' mape = Mean absolute percentage error \cr
+#' mdape = Median absolute percentage error \cr
 #' smape = Symmetrical mean absolute percentage error
 #'
 #' @return A 'validation_error' or 'forecast_error' object: A list of data.frames
@@ -27,9 +28,10 @@
 #' Global error metrics collapsed across horizons and validation windows
 #' @example /R/examples/example_return_error.R
 #' @export
-return_error <- function(data_results, data_test = NULL, metrics = c("mae", "mape", "smape"),
+return_error <- function(data_results, data_test = NULL, metrics = c("mae", "mape", "mdape", "smape"),
                          models = NULL, horizons = NULL, windows = NULL) {
 
+  #data_results <- data_valid
   data <- data_results
 
   if(!(methods::is(data, "training_results") || methods::is(data, "forecast_results"))) {
@@ -41,7 +43,7 @@ return_error <- function(data_results, data_test = NULL, metrics = c("mae", "map
   }
 
   if(methods::is(data, "training_results") && !is.null(data_test)) {
-    stop("The 'data_test' argument is not needed for assessing validation error.")
+    stop("The 'data_test' argument should be NULL when assessing validation error.")
   }
 
   outcome_cols <- attributes(data)$outcome_cols
@@ -53,7 +55,7 @@ return_error <- function(data_results, data_test = NULL, metrics = c("mae", "map
     data <- dplyr::inner_join(data, data_test, by = "horizon")
   }
 
-  supported_error_metrics <- c("mae", "mape", "smape")
+  supported_error_metrics <- c("mae", "mape", "mdape", "smape")
 
   data$residual <- data[, outcome_names] - data[, paste0(outcome_names, "_pred")]
 
@@ -65,19 +67,23 @@ return_error <- function(data_results, data_test = NULL, metrics = c("mae", "map
                data$window_number %in% windows, ]
 
   # The error metric calculations are currently a lot of copy and paste that needs to be cleaned up.
+  # To-do: reduce verboseness and create error metric functions or import from another package.
 
   if(is.null(data_test)) {
+
     data_1 <- data %>%
       dplyr::group_by(model, horizon, window_length, window_number) %>%
       dplyr::summarise("window_start" = min(valid_indices, na.rm = TRUE),
                        "window_stop" = max(valid_indices, na.rm = TRUE),
-                       "window_midpoint" = mean(valid_indices, na.rm = TRUE),
                        "mae" = mean(abs(residual), na.rm = TRUE),
                        "mape" = mean(abs(residual) / abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                       #"mape_test" = forecast::accuracy(eval(parse(text = paste0(outcome_names, "_pred"))), eval(parse(text = outcome_names)))[, "MAPE"],
+                       "mdape" = median(abs(residual) / abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
                        "smape" = mean(2 * abs(residual) /
-                                         (abs((eval(parse(text = outcome_names)))) + abs(eval(parse(text = paste0(outcome_names, "_pred"))))),
-                                          na.rm = TRUE) * 100)
+                                        (abs((eval(parse(text = outcome_names)))) + abs(eval(parse(text = paste0(outcome_names, "_pred"))))),
+                                      na.rm = TRUE) * 100)
     data_1$mape <- with(data_1, ifelse(is.infinite(mape), NA, mape))
+    data_1$mape <- with(data_1, ifelse(is.infinite(mdape), NA, mdape))
 
     # Compute error metric by horizon and window length across all validation windows.
     data_2 <- data %>%
@@ -86,10 +92,12 @@ return_error <- function(data_results, data_test = NULL, metrics = c("mae", "map
                        "window_stop" = max(valid_indices, na.rm = TRUE),
                        "mae" = mean(abs(residual), na.rm = TRUE),
                        "mape" = mean(abs(residual) / abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                       "mdape" = median(abs(residual) / abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
                        "smape" = mean(2 * abs(residual) /
                                          (abs((eval(parse(text = outcome_names)))) + abs(eval(parse(text = paste0(outcome_names, "_pred"))))),
                                           na.rm = TRUE) * 100)
     data_2$mape <- with(data_2, ifelse(is.infinite(mape), NA, mape))
+    data_2$mdape <- with(data_2, ifelse(is.infinite(mdape), NA, mdape))
 
     # Compute error metric by model.
     data_3 <- data %>%
@@ -98,10 +106,12 @@ return_error <- function(data_results, data_test = NULL, metrics = c("mae", "map
                        "window_stop" = max(valid_indices, na.rm = TRUE),
                        "mae" = mean(abs(residual), na.rm = TRUE),
                        "mape" = mean(abs(residual) / abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                       "mdape" = median(abs(residual) / abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
                        "smape" = mean(2 * abs(residual) /
                                          (abs((eval(parse(text = outcome_names)))) + abs(eval(parse(text = paste0(outcome_names, "_pred"))))),
                                           na.rm = TRUE) * 100)
     data_3$mape <- with(data_3, ifelse(is.infinite(mape), NA, mape))
+    data_3$mdape <- with(data_3, ifelse(is.infinite(mdape), NA, mdape))
 
     } else {
 
@@ -114,20 +124,24 @@ return_error <- function(data_results, data_test = NULL, metrics = c("mae", "map
         dplyr::group_by(model, model_forecast_horizon, horizon) %>%
         dplyr::summarise("mae" = mean(abs(residual), na.rm = TRUE),
                          "mape" = mean(abs(residual) / abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                         "mdape" = median(abs(residual) / abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
                          "smape" = mean(2 * abs(residual) /
                                            (abs((eval(parse(text = outcome_names)))) + abs(eval(parse(text = paste0(outcome_names, "_pred"))))),
                                             na.rm = TRUE) * 100)
       data_2$mape <- with(data_2, ifelse(is.infinite(mape), NA, mape))
+      data_2$mdape <- with(data_2, ifelse(is.infinite(mdape), NA, mdape))
 
       # Compute error metric by model.
       data_3 <- data %>%
         dplyr::group_by(model, model_forecast_horizon) %>%
         dplyr::summarise("mae" = mean(abs(residual), na.rm = TRUE),
                          "mape" = mean(abs(residual) / abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                         "mdape" = median(abs(residual) / abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
                          "smape" = mean(2 * abs(residual) /
                                            (abs((eval(parse(text = outcome_names)))) + abs(eval(parse(text = paste0(outcome_names, "_pred"))))),
                                             na.rm = TRUE) * 100)
       data_3$mape <- with(data_3, ifelse(is.infinite(mape), NA, mape))
+      data_3$mdape <- with(data_3, ifelse(is.infinite(mdape), NA, mdape))
     }
 
   metrics <- supported_error_metrics[supported_error_metrics %in% metrics]
@@ -165,7 +179,7 @@ return_error <- function(data_results, data_test = NULL, metrics = c("mae", "map
 #' @return Forecast error plots of class 'ggplot'.
 #' @export
 plot.validation_error <- function(data_error, data_results, type = c("time", "horizon", "global"),
-                                  models = NULL, horizons = NULL, window_lengths = NULL, windows = NULL) {
+                                  models = NULL, horizons = NULL, windows = NULL) {
 
   if(!methods::is(data_error, "validation_error")) {
     stop("The 'data_error' argument takes an object of class 'validation_error' as input. Run return_error() first.")
@@ -184,17 +198,13 @@ plot.validation_error <- function(data_error, data_results, type = c("time", "ho
 
   models <- if (is.null(models)) {unique(data_results$model)} else {models}
   horizons <- if (is.null(horizons)) {unique(data_results$horizon)} else {horizons}
-  window_lengths <- if (is.null(window_lengths)) {unique(data_results$window_length)} else {window_lengths}
   windows <- if (is.null(windows)) {unique(data_results$window_number)} else {windows}
 
-  # Limiting the input to the first window_length for plotting.
-  window_lengths <- window_lengths[1]
-
   # Filter the dataset based on user input.
-  data_plot <- data_plot[data_plot$window_length %in% window_lengths & data_plot$horizon %in% horizons &
+  data_plot <- data_plot[data_plot$horizon %in% horizons &
                          data_plot$model %in% models & data_plot$window_number %in% windows, ]
 
-  data_results <- data_results[data_results$window_length %in% window_lengths & data_results$horizon %in% horizons &
+  data_results <- data_results[data_results$horizon %in% horizons &
                                data_results$model %in% models & data_results$window_number %in% windows, ]
 
   # Melt the data for plotting.
