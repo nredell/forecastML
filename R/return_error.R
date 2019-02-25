@@ -75,6 +75,7 @@ return_error <- function(data_results, data_test = NULL, metrics = c("mae", "map
       dplyr::group_by(model, horizon, window_length, window_number) %>%
       dplyr::summarise("window_start" = min(valid_indices, na.rm = TRUE),
                        "window_stop" = max(valid_indices, na.rm = TRUE),
+                       "window_midpoint" = mean(valid_indices, na.rm = TRUE),
                        "mae" = mean(abs(residual), na.rm = TRUE),
                        "mape" = mean(abs(residual) / abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
                        #"mape_test" = forecast::accuracy(eval(parse(text = paste0(outcome_names, "_pred"))), eval(parse(text = outcome_names)))[, "MAPE"],
