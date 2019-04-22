@@ -1,6 +1,6 @@
 [![lifecycle](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental)
 
-# forecastML <img src="forecastML_logo.png" alt="forecastML logo" align="right" height="138.5" style="display: inline-block;">
+# package::forecastML <img src="forecastML_logo.png" alt="forecastML logo" align="right" height="138.5" style="display: inline-block;">
 
 The purpose of `forecastML` is to provide a series of functions and visualizations that simplify the process of 
 multi-step-ahead direct forecasting with standard machine learning algorithms. It's aimed at 
