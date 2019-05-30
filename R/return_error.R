@@ -72,7 +72,8 @@ return_error <- function(data_results, data_test = NULL, metrics = c("mae", "map
   if(is.null(data_test)) {
 
     data_1 <- data %>%
-      dplyr::group_by(model, horizon, window_length, window_number) %>%
+      #dplyr::group_by(model, horizon, window_length, window_number) %>%
+      dplyr::group_by(model, horizon, window_number) %>%
       dplyr::summarise("window_start" = min(valid_indices, na.rm = TRUE),
                        "window_stop" = max(valid_indices, na.rm = TRUE),
                        "window_midpoint" = mean(valid_indices, na.rm = TRUE),
@@ -88,7 +89,8 @@ return_error <- function(data_results, data_test = NULL, metrics = c("mae", "map
 
     # Compute error metric by horizon and window length across all validation windows.
     data_2 <- data %>%
-      dplyr::group_by(model, horizon, window_length) %>%
+      #dplyr::group_by(model, horizon, window_length) %>%
+      dplyr::group_by(model, horizon) %>%
       dplyr::summarise("window_start" = min(valid_indices, na.rm = TRUE),
                        "window_stop" = max(valid_indices, na.rm = TRUE),
                        "mae" = mean(abs(residual), na.rm = TRUE),
@@ -244,10 +246,12 @@ plot.validation_error <- function(data_error, data_results, type = c("time", "ho
     data_plot_summary <- data_error[[2]]
 
     models <- if (is.null(models)) {unique(data_plot_summary$model)} else {models}
-    window_lengths <- if (is.null(window_lengths)) {unique(data_plot_summary$window_length)} else {window_lengths}
+    #window_lengths <- if (is.null(window_lengths)) {unique(data_plot_summary$window_length)} else {window_lengths}
     horizons <- if (is.null(horizons)) {unique(data_plot_summary$horizon)} else {horizons}
 
-    data_plot_summary <- data_plot_summary[data_plot_summary$window_length %in% window_lengths & data_plot_summary$horizon %in% horizons &
+    # data_plot_summary <- data_plot_summary[data_plot_summary$window_length %in% window_lengths & data_plot_summary$horizon %in% horizons &
+    #                                        data_plot_summary$model %in% models, ]
+    data_plot_summary <- data_plot_summary[data_plot_summary$horizon %in% horizons &
                                            data_plot_summary$model %in% models, ]
 
     # Melt the data for plotting.
