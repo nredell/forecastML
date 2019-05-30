@@ -184,7 +184,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
       if (!is.null(lookback)) {
         attr(data_x, "lookback") <- lookback_over_horizon
       } else {
-        attr(data_out, "lookback") <- if (length(horizon) == 1) {lookback_control} else {lookback_control[[i]]}
+        attr(data_x, "lookback") <- if (length(horizon) == 1) {lookback_control} else {lookback_control[[i]]}
       }
       data_x
     })
