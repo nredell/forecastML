@@ -47,8 +47,8 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
   # Check the lookback_control argument.
   if (length(horizon) == 1 & !is.null(lookback_control)) {
     # Check if there is one list location for each feature in the dataset.
-    if(length(lookback_control) != (ncol(data) - length(outcome_cols))) {
-      stop("For a single forecast horizon, the length of the 'lookback_control' list should equal to the number of features in
+    if(length(lookback_control) != (ncol(data))) {
+      stop("For a single forecast horizon, the length of the 'lookback_control' list should equal the number of features in
            the dataset. For multiple forecast horizons, 'lookback_control' is a nested list with length(lookback_control) ==
            length(horizons) and, one layer down, the nested list should have a length equal to the number of features in the dataset.
            Features with no lags should have a NULL value in the appropriate list location.")
