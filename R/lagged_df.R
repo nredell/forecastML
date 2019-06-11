@@ -26,7 +26,8 @@
 #'
 #' @export
 create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols = 1,
-                             horizons = NULL, lookback = NULL, lookback_control = NULL) {
+                             horizons = NULL, lookback = NULL, lookback_control = NULL,
+                             groups = NULL) {
 
   if (!methods::is(data, c("data.frame"))) {stop("The 'data' argument takes an object of class 'data.frame'.")}
 
