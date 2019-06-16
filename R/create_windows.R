@@ -22,6 +22,7 @@ create_windows <- function(lagged_df, window_length = 12,
                            include_partial_window = TRUE) {
 
   data <- lagged_df
+  #data <- data_train
 
   if(!methods::is(data, "lagged_df")) {
     stop("This function takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
@@ -31,21 +32,15 @@ create_windows <- function(lagged_df, window_length = 12,
     stop("Define a 'window_length' >= 0 for the validation dataset(s).")
   }
 
-  window_length <- as.numeric(window_length[1])
+  window_length <- as.numeric(window_length)
 
   outcome_cols <- attributes(data)$outcome_cols
   outcome_names <- attributes(data)$outcome_names
   row_names <- attributes(data)$row_indices
   date_indices <- attributes(data)$dates
   frequency <- attributes(data)$frequency
-
-  if (is.null(date_indices)) {
-    data_start <- attributes(data)$data_start
-    data_stop <- attributes(data)$data_stop
-  } else {
-    data_start <- min(date_indices, na.rm = TRUE)
-    data_stop <- max(date_indices, na.rm = TRUE)
-  }
+  data_start <- attributes(data)$data_start
+  data_stop <- attributes(data)$data_stop
 
   window_start <- if (is.null(window_start)) {data_start} else {window_start}
   window_stop <- if (is.null(window_stop)) {data_stop} else {window_stop}
@@ -164,6 +159,8 @@ plot.windows <- function(windows, data, show_labels = TRUE) {
     stop("The 'data' argument takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
   }
 
+  data <- data_train
+
   outcome_cols <- attributes(data)$outcome_cols
   outcome_names <- attributes(data)$outcome_names
   row_names <- as.numeric(row.names(data[[1]]))
@@ -174,8 +171,14 @@ plot.windows <- function(windows, data, show_labels = TRUE) {
   if (is.null(groups)) {
 
     # Create a dataset for a line plot overlay of the time-series on the validation window plot.
-    data_line <- data[[1]][, 1:n_outcomes , drop = FALSE]
-    data_line$index <- row_names
+    data_line <- data[[1]][, 1:n_outcomes, drop = FALSE]
+
+    if (is.null(date_indices)) {
+      data_line$index <- row_names
+    } else {
+      data_line$index <- date_indices[row_names]
+    }
+
     data_line <- data_line[rep(1:nrow(data_line), each = length(windows)), ]
 
     skip <- attributes(windows)$skip
@@ -197,8 +200,14 @@ plot.windows <- function(windows, data, show_labels = TRUE) {
       seq(x, y, 1)
     })))
 
-    data_plot_line$window_length <- rep(data_plot_window$window_length, data_plot_window$window_length_partial)
-    data_plot_line$window <- rep(data_plot_window$window, data_plot_window$window_length_partial)
+    # data_plot_line$window_length <- rep(data_plot_window$window_length, data_plot_window$window_length_partial)
+    # data_plot_line$window <- rep(data_plot_window$window, data_plot_window$window_length_partial)
+    data_plot_line$window_length <- data_plot_window$window_length[1]
+    temp <- rep(data_plot_window$window, data_plot_window$window_length_partial)
+    data_plot_line$window <- temp[1:nrow(data_plot_line)]
+    temp <- rep(data_plot_window$start, data_plot_window$window_length_partial)
+    data_plot_line$index <- temp[1:nrow(data_plot_line)]
+
     data_plot_window$window_length_partial <- NULL
 
     data_line$window_length <- rep(unique(data_plot_line$window_length), nrow(data_line) / length(windows))
@@ -215,7 +224,7 @@ plot.windows <- function(windows, data, show_labels = TRUE) {
                                            (max(data_line[, 1:n_outcomes], na.rm = TRUE) + abs(min(data_line[, 1:n_outcomes], na.rm = TRUE))) / 2)
     data_plot_group <- data_plot_group[!is.na(data_plot_group$window), ]
 
-    data_plot_window$stop <- with(data_plot_window, ifelse(start == stop, stop + 1, stop))  # To plot a shaded rectangle of length 1.
+    #data_plot_window$stop <- with(data_plot_window, ifelse(start == stop, stop + 1, stop))  # To plot a shaded rectangle of length 1.
 
     p <- ggplot()
     p <- p + geom_rect(data = data_plot_window, aes(xmin = start, xmax = stop,
