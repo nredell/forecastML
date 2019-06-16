@@ -498,8 +498,6 @@ plot.forecast_results <- function(forecast_results, data_actual = NULL,
     #   data_forecast$index <- data_forecast$forecast_period  # data_forecast$horizon + attributes(data_forecast)$data_stop
     # }
 
-    #data_actual <- tail(data_actual)
-
     p <- ggplot()
 
     if (1 %in% horizons) {  # Use geom_point instead of geom_line to plot a 1-step-ahead forecast.
@@ -515,12 +513,12 @@ plot.forecast_results <- function(forecast_results, data_actual = NULL,
                              color = plot_group, group = plot_group))
     }
 
-    #p <- p + geom_vline(xintercept = attributes(data_forecast)$data_stop, color = "red")
+    p <- p + geom_vline(xintercept = attributes(data_forecast)$data_stop, color = "red")
 
     if (!is.null(data_actual)) {
 
       data_actual$plot_group <- apply(data_actual[, groups, drop = FALSE], 1, paste, collapse = " + ")
-      data_actual$plot_group <- ordered(data_forecast$plot_group, levels = unique(data_forecast$plot_group))
+      data_actual$plot_group <- ordered(data_actual$plot_group, levels = unique(data_actual$plot_group))
 
       if (is.null(date_indices)) {
 
@@ -550,7 +548,7 @@ plot.forecast_results <- function(forecast_results, data_actual = NULL,
     p <- p + theme_bw()
     p <- p + xlab("Dataset row / index") + ylab("Outcome") + labs(color = toupper(gsub("_", " ", paste(plot_group, collapse = " + \n")))) +
       ggtitle("N-Step-Ahead Model Forecasts")
-    p + theme(legend.position = "none")
-    #return(p)
+    #p + theme(legend.position = "none")
+    return(p)
   }
 }
