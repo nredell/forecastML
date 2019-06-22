@@ -36,6 +36,7 @@ train_model <- function(lagged_df, windows, model_function, model_name = NULL) {
   data_stop <- attributes(data)$data_stop
   n_outcomes <- length(outcome_cols)
   groups <- attributes(data)$groups
+  valid_indices_date <- NULL
 
   window_indices <- windows
 
@@ -47,7 +48,7 @@ train_model <- function(lagged_df, windows, model_function, model_name = NULL) {
 
       window_length <- window_indices[i, "window_length"]
 
-      if (is.null(dates)) {
+      if (is.null(date_indices)) {
 
         valid_indices <- window_indices[i, "start"]:window_indices[i, "stop"]
 
@@ -154,21 +155,21 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
       data_win_num <- lapply(seq_along(model_list[[i]][[j]]), function(k) {
 
         data_results <- model_list[[i]][[j]][[k]]
-        forecast_horizons <- data_forecast[[j]][, "horizon", drop = FALSE]
-        data_for_forecast <- data_forecast[[j]][, !names(data_forecast[[j]]) == "horizon", drop = FALSE]  # Remove "horizon" for predict().
 
         # Predict on training data or the forecast dataset?
-
-        if (is.null(data_forecast)) {
+        if (is.null(data_forecast)) {  # Nested cross-validation.
 
           data_pred <- prediction_fun(data_results$model, data_results$x_valid)  # Nested cross-validation.
 
           if (!is.null(groups)) {
 
-            data_groups <- data_results$x_valid[, groups, drop = FALSE]
+            data_groups <- data_results$x_valid[, groups, drop = FALSE]  # save out group identifiers.
           }
 
-        } else {
+        } else {  # Forecast.
+
+          forecast_horizons <- data_forecast[[j]][, "horizon", drop = FALSE]
+          data_for_forecast <- data_forecast[[j]][, !names(data_forecast[[j]]) %in% c("horizon", "row_number"), drop = FALSE]  # Remove "horizon" for predict().
 
           data_pred <- prediction_fun(data_results$model, data_for_forecast)  # Forecast.
 
@@ -188,8 +189,9 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
                                   "horizon" = attributes(model_list[[i]][[j]])$horizon,
                                   "window_length" = data_results$window,
                                   "window_number" = k,
-                                  "valid_indices" = data_results$valid_indices,
-                                  "date_indices" = data_results$date_indices)
+                                  "valid_indices" = data_results$valid_indices)
+
+          data_temp$date_indices <- data_results$date_indices
 
           if (is.null(groups)) {
 
@@ -556,15 +558,16 @@ plot.forecast_results <- function(forecast_results, data_actual = NULL,
     if (1 %in% horizons) {  # Use geom_point instead of geom_line to plot a 1-step-ahead forecast.
 
       p <- p + geom_point(data = data_forecast[data_forecast$model_forecast_horizon == 1, ],
-                          aes(x = index, y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                          aes(x = forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
                               color = plot_group, group = plot_group), show.legend = FALSE)
+      }
 
-    } else {  # Plot forecasts for model forecast horizons > 1.
+    if (!all(1 == horizons)) {  # Plot forecasts for model forecast horizons > 1.
 
       p <- p + geom_line(data = data_forecast[data_forecast$model_forecast_horizon != 1, ],
                          aes(x = forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
                              color = plot_group, group = plot_group))
-    }
+      }
 
     p <- p + geom_vline(xintercept = attributes(data_forecast)$data_stop, color = "red")
 
