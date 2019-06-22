@@ -183,8 +183,6 @@ plot.windows <- function(windows, data, show_labels = TRUE) {
 
     skip <- attributes(windows)$skip
 
-    #data_plot_window <- lapply(windows, function(x){as.data.frame(x)})
-    #data_plot_window <- dplyr::bind_rows(data_plot_window)
     data_plot_window <- windows
 
     if (is.null(date_indices)) {

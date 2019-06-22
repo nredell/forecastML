@@ -53,8 +53,8 @@ train_model <- function(lagged_df, windows, model_function, model_name = NULL) {
 
       } else {
 
-        valid_indices <- which(date_indices >= window_indices[i, "start"] &
-                               date_indices <= window_indices[i, "stop"])
+        valid_indices <- which(date_indices >= window_indices[i, "start"] & date_indices <= window_indices[i, "stop"])
+        valid_indices_date <- date_indices[date_indices >= window_indices[i, "start"] & date_indices <= window_indices[i, "stop"]]
       }
 
       # A window length of 0 removes the nested cross-validation and trains on all input data in lagged_df.
@@ -75,7 +75,7 @@ train_model <- function(lagged_df, windows, model_function, model_name = NULL) {
 
       model_plus_valid_data  <- list("model" = model, "x_valid" = x_valid,
                                      "y_valid" = y_valid, "window" = window_length,
-                                     "valid_indices" = valid_indices)
+                                     "valid_indices" = valid_indices, "date_indices" = valid_indices_date)
 
       model_plus_valid_data
     })  # End model training across nested cross-validation windows for the horizon in "data".
@@ -131,11 +131,16 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
   outcome_names <- attributes(model_list[[1]])$outcome_names
   row_indices <- attributes(model_list[[1]])$row_indices
   date_indices <- attributes(model_list[[1]])$date_indices
+
   if (is.null(data_forecast)) {
+
     data_stop <- attributes(model_list[[1]])$data_stop
+
   } else {
+
     data_stop <- attributes(data_forecast)$data_stop
   }
+
   horizons <- attributes(model_list[[1]])$horizons
   groups <- attributes(model_list[[1]])$groups
 
@@ -153,6 +158,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
         data_for_forecast <- data_forecast[[j]][, !names(data_forecast[[j]]) == "horizon", drop = FALSE]  # Remove "horizon" for predict().
 
         # Predict on training data or the forecast dataset?
+
         if (is.null(data_forecast)) {
 
           data_pred <- prediction_fun(data_results$model, data_results$x_valid)  # Nested cross-validation.
@@ -182,7 +188,8 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
                                   "horizon" = attributes(model_list[[i]][[j]])$horizon,
                                   "window_length" = data_results$window,
                                   "window_number" = k,
-                                  "valid_indices" = data_results$valid_indices)
+                                  "valid_indices" = data_results$valid_indices,
+                                  "date_indices" = data_results$date_indices)
 
           if (is.null(groups)) {
 
@@ -226,12 +233,13 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
             data_temp$forecast_period <- data_temp$date
             data_temp$date <- NULL
           }
-        }
+        }  # End forecast results.
+
         data_temp$model <- as.character(data_temp$model)
         data_temp
       })  # End cross-validation window predictions.
       data_win_num <- dplyr::bind_rows(data_win_num)
-    })
+    })  # End horizon-level predictions
     data_horizon <- dplyr::bind_rows(data_horizon)
   })
   data_out <- dplyr::bind_rows(data_model)
@@ -267,18 +275,16 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
 #' @param valid_indices Filter results by validation row index (optional).
 #' @return Diagnostic plots of class 'ggplot'.
 #' @export
-plot.training_results <- function(training_results,
+plot.training_results <- function(training_results, data_actual = NULL,
                                   type = c("prediction", "residual", "forecast_stability", "forecast_variability"),
                                   models = NULL, horizons = NULL,
-                                  windows = NULL, valid_indices = NULL) {
+                                  windows = NULL, valid_indices = NULL, group_filter = NULL) {
 
   data <- training_results
 
-  if(!methods::is(data, "training_results")) {
+  if (!methods::is(data, "training_results")) {
     stop("The 'data' argument takes an object of class 'training_results' as input. Run predict() on a 'forecast_model' object first.")
   }
-
-  data_results <- data
 
   type <- type[1]
 
@@ -288,23 +294,52 @@ plot.training_results <- function(training_results,
     }
   }
 
-  outcome_cols <- attributes(data_results)$outcome_cols
-  outcome_names <- attributes(data_results)$outcome_names
+  if (!is.null(attributes(data)$group) & !type %in% c("prediction", "residual")) {
+    stop("Only 'prediction' and 'residual' plots are currently available for grouped models")
 
-  data_plot <- data_results
+  }
+  #----------------------------------------------------------------------------
 
-  data_plot$residual <- data_plot[, outcome_names] - data_plot[, paste0(outcome_names, "_pred")]
+  outcome_cols <- attributes(data)$outcome_cols
+  outcome_names <- attributes(data)$outcome_names
+  date_indices <- attributes(data)$date_indices
+  groups <- attributes(data)$group
+  n_outcomes <- length(outcome_cols)
 
   forecast_stability_plot_windows <- windows
 
-  models <- if (is.null(models)) {unique(data_plot$model)} else {models}
-  horizons <- if (is.null(horizons)) {unique(data_plot$horizon)} else {horizons}
-  windows <- if (is.null(windows)) {unique(data_plot$window_number)} else {windows}
-  valid_indices <- if (is.null(valid_indices)) {unique(data_plot$valid_indices)} else {valid_indices}
+  if (!is.null(data_actual)) {
+    data_actual <- data_actual[, c(outcome_names, groups), drop = FALSE]
+  }
+
+  data$residual <- data[, outcome_names] - data[, paste0(outcome_names, "_pred")]
+
+  forecast_horizons <- sort(unique(data$horizon))
+
+  models <- if (is.null(models)) {unique(data$model)} else {models}
+  horizons <- if (is.null(horizons)) {unique(data$horizon)} else {horizons}
+  windows <- if (is.null(windows)) {unique(data$window_number)} else {windows}
+  valid_indices <- if (is.null(valid_indices)) {unique(data$valid_indices)} else {valid_indices}
+
+  data_plot <- data
 
   data_plot <- data_plot[data_plot$model %in% models & data_plot$horizon %in% horizons &
-                         data_plot$window_number %in% windows
-                         & data_plot$valid_indices %in% valid_indices, ]
+                         data_plot$window_number %in% windows, ]
+
+  if (methods::is(valid_indices, "Date")) {
+
+    data_plot <- data_plot[data_plot$date_indices %in% valid_indices, ]  # Filter plots by dates.
+
+  } else {
+
+    data_plot <- data_plot[data_plot$valid_indices %in% valid_indices, ]  # Filter plots by row indices.
+  }
+
+  if (!is.null(group_filter)) {
+
+    data_plot <- dplyr::filter(data_plot, eval(parse(text = group_filter)))
+  }
+
   #----------------------------------------------------------------------------
 
   if (type %in% c("prediction", "residual")) {
@@ -313,17 +348,25 @@ plot.training_results <- function(training_results,
     data_plot <- tidyr::gather(data_plot, "outcome", "value",
                                -!!names(data_plot)[!names(data_plot) %in% c(outcome_names, paste0(outcome_names, "_pred"))])
 
-    data_plot$group <- with(data_plot, paste0(model, "_", horizon, "_", window_length, "_", window_number))
-    data_plot$group <- ordered(data_plot$group)
+    # If date indices exist, plot with them.
+    if (!is.null(date_indices)) {
+      data_plot$valid_indices <- data_plot$date_indices
+    }
+
+    data_plot$group <- apply(data_plot[, c("model", "horizon", groups), drop = FALSE], 1, paste, collapse = " + ")
+
+    data_plot$group <- ordered(data_plot$group, levels = unique(data_plot$group))
 
     if (type == "prediction") {
-      p <- ggplot(data_plot[data_plot$outcome != outcome_names, ], aes(x = valid_indices, y = value, color = factor(model), group = group))
+
+      p <- ggplot(data_plot[data_plot$outcome != outcome_names, ], aes(x = valid_indices, y = value, group = group, color = factor(model)))
       p <- p + geom_line(size = 1.05, linetype = 1)
       p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
                          aes(x = valid_indices, y = value), color = "grey50")
 
     } else if (type == "residual") {
-      p <- ggplot(data_plot[data_plot$outcome != outcome_names, ], aes(x = valid_indices, y = residual, color = factor(model), group = group))
+
+      p <- ggplot(data_plot[data_plot$outcome != outcome_names, ], aes(x = valid_indices, y = residual, group = group, color = factor(model)))
       p <- p + geom_line(size = 1.05, linetype = 1)
       p <- p + geom_hline(yintercept = 0)
     }
@@ -433,7 +476,8 @@ plot.training_results <- function(training_results,
 plot.forecast_results <- function(forecast_results, data_actual = NULL,
                                   models = NULL, horizons = NULL,
                                   windows = NULL,
-                                  facet_plot = c("model", "model_forecast_horizon")) {
+                                  facet_plot = c("model", "model_forecast_horizon"),
+                                  group_filter = NULL) {
 
   data_forecast <- forecast_results
   #data_forecast <- data_forecasts  # testing
@@ -452,7 +496,15 @@ plot.forecast_results <- function(forecast_results, data_actual = NULL,
   n_outcomes <- length(outcome_cols)
 
   if (!is.null(data_actual)) {
+
     data_actual <- data_actual[, c(outcome_names, groups), drop = FALSE]
+
+    data_actual$index <- as.numeric(row.names(data_actual))
+
+    if (!is.null(group_filter)) {
+
+      data_actual <- dplyr::filter(data_actual, eval(parse(text = group_filter)))
+    }
   }
 
   forecast_horizons <- sort(unique(data_forecast$model_forecast_horizon))
@@ -464,6 +516,13 @@ plot.forecast_results <- function(forecast_results, data_actual = NULL,
   data_forecast <- data_forecast[data_forecast$model %in% models &
                                  data_forecast$model_forecast_horizon %in% horizons &
                                  data_forecast$window_number %in% windows, ]
+
+  if (!is.null(group_filter)) {
+
+    data_forecast$index <- as.numeric(row.names(data_forecast))
+
+    data_forecast <- dplyr::filter(data_forecast, eval(parse(text = group_filter)))
+  }
 
   data_forecast$model_forecast_horizon <- as.integer(data_forecast$model_forecast_horizon)
   data_forecast$window_number <- as.integer(data_forecast$window_number)
@@ -492,12 +551,6 @@ plot.forecast_results <- function(forecast_results, data_actual = NULL,
     data_forecast$plot_group <- apply(data_forecast[, plot_group, drop = FALSE], 1, paste, collapse = " + ")
     data_forecast$plot_group <- ordered(data_forecast$plot_group, levels = unique(data_forecast$plot_group))
 
-    #data_forecast$index <- data_forecast$horizon
-
-    # if (!is.null(data_actual)) {
-    #   data_forecast$index <- data_forecast$forecast_period  # data_forecast$horizon + attributes(data_forecast)$data_stop
-    # }
-
     p <- ggplot()
 
     if (1 %in% horizons) {  # Use geom_point instead of geom_line to plot a 1-step-ahead forecast.
@@ -520,16 +573,13 @@ plot.forecast_results <- function(forecast_results, data_actual = NULL,
       data_actual$plot_group <- apply(data_actual[, groups, drop = FALSE], 1, paste, collapse = " + ")
       data_actual$plot_group <- ordered(data_actual$plot_group, levels = unique(data_actual$plot_group))
 
-      if (is.null(date_indices)) {
+      if (!is.null(date_indices)) {
 
-        data_actual$index <- as.numeric(row.names(data_actual))
-
-      } else {
         # To-do: This needs to be more robust. If a user passes in an actual data.frame for
         # plotting historicals and the row.names are re-indexed, the plot will not look right.
         # Good thing we're still at "Experimental" status.
-        indices_in_input_dataset <- as.numeric(row.names(data_actual))
-        data_actual$index <- date_indices[indices_in_input_dataset]
+        data_actual$index <- date_indices[data_actual$index]
+
       }
 
       if (is.null(groups)) {
