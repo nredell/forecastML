@@ -42,8 +42,7 @@ train_model <- function(lagged_df, windows, model_function, model_name = NULL) {
 
   # Seq along model forecast horizon > cross-validation windows.
   data_out <- lapply(data, function(data) {
-    #data <- data[[1]]
-    #i <- 1
+
     model_plus_valid_data <- lapply(1:nrow(window_indices), function(i) {
 
       window_length <- window_indices[i, "window_length"]
@@ -475,7 +474,7 @@ plot.training_results <- function(training_results, data_actual = NULL,
 #' @param facet_plot Adjust the plot display through ggplot2::facet_grid(). facet_plot = NULL plots results in one facet.
 #' @return Forecast plot of class 'ggplot'.
 #' @export
-plot.forecast_results <- function(forecast_results, data_actual = NULL,
+plot.forecast_results <- function(forecast_results, data_actual = NULL, actual_indices = NULL,
                                   models = NULL, horizons = NULL,
                                   windows = NULL,
                                   facet_plot = c("model", "model_forecast_horizon"),
@@ -484,6 +483,7 @@ plot.forecast_results <- function(forecast_results, data_actual = NULL,
   data_forecast <- forecast_results
   #data_forecast <- data_forecasts  # testing
   #data_actual <- data  # testing
+  #actual_indices <- as.numeric(row.names(data_actual))
 
   if(!methods::is(data_forecast, "forecast_results")) {
     stop("The 'forecast_results' argument takes an object of class 'forecast_results' as input. Run predict() on a 'forecast_model' object first.")
@@ -501,7 +501,13 @@ plot.forecast_results <- function(forecast_results, data_actual = NULL,
 
     data_actual <- data_actual[, c(outcome_names, groups), drop = FALSE]
 
-    data_actual$index <- as.numeric(row.names(data_actual))
+    data_actual$index <- actual_indices
+
+    if (!is.null(date_indices)) {
+
+      data_actual$index <- date_indices[data_actual$index]
+
+    }
 
     if (!is.null(group_filter)) {
 
@@ -575,15 +581,6 @@ plot.forecast_results <- function(forecast_results, data_actual = NULL,
 
       data_actual$plot_group <- apply(data_actual[, groups, drop = FALSE], 1, paste, collapse = " + ")
       data_actual$plot_group <- ordered(data_actual$plot_group, levels = unique(data_actual$plot_group))
-
-      if (!is.null(date_indices)) {
-
-        # To-do: This needs to be more robust. If a user passes in an actual data.frame for
-        # plotting historicals and the row.names are re-indexed, the plot will not look right.
-        # Good thing we're still at "Experimental" status.
-        data_actual$index <- date_indices[data_actual$index]
-
-      }
 
       if (is.null(groups)) {
         p <- p + geom_line(data = data_actual, aes(x = index, y = eval(parse(text = outcome_names))), color = "grey50")

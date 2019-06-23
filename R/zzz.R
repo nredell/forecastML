@@ -28,30 +28,3 @@ plot_outcome <- function(data_melt, data_outcome, join = c("model", "horizon", "
 
   return(data_outcome)
 }
-#
-# data_outcome <- plot_outcome(data_hyper_num, data_results, scale_outcome_by = "hyper",
-#                              join = c("model", "horizon", "window_length", "window_number"),
-#                              outcome_names = outcome_names)
-#
-#
-# data_melt <- data_hyper_num
-# data_outcome <- data_results
-# scale_outcome_by <- "hyper"
-# join <- c("model", "horizon", "window_length", "window_number")
-#
-
-
-
-# data_outcome <- backtestR:::plot_outcome(data_plot, data_results, scale_outcome_by = "error_metric",
-#                                          outcome_names = outcome_names)
-#
-# p <- ggplot()
-# p <- p + geom_line(data = data_plot, aes(x = window_midpoint, y = value, color = group, group = group), size = 1.05, alpha = .50)
-# p <- p + geom_point(data = data_plot, aes(x = window_midpoint, y = value, color = group, group = group))
-# p <- p + geom_line(data = data_outcome, aes(x = valid_indices, y = outcome_scaled), color = "gray50")
-#
-# p <- p + facet_grid(error_metric ~ window_length, scales = "free")
-# p <- p + theme_bw()
-# p <- p + xlab("Dataset row / index") + ylab("Forecast error metric") + labs(color = "Model - Horizon") +
-#   ggtitle("Forecast Error Metrics at Validation Window Midpoint - Faceted by window length and error metric")
-# p

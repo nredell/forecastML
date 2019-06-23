@@ -22,7 +22,6 @@ create_windows <- function(lagged_df, window_length = 12,
                            include_partial_window = TRUE) {
 
   data <- lagged_df
-  #data <- data_train
 
   if(!methods::is(data, "lagged_df")) {
     stop("This function takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
@@ -159,121 +158,59 @@ plot.windows <- function(windows, data, show_labels = TRUE) {
     stop("The 'data' argument takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
   }
 
-  data <- data_train
-
   outcome_cols <- attributes(data)$outcome_cols
   outcome_names <- attributes(data)$outcome_names
   row_names <- as.numeric(row.names(data[[1]]))
   n_outcomes <- length(outcome_cols)
   date_indices <- attributes(data)$dates
   groups <- attributes(data)$groups
+  skip <- attributes(windows)$skip
 
-  if (is.null(groups)) {
+  data_plot <- as.data.frame(data)
 
-    # Create a dataset for a line plot overlay of the time-series on the validation window plot.
-    data_line <- data[[1]][, 1:n_outcomes, drop = FALSE]
+  if (is.null(date_indices)) {
 
-    if (is.null(date_indices)) {
-      data_line$index <- row_names
+    data_plot$index <- row_names
+
+  } else {
+
+    if (is.null(groups)) {
+      data_plot$index <- date_indices[row_names]  # Removes the dates from predictor lags.
     } else {
-      data_line$index <- date_indices[row_names]
+      data_plot$index <- date_indices
     }
 
-    data_line <- data_line[rep(1:nrow(data_line), each = length(windows)), ]
-
-    skip <- attributes(windows)$skip
-
-    data_plot_window <- windows
-
-    if (is.null(date_indices)) {
-      data_plot_window$window_length_partial <- with(data_plot_window, stop - start + 1)
-    } else {
-      data_plot_window$window_length_partial <- with(data_plot_window, stop - start)  # FIX
-    }
-
-    data_plot_window$window <- 1:nrow(data_plot_window)
-
-    #----------------------------------------------------------------------------
-    data_plot_line <- data.frame("index" = unlist(purrr::map2(data_plot_window$start, data_plot_window$stop, function(x, y) {
-      seq(x, y, 1)
-    })))
-
-    # data_plot_line$window_length <- rep(data_plot_window$window_length, data_plot_window$window_length_partial)
-    # data_plot_line$window <- rep(data_plot_window$window, data_plot_window$window_length_partial)
-    data_plot_line$window_length <- data_plot_window$window_length[1]
-    temp <- rep(data_plot_window$window, data_plot_window$window_length_partial)
-    data_plot_line$window <- temp[1:nrow(data_plot_line)]
-    temp <- rep(data_plot_window$start, data_plot_window$window_length_partial)
-    data_plot_line$index <- temp[1:nrow(data_plot_line)]
-
-    data_plot_window$window_length_partial <- NULL
-
-    data_line$window_length <- rep(unique(data_plot_line$window_length), nrow(data_line) / length(windows))
-
-    data_plot_line <- dplyr::full_join(data_line, data_plot_line, by = c("index", "window_length"))
-
-    data_plot_line <- dplyr::arrange(data_plot_line, window_length, index)
-
-    data_plot_group <- data_plot_line %>%
-      dplyr::group_by(window_length, window) %>%
-      dplyr::summarise("index" = mean(index))
-    data_plot_group$label_height <- ifelse(min(data_line[, 1:n_outcomes], na.rm = TRUE) < 0,
-                                           (max(data_line[, 1:n_outcomes], na.rm = TRUE) - abs(min(data_line[, 1:n_outcomes], na.rm = TRUE))) / 2,
-                                           (max(data_line[, 1:n_outcomes], na.rm = TRUE) + abs(min(data_line[, 1:n_outcomes], na.rm = TRUE))) / 2)
-    data_plot_group <- data_plot_group[!is.na(data_plot_group$window), ]
-
-    #data_plot_window$stop <- with(data_plot_window, ifelse(start == stop, stop + 1, stop))  # To plot a shaded rectangle of length 1.
-
-    p <- ggplot()
-    p <- p + geom_rect(data = data_plot_window, aes(xmin = start, xmax = stop,
-                                                    ymin = -Inf, ymax = Inf), fill = "grey85", show.legend = FALSE)
-    p <- p + geom_line(data = data_plot_line, aes(x = index, y = eval(parse(text = outcome_names))), size = 1)
-
-    if (isTRUE(show_labels) || missing(show_labels)) {
-      p <- p + geom_label(data = data_plot_group, aes(x = index, y = label_height, label = window),
-                          color = "black", size = 4)
-    }
-
-    p <- p + theme_bw()
-    p <- p + xlab("Dataset index / row") + ylab("Outcome") +
-      ggtitle("Validation Windows")
-
-    return(p)
-
-  } else {  # Date-based plots...change to group-based...
-
-    data_plot <- as.data.frame(data)
-
-    data_plot$date_indices <- date_indices
-
-    data_plot$ggplot_color_group <- apply(data_plot[, groups], 1, function(x) {paste(x, collapse = "-")})
-
-    data_windows <- windows
-    data_windows$window <- 1:nrow(data_windows)
-
-    data_plot_group <- data_windows %>%
-      dplyr::group_by(window_length, window) %>%
-      dplyr::summarise("index" = start + ((stop - start) / 2))  # Window midpoint for plot label.
-    data_plot_group$label_height <- ifelse(min(data_plot[, 1:n_outcomes], na.rm = TRUE) < 0,
-                                           (max(data_plot[, 1:n_outcomes], na.rm = TRUE) - abs(min(data_plot[, 1:n_outcomes], na.rm = TRUE))) / 2,
-                                           (max(data_plot[, 1:n_outcomes], na.rm = TRUE) + abs(min(data_plot[, 1:n_outcomes], na.rm = TRUE))) / 2)
-    data_plot_group <- data_plot_group[!is.na(data_plot_group$window), ]
-
-
-    p <- ggplot()
-    p <- p + geom_rect(data = windows, aes(xmin = start, xmax = stop,
-                                                    ymin = -Inf, ymax = Inf), fill = "grey85", show.legend = FALSE)
-    p <- p + geom_line(data = data_plot, aes(x = date_indices, y = eval(parse(text = outcome_names)), color = ordered(ggplot_color_group)))
-
-    if (isTRUE(show_labels) || missing(show_labels)) {
-      p <- p + geom_label(data = data_plot_group, aes(x = index, y = label_height, label = window),
-                          color = "black", size = 4)
-    }
-
-    p <- p + theme_bw()
-    p <- p + xlab("Dataset index / row") + ylab("Outcome") + labs(color = "Groups") + ggtitle("Validation Windows")
-
-    return(p)
   }
 
+  data_plot$ggplot_color_group <- apply(data_plot[, groups], 1, function(x) {paste(x, collapse = "-")})
+
+  data_windows <- windows
+  data_windows$window <- 1:nrow(data_windows)
+
+  data_plot_group <- data_windows %>%
+    dplyr::group_by(window_length, window) %>%
+    dplyr::summarise("index" = start + ((stop - start) / 2))  # Window midpoint for plot label.
+  data_plot_group$label_height <- ifelse(min(data_plot[, 1:n_outcomes], na.rm = TRUE) < 0,
+                                         (max(data_plot[, 1:n_outcomes], na.rm = TRUE) - abs(min(data_plot[, 1:n_outcomes], na.rm = TRUE))) / 2,
+                                         (max(data_plot[, 1:n_outcomes], na.rm = TRUE) + abs(min(data_plot[, 1:n_outcomes], na.rm = TRUE))) / 2)
+  data_plot_group <- data_plot_group[!is.na(data_plot_group$window), ]
+
+  p <- ggplot()
+  p <- p + geom_rect(data = windows, aes(xmin = start, xmax = stop,
+                                         ymin = -Inf, ymax = Inf), fill = "grey85", show.legend = FALSE)
+  p <- p + geom_line(data = data_plot, aes(x = index, y = eval(parse(text = outcome_names)), color = ordered(ggplot_color_group)))
+
+  if (isTRUE(show_labels) || missing(show_labels)) {
+    p <- p + geom_label(data = data_plot_group, aes(x = index, y = label_height, label = window),
+                        color = "black", size = 4)
+  }
+
+  p <- p + theme_bw()
+
+  if (is.null(groups)) {
+    p <- p + theme(legend.position = "none")
+  }
+
+  p <- p + xlab("Dataset index / row") + ylab("Outcome") + labs(color = "Groups") + ggtitle("Validation Windows")
+  return(p)
 }
