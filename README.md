@@ -35,6 +35,11 @@ Detailed **[forecastML overview vignette](https://nredell.github.io/data_science
 
 ## Example
 
+Below is an example of how to create 12 horizon-specific ML models to forecast the number of `DriversKilled` 
+12 time periods into the future using the `Seatbelts` dataset. Notice in the last plot that there are multiple forecasts; 
+these are from the slightly different LASSO models trained in the nested cross-validation. An example of selecting optimal 
+hyperparameters and retraining to create a single forecast model can be found in the overview vignette.
+
 ``` r
 # Sampled Seatbelts data from the R package datasets.
 data("data_seatbelts", package = "forecastML")
@@ -45,8 +50,8 @@ lookback <- 1:15
 
 #------------------------------------------------------------------------------
 # Create a dataset of lagged predictors for modeling.
-data_train <- forecastML::create_lagged_df(data_seatbelts, type = "train", 
-                                           outcome_cols = 1, lookback = lookback, 
+data_train <- forecastML::create_lagged_df(data_seatbelts, type = "train",
+                                           outcome_cols = 1, lookback = lookback,
                                            horizon = horizons)
 
 #------------------------------------------------------------------------------
@@ -54,10 +59,10 @@ data_train <- forecastML::create_lagged_df(data_seatbelts, type = "train",
 windows <- forecastML::create_windows(data_train, window_length = 12)
 
 #------------------------------------------------------------------------------
-# User-define model - LASSO
+# User-define model function - LASSO
 # The model takes in a data.frame with a target and predictors with exactly the same format as
 # in create_lagged_df(). 'outcome_cols' is the column index of the target. The
-# model returns a model object suitable for a predict-type function.
+# function returns a model object suitable for the user-defined predict function.
 library(glmnet)
 model_function <- function(data, outcome_cols = 1) {
 
@@ -74,13 +79,13 @@ model_function <- function(data, outcome_cols = 1) {
 # Train a model across forecast horizons and validation datasets.
 model_results <- forecastML::train_model(data_train, windows,
                                          model_function, model_name = "LASSO")
-                                         
+
 #------------------------------------------------------------------------------
 # User-defined prediction function - LASSO
 # The predict() wrapper takes two positional arguments. First,
 # the returned model from the user-defined modeling function (model_function() above).
-# Second, a data.frame of predictors--lagged predictors will be created automatically
-# using create_lagged_df().
+# Second, a data.frame of predictors identical to the input dataset in forecastML::create_lagged_df();
+# predictor lags are created automatically.
 prediction_function <- function(model, data_features) {
 
   x <- as.matrix(data_features, ncol = ncol(data_features))
@@ -98,16 +103,17 @@ plot(data_valid, horizons = c(1, 6, 12))
 
 #------------------------------------------------------------------------------
 # Forecast.
-data_forecast <- forecastML::create_lagged_df(data_seatbelts, type = "forecast", 
+
+# Forward-looking forecast data.frame.
+data_forecast <- forecastML::create_lagged_df(data_seatbelts, type = "forecast",
                                               outcome_cols = 1,
                                               lookback = lookback, horizons = horizons)
-                                              
+
+# Forecasts.
 data_forecasts <- predict(model_results, prediction_function = list(prediction_function),
                           data_forecast = data_forecast)
-                          
-plot(data_forecasts, data[-(1:150), ], horizons = c(1, 6, 12))
+
+plot(data_forecasts, data_seatbelts[-(1:150), ], as.numeric(row.names(data_seatbelts[-(1:150), ])), horizons = c(1, 6, 12))
 ```
 ![](./validation_data_forecasts.png)
 ![](./forecasts.png)
-
-
