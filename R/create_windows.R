@@ -4,13 +4,15 @@
 #' Create blocks of contiguous validation windows to assess the likely forecast accuracy
 #' of various models.
 #'
-#' @param lagged_df An object of class 'lagged_df' from create_lagged_df().
-#' @param window_length An integer that defines the length of the contiguous validation dataset in dataset rows.
+#' @param lagged_df An object of class 'lagged_df' or'grouped_lagged_df' from create_lagged_df().
+#' @param window_length An integer that defines the length of the contiguous validation dataset in dataset rows/dates.
+#' If dates were given in create_lagged_df(), the validation window is window_length * date frequency.
 #' Setting 'window_length = 0' trains the model on the entire dataset--useful for re-training after examining
 #' the nested cross-validation results.
-#' @param window_start An optional index identifying the row to start creating contiguous validation datasets.
-#' @param window_stop An optional index identifying the row to stop creating contiguous validation datasets.
-#' @param skip An integer giving a fixed number of dataset rows to skip between validation datasets.
+#' @param window_start An optional index or date identifying the row/date to start creating contiguous validation datasets.
+#' @param window_stop An optional index or date identifying the row to stop creating contiguous validation datasets.
+#' @param skip An integer giving a fixed number of dataset rows/time to skip between validation datasets. If dates were given
+#' in create_lagged_df(), the time between validation windows is skip * date frequency.
 #' @param include_partial_window Keep validation datasets that are shorter than window_length.
 #' @return A'windows' object: A list of matrices, one per horizon, giving the indices for the validation datasets.
 #' @example /R/examples/example_create_windows.R
@@ -45,20 +47,19 @@ create_windows <- function(lagged_df, window_length = 12,
   window_stop <- if (is.null(window_stop)) {data_stop} else {window_stop}
 
   if (!is.null(date_indices) && !methods::is(window_start, "Date")) {
-    stop("Dates were provided with the input dataset created with `shapFlex::create_lagged_df()`;
+    stop("Dates were provided with the input dataset created with `create_lagged_df()`;
          Enter a window start date as a length-1 vector of class `Date`.")
   }
 
   if (!is.null(date_indices) && !methods::is(window_stop, "Date")) {
-    stop("Dates were provided with the input dataset created with `shapFlex::create_lagged_df()`;
+    stop("Dates were provided with the input dataset created with `create_lagged_df()`;
          Enter a window stop date as a length-1 vector of class `Date`.")
   }
 
-  # To-do: re-write for date inputs.
-  # if(!window_stop >= data_stop) {
-  #   stop(paste0("The end of all validation windows needs to occur on or before row index ", data_stop, " which is the end of the dataset."))
-  #   }
-  #
+  if(!window_stop >= data_stop) {
+    stop(paste0("The end of all validation windows needs to occur on or before row/date ", data_stop, " which is the end of the dataset."))
+  }
+
   # if(!window_stop - window_start + 1 >= max(window_length)) {
   #   stop(paste0("The length of at least one user-defined validation window, ", window_stop - window_start + 1, ", must be >= the longest 'window_length' of ", max(window_length), "."))
   # }
@@ -69,7 +70,7 @@ create_windows <- function(lagged_df, window_length = 12,
     # If the window_length is 0 there are no nested cross-validation windows needed.
     if (window_length == 0) {
 
-      window_matrices <- data.frame("start" = data_start, "stop" = data_stop, "window_length" = window_length)
+      window_matrices <- data.frame("start" = window_start, "stop" = window_stop, "window_length" = window_length)
 
     } else {
 
@@ -107,11 +108,11 @@ create_windows <- function(lagged_df, window_length = 12,
     # If the window_length is 0 there are no nested cross-validation windows needed.
     if (window_length == 0) {
 
-      window_matrices <- data.frame("start" = data_start, "stop" = data_stop, "window_length" = window_length)
+      window_matrices <- data.frame("start" = window_start, "stop" = window_stop, "window_length" = window_length)
 
     } else {
 
-      all_dates <- seq(data_start, data_stop, frequency)
+      all_dates <- seq(window_start, window_stop, frequency)
 
       start_dates <- all_dates[seq(1, length(all_dates), by = window_length + skip)]
 
@@ -167,10 +168,6 @@ plot.windows <- function(windows, data, show_labels = TRUE) {
   skip <- attributes(windows)$skip
 
   data_plot <- as.data.frame(data_train)
-
-  # if (!is.null(groups)) {
-  #   data_plot  <- dplyr::filter(data_plot, eval(parse(text = group_filter)))
-  # }
 
   if (is.null(date_indices)) {
 

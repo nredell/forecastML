@@ -8,11 +8,11 @@
 #' @param lagged_df An object of class 'lagged_df' from create_lagged_df().
 #' @param windows An object of class 'windows' from create_windows().
 #' @param model_function A user-defined wrapper function for model training (see example).
-#' @param model_name A name for the model (required).
-#' @return A'forecast_model' object: A nested list of model results, nested by horizon > validation dataset.
+#' @param model_name A name for the model.
+#' @return A'forecast_model' object: A nested list of model results, nested by model forecast horizon > validation dataset.
 #' @example /R/examples/example_train_model.R
 #' @export
-train_model <- function(lagged_df, windows, model_function, model_name = NULL) {
+train_model <- function(lagged_df, windows, model_function, model_name) {
 
   data <- lagged_df
 
@@ -109,7 +109,7 @@ train_model <- function(lagged_df, windows, model_function, model_name = NULL) {
 #'
 #' @param ... One or more trained models from train_model().
 #' @param prediction_function A list of user-defined prediction functions.
-#' @param data_forecast If NULL, predictions are returned for the validation datasets. If
+#' @param data_forecast If 'NULL', predictions are returned for the validation datasets in each 'forecast_model' in .... If
 #' an object of class 'lagged_df' from create_lagged_df(..., type = "forecast"), forecasts from 1:h.
 #' @return If data_forecast = NULL, a 'training_results' object. If data_forecast = create_lagged_df(..., type = "forecast"),
 #' a 'forecast_results' object.
@@ -146,7 +146,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
 
   # Seq along model > forecast model horizon > validation window number.
   data_model <- lapply(seq_along(model_list), function(i) {
-    #i <- j <- k <- 1
+
     prediction_fun <- prediction_function[[i]]
 
     data_horizon <- lapply(seq_along(model_list[[i]]), function(j) {
@@ -245,6 +245,8 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
     data_horizon <- dplyr::bind_rows(data_horizon)
   })
   data_out <- dplyr::bind_rows(data_model)
+
+  data_out <- as.data.frame(data_out)
 
   attr(data_out, "outcome_cols") <- outcome_cols
   attr(data_out, "outcome_names") <- outcome_names
@@ -482,9 +484,6 @@ plot.forecast_results <- function(forecast_results, data_actual = NULL, actual_i
                                   group_filter = NULL) {
 
   data_forecast <- forecast_results
-  #data_forecast <- data_forecasts  # testing
-  #data_actual <- data  # testing
-  #actual_indices <- as.numeric(row.names(data_actual))
 
   if(!methods::is(data_forecast, "forecast_results")) {
     stop("The 'forecast_results' argument takes an object of class 'forecast_results' as input. Run predict() on a 'forecast_model' object first.")
