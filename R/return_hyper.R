@@ -20,7 +20,9 @@ return_hyper <- function(forecast_model, hyper_function = NULL) {
 
   outcome_cols <- attributes(model_results)$outcome_cols
   outcome_names <- attributes(model_results)$outcome_names
+  horizon <- attributes(model_results)$horizons
 
+  # Defined here to catch (from '<<-' below) the user-defined hyperparameter names in hyper_function.
   hyper_names <- NULL
 
   # Seq along horizon > window_number
@@ -34,7 +36,7 @@ return_hyper <- function(forecast_model, hyper_function = NULL) {
       hyper_names <<- names(data_hyper)
 
       data_plot <- data.frame("model" = attributes(model_results)$model_name,
-                              "horizon" = attributes(model_results[[i]])$horizon,
+                              "horizon" = horizon[i],
                               "window_length" = data_results$window,
                               "window_number" = j,
                               "valid_window_start" = min(data_results$valid_indices),
@@ -154,20 +156,20 @@ plot.forecast_model_hyper <- function(data_hyper, data_results, data_error,
     data_error_merge <- data_error$error_by_window
 
     data_error_merge <- dplyr::select(data_error_merge,
-                                      model, horizon, window_length, window_number,
+                                      model, horizon, window_number,
                                       error_metrics)
     data_error_merge$model <- as.character(data_error_merge$model)
 
     if (length(hyper_num) > 0) {
       data_hyper_num$model <- as.character(data_hyper_num$model)
-      data_hyper_num <- dplyr::inner_join(data_error_merge, data_hyper_num, by = c("model", "horizon", "window_length", "window_number"))
+      data_hyper_num <- dplyr::inner_join(data_error_merge, data_hyper_num, by = c("model", "horizon", "window_number"))
       data_hyper_num <- tidyr::gather(data_hyper_num, "error_metric", "error",
                     -!!names(data_hyper_num)[!names(data_hyper_num) %in% error_metrics])
       }
 
     if (length(hyper_cat) > 0) {
       data_hyper_cat$model <- as.character(data_hyper_cat$model)
-      data_hyper_cat <- dplyr::inner_join(data_hyper_cat, data_error_merge, by = c("model", "horizon", "window_length", "window_number"))
+      data_hyper_cat <- dplyr::inner_join(data_hyper_cat, data_error_merge, by = c("model", "horizon", "window_number"))
       data_hyper_cat <- tidyr::gather(data_hyper_cat, "error_metric", "error",
                                       -!!names(data_hyper_cat)[!names(data_hyper_cat) %in% error_metrics])
     }

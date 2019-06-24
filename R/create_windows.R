@@ -167,7 +167,7 @@ plot.windows <- function(windows, data, show_labels = TRUE) {
   groups <- attributes(data)$groups
   skip <- attributes(windows)$skip
 
-  data_plot <- as.data.frame(data_train)
+  data_plot <- as.data.frame(data)
 
   if (is.null(date_indices)) {
 

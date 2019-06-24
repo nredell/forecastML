@@ -65,6 +65,9 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 
   supported_error_metrics <- c("mae", "mape", "mdape", "smape")
 
+  metrics <- supported_error_metrics[supported_error_metrics %in% metrics]
+  error_metrics_missing <- supported_error_metrics[!supported_error_metrics %in% metrics]
+
   data$residual <- data[, outcome_names] - data[, paste0(outcome_names, "_pred")]
 
   models <- if (is.null(models)) {unique(data$model)} else {models}
@@ -154,13 +157,12 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
                                             na.rm = TRUE) * 100)
       data_3$mape <- with(data_3, ifelse(is.infinite(mape), NA, mape))
       data_3$mdape <- with(data_3, ifelse(is.infinite(mdape), NA, mdape))
-    }
-
-  metrics <- supported_error_metrics[supported_error_metrics %in% metrics]
-  error_metrics_missing <- supported_error_metrics[!supported_error_metrics %in% metrics]
+    }  # End error metrics for forecast results.
 
   if (length(error_metrics_missing) > 0 ) {
-    data_1 <- dplyr::select(data_1, -error_metrics_missing)
+    if (is.null(data_test)) {  #  data_1 is an empty data.frame for forecast error results and dplyr::select throws an error.
+      data_1 <- dplyr::select(data_1, -error_metrics_missing)
+    }
     data_2 <- dplyr::select(data_2, -error_metrics_missing)
     data_3 <- dplyr::select(data_3, -error_metrics_missing)
   }
