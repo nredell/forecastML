@@ -503,7 +503,7 @@ plot.lagged_df <- function(object) {
     stop("This method takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
   }
 
-  horizon <- lapply(data, function(x){attributes(x)$horizon})
+  horizon <- attributes(data)$horizons
 
   # Within a given horizon, an indicator for different lag vectors for each predictor.
   if (methods::is(attributes(data[[1]])$lookback, "list")) {
@@ -521,7 +521,7 @@ plot.lagged_df <- function(object) {
 
   n_predictors <- length(predictor_names)
 
-  lookback <- lapply(data_train, function(x) {attributes(x)$lookback})
+  lookback <- lapply(data, function(x) {attributes(x)$lookback})
   lookback_max <- max(unlist(lookback), na.rm = TRUE)
 
   if (lookback_per_predictor) {
@@ -536,7 +536,7 @@ plot.lagged_df <- function(object) {
           lookback_predictor <- lookback[[i]][[j]]
 
           if (!is.na(lookback_predictor) && length(lookback_predictor) > 0) {
-            data_predictor <- expand.grid("horizon" = unlist(horizon)[i], "time" = lookback_predictor)
+            data_predictor <- expand.grid("horizon" = horizon[i], "time" = lookback_predictor)
             data_predictor$predictor_number <- j
 
           } else {  # Nothing to plot, no feature lags appropriate for this horizon.
@@ -569,10 +569,10 @@ plot.lagged_df <- function(object) {
   data_plot$feature <- "Feature"  # Feature is present in plot.
 
   # Make a grid for plotting the presence of lagged features, no lagged features, and forecast horizons.
-  data_grid_past <- expand.grid("horizon" = min(unlist(horizon)):max(unlist(horizon)),
+  data_grid_past <- expand.grid("horizon" = min(horizon):max(horizon),
                                 "time" = (-1 * lookback_max):-1)
-  data_grid_future <- expand.grid("horizon" = min(unlist(horizon)):max(unlist(horizon)),
-                                  "time" = 1:max(unlist(horizon)))
+  data_grid_future <- expand.grid("horizon" = min(horizon):max(horizon),
+                                  "time" = 1:max(horizon))
   # For forecast horizon plot fill, remove the rows in the data that exceed the horizon.
   data_grid_future <- data_grid_future[with(data_grid_future, time <= horizon), ]
   data_grid <- dplyr::bind_rows(data_grid_past, data_grid_future)
@@ -584,7 +584,7 @@ plot.lagged_df <- function(object) {
   data_plot$feature[is.na(data_plot$feature)] <- "Forecast"
 
   # Filter to remove user-specified unused horizons from the plot grid.
-  data_plot <- data_plot[data_plot$horizon %in% unlist(horizon), ]
+  data_plot <- data_plot[data_plot$horizon %in% horizon, ]
 
   if (!lookback_per_predictor) {
 
