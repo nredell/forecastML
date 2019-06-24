@@ -4,14 +4,14 @@
 #' Compute forecast error metrics on the validation datasets or a test dataset
 #'
 #' @param data_results An object of class 'training_results' or 'forecast_results'.
-#' @param data_test Optional. A data.frame used to assess the accuracy of a 'forecast_results'
-#' object. The outcome/target name needs to be present; the remaining columns are ignored. The
-#' first 1:h rows of data_test are matched to the first 1:h-step-ahead forecasts for each
-#' horizon-specific forecast model.
+#' @param data_test If 'data_results' is an object of class 'forecast_results', a data.frame used to
+#' assess the accuracy of a 'forecast_results' object. 'data_test' should have the outcome/target columns and any grouping columns.
+#' @param test_indices Required if 'data_test' is given. A vector or 1-column data.frame of numeric row indices or dates (class'Date') with length nrow(data_test).
 #' @param metrics Common forecast error metrics. See the Error Metrics section below for details.
 #' @param models Filter results by user-defined model name from train_model() (optional).
 #' @param horizons Filter results by horizon (optional).
 #' @param windows Filter results by validation window number (optional).
+#' @param group_filter A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").
 #'
 #' @section Error Metrics:
 #' mae = Means absolute error \cr
@@ -190,6 +190,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 #' @param models Filter results by user-defined model name from train_model() (optional).
 #' @param horizons Filter results by horizon (optional).
 #' @param windows Filter results by validation window number (optional).
+#' @param group_filter A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").
 #' @return Forecast error plots of class 'ggplot'.
 #' @export
 plot.validation_error <- function(data_error, data_results, type = c("time", "horizon", "global"),

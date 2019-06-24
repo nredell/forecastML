@@ -277,9 +277,10 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
 #' @param horizons Filter results by horizon (optional).
 #' @param windows Filter results by validation window number (optional).
 #' @param valid_indices Filter results by validation row index (optional).
+#'
 #' @return Diagnostic plots of class 'ggplot'.
 #' @export
-plot.training_results <- function(training_results, data_actual = NULL,
+plot.training_results <- function(training_results,
                                   type = c("prediction", "residual", "forecast_stability", "forecast_variability"),
                                   models = NULL, horizons = NULL,
                                   windows = NULL, valid_indices = NULL, group_filter = NULL) {
@@ -311,10 +312,6 @@ plot.training_results <- function(training_results, data_actual = NULL,
   n_outcomes <- length(outcome_cols)
 
   forecast_stability_plot_windows <- windows
-
-  if (!is.null(data_actual)) {
-    data_actual <- data_actual[, c(outcome_names, groups), drop = FALSE]
-  }
 
   data$residual <- data[, outcome_names] - data[, paste0(outcome_names, "_pred")]
 
@@ -469,12 +466,14 @@ plot.training_results <- function(training_results, data_actual = NULL,
 #' A forecast plot for each horizon for each model in predict.forecast_model().
 #'
 #' @param forecast_results An object of class 'forecast_results' from predict.forecast_model().
-#' @param data_actual A data.frame containing the target/outcome name; other columns are ignored.
+#' @param data_actual A data.frame containing the target/outcome name and any grouping columns.
+#' @param actual_indices Required if 'data_actual' is given. A vector or 1-column data.frame of numeric row indices or dates (class'Date') with length nrow(data_actual).
 #' The data can be historical and/or holdout/test data, forecasts and actuals are matched by row.names().
 #' @param models Filter results by user-defined model name from train_model() (optional).
 #' @param horizons Filter results by horizon (optional).
 #' @param windows Filter results by validation window number (optional).
 #' @param facet_plot Adjust the plot display through ggplot2::facet_grid(). facet_plot = NULL plots results in one facet.
+#' @param group_filter A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").
 #' @return Forecast plot of class 'ggplot'.
 #' @export
 plot.forecast_results <- function(forecast_results, data_actual = NULL, actual_indices = NULL,

@@ -22,10 +22,10 @@
 #' should have a lookback_control value of 0. 'NULL' lookback_control values drop columns from the input dataset.
 #' Lags that don't support direct forecasting for a given horizon
 #' are dropped. Either 'lookback' or 'lookback_control' need to be specified.
-#' @groups Column name(s) that give the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but are not lagged.
+#' @param groups Column name(s) that give the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but are not lagged.
 #' Note that combining feature lags with grouped time-series will result in NA values throughout the data.
-#' @dates A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal nrow(data). Required if 'groups' are given.
-#' @frequency A string taking the same input as `scales::date_breaks()` e.g., '1 month', '7 days', etc.". Required if 'dates' are given.
+#' @param dates A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal nrow(data). Required if 'groups' are given.
+#' @param frequency A string taking the same input as `scales::date_breaks()` e.g., '1 month', '7 days', etc.". Required if 'dates' are given.
 #' @return A 'lagged_df' or 'grouped_lagged_df' object: A list of data.frames with new columns for the lagged predictors.
 #' @example /R/examples/example_create_lagged_df.R
 #'
