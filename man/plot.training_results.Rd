@@ -7,7 +7,7 @@
 \method{plot}{training_results}(training_results, type = c("prediction",
   "residual", "forecast_stability", "forecast_variability"),
   models = NULL, horizons = NULL, windows = NULL,
-  valid_indices = NULL)
+  valid_indices = NULL, group_filter = NULL)
 }
 \arguments{
 \item{training_results}{An object of class 'training_results' from predict.forecast_model().}

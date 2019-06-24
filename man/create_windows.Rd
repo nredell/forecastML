@@ -8,17 +8,19 @@ create_windows(lagged_df, window_length = 12, window_start = NULL,
   window_stop = NULL, skip = 0, include_partial_window = TRUE)
 }
 \arguments{
-\item{lagged_df}{An object of class 'lagged_df' from create_lagged_df().}
+\item{lagged_df}{An object of class 'lagged_df' or'grouped_lagged_df' from create_lagged_df().}
 
-\item{window_length}{An integer that defines the length of the contiguous validation dataset in dataset rows.
+\item{window_length}{An integer that defines the length of the contiguous validation dataset in dataset rows/dates.
+If dates were given in create_lagged_df(), the validation window is window_length * date frequency.
 Setting 'window_length = 0' trains the model on the entire dataset--useful for re-training after examining
 the nested cross-validation results.}
 
-\item{window_start}{An optional index identifying the row to start creating contiguous validation datasets.}
+\item{window_start}{An optional index or date identifying the row/date to start creating contiguous validation datasets.}
 
-\item{window_stop}{An optional index identifying the row to stop creating contiguous validation datasets.}
+\item{window_stop}{An optional index or date identifying the row to stop creating contiguous validation datasets.}
 
-\item{skip}{An integer giving a fixed number of dataset rows to skip between validation datasets.}
+\item{skip}{An integer giving a fixed number of dataset rows/time to skip between validation datasets. If dates were given
+in create_lagged_df(), the time between validation windows is skip * date frequency.}
 
 \item{include_partial_window}{Keep validation datasets that are shorter than window_length.}
 }

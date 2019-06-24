@@ -12,7 +12,7 @@
 
 \item{prediction_function}{A list of user-defined prediction functions.}
 
-\item{data_forecast}{If NULL, predictions are returned for the validation datasets. If
+\item{data_forecast}{If 'NULL', predictions are returned for the validation datasets in each 'forecast_model' in .... If
 an object of class 'lagged_df' from create_lagged_df(..., type = "forecast"), forecasts from 1:h.}
 }
 \value{

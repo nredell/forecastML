@@ -6,7 +6,7 @@
 \usage{
 \method{plot}{validation_error}(data_error, data_results,
   type = c("time", "horizon", "global"), models = NULL,
-  horizons = NULL, windows = NULL)
+  horizons = NULL, windows = NULL, group_filter = NULL)
 }
 \arguments{
 \item{data_error}{An object of class 'validation_error' from return_error().}
@@ -20,6 +20,8 @@
 \item{horizons}{Filter results by horizon (optional).}
 
 \item{windows}{Filter results by validation window number (optional).}
+
+\item{group_filter}{A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").}
 }
 \value{
 Forecast error plots of class 'ggplot'.
