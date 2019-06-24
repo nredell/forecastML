@@ -166,7 +166,11 @@ plot.windows <- function(windows, data, show_labels = TRUE) {
   groups <- attributes(data)$groups
   skip <- attributes(windows)$skip
 
-  data_plot <- as.data.frame(data)
+  data_plot <- as.data.frame(data_train)
+
+  # if (!is.null(groups)) {
+  #   data_plot  <- dplyr::filter(data_plot, eval(parse(text = group_filter)))
+  # }
 
   if (is.null(date_indices)) {
 

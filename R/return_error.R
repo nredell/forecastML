@@ -199,7 +199,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 #' @return Forecast error plots of class 'ggplot'.
 #' @export
 plot.validation_error <- function(data_error, data_results, type = c("time", "horizon", "global"),
-                                  models = NULL, horizons = NULL, windows = NULL) {
+                                  models = NULL, horizons = NULL, windows = NULL, group_filter = NULL) {
 
   if(!methods::is(data_error, "validation_error")) {
     stop("The 'data_error' argument takes an object of class 'validation_error' as input. Run return_error() first.")
@@ -209,6 +209,7 @@ plot.validation_error <- function(data_error, data_results, type = c("time", "ho
 
   outcome_cols <- attributes(data_results)$outcome_cols
   outcome_names <- attributes(data_results)$outcome_names
+  groups <- attributes(data_results)$groups
 
   error_metrics <- attributes(data_error)$error_metrics
 
@@ -225,26 +226,25 @@ plot.validation_error <- function(data_error, data_results, type = c("time", "ho
   data_results <- data_results[data_results$horizon %in% horizons &
                                data_results$model %in% models & data_results$window_number %in% windows, ]
 
+  if (!is.null(group_filter)) {
+    data_plot <- dplyr::filter(data_plot, eval(parse(text = group_filter)))
+    data_results <- dplyr::filter(data_results, eval(parse(text = group_filter)))
+  }
+
   # Melt the data for plotting.
   data_plot <- tidyr::gather(data_plot, "error_metric", "value",
                              -!!names(data_plot)[!names(data_plot) %in% error_metrics])
 
-  data_plot$group <- paste0("00", data_plot$horizon)
-  data_plot$group <- substr(data_plot$group, nchar(data_plot$group) - 2, nchar(data_plot$group))
-  data_plot$group <- paste0(data_plot$model, "-", data_plot$group)
-  data_plot$group <- ordered(data_plot$group)
-
   if (type == "time") {
 
-    # data_outcome <- forecastML:::plot_outcome(data_plot, data_results, scale_outcome_by = "error_metric",
-    #                                           outcome_names = outcome_names)
+    data_plot$group <- apply(data_plot[, c("model", "horizon", groups), drop = FALSE], 1, paste, collapse = " + ")
+    data_plot$group <- ordered(data_plot$group)
 
     p <- ggplot()
     if (length(unique(data_plot$window_midpoint)) != 1) {
-      p <- p + geom_line(data = data_plot, aes(x = window_midpoint, y = value, color = factor(model)), size = 1.05)
+      p <- p + geom_line(data = data_plot, aes(x = window_midpoint, y = value, color = factor(model), group = group), size = 1.05)
     }
-    p <- p + geom_point(data = data_plot, aes(x = window_midpoint, y = value, color = factor(model)), show.legend = FALSE)
-    #p <- p + geom_line(data = data_outcome, aes(x = valid_indices, y = outcome_scaled, group = window_number), color = "gray50")
+    p <- p + geom_point(data = data_plot, aes(x = window_midpoint, y = value, color = factor(model), group = group), show.legend = FALSE)
     p <- p + scale_color_viridis_d()
     p <- p + facet_grid(error_metric ~ horizon, scales = "free")
     p <- p + theme_bw()
@@ -255,7 +255,7 @@ plot.validation_error <- function(data_error, data_results, type = c("time", "ho
 
   if (type == "horizon") {
 
-    data_plot$group <- with(data_plot, paste0(model, "-", window_number))
+    data_plot$group <- apply(data_plot[, c("model", "window_number", groups), drop = FALSE], 1, paste, collapse = " + ")
     data_plot$group <- ordered(data_plot$group)
 
     data_plot_summary <- data_error[[2]]
@@ -266,11 +266,15 @@ plot.validation_error <- function(data_error, data_results, type = c("time", "ho
     data_plot_summary <- data_plot_summary[data_plot_summary$horizon %in% horizons &
                                            data_plot_summary$model %in% models, ]
 
+    if (!is.null(group_filter)) {
+      data_plot_summary <- dplyr::filter(data_plot_summary, eval(parse(text = group_filter)))
+    }
+
     # Melt the data for plotting.
     data_plot_summary <- tidyr::gather(data_plot_summary, "error_metric", "value",
                                        -!!names(data_plot_summary)[!names(data_plot_summary) %in% error_metrics])
 
-    data_plot_summary$group <- with(data_plot_summary, paste0(model))
+    data_plot_summary$group <- apply(data_plot_summary[, c("model", groups), drop = FALSE], 1, paste, collapse = " + ")
     data_plot_summary$group <- ordered(data_plot_summary$group)
 
     p <- ggplot()
@@ -297,12 +301,20 @@ plot.validation_error <- function(data_error, data_results, type = c("time", "ho
 
     data_plot_summary <- data_plot_summary[data_plot_summary$model %in% models, ]
 
+    if (!is.null(group_filter)) {
+      data_plot_summary <- dplyr::filter(data_plot_summary, eval(parse(text = group_filter)))
+    }
+
+    data_plot_summary$group <- apply(data_plot_summary[, c("model", groups), drop = FALSE], 1, paste, collapse = " + ")
+    data_plot_summary$group <- ordered(data_plot_summary$group)
+
+
     data_plot_summary <- tidyr::gather(data_plot_summary, "error_metric", "value",
                                        -!!names(data_plot_summary)[!names(data_plot_summary) %in% error_metrics])
 
-    p <- ggplot()
-    p <- p + geom_bar(data = data_plot_summary, aes(x = model, y = value, fill = factor(model)), stat = "identity")
-    p <- p + geom_label(data = data_plot_summary, aes(x = model, y = value, label = round(value, 1)), show.legend = FALSE)
+    p <- ggplot(data_plot_summary)
+    p <- p + geom_bar(data = data_plot_summary, aes(x = model, y = value, fill = factor(model), group = group), stat = "identity", position = position_dodge(width = 1))
+    p <- p + geom_label(data = data_plot_summary, aes(x = model, y = value, label = round(value, 1), group = group), show.legend = FALSE, position = position_dodge(width = 1))
     p <- p + scale_fill_viridis_d()
     p <- p + facet_grid(error_metric ~ ., scales = "free")
     p <- p + theme_bw()
