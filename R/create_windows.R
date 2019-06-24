@@ -36,7 +36,7 @@ create_windows <- function(lagged_df, window_length = 12,
   outcome_cols <- attributes(data)$outcome_cols
   outcome_names <- attributes(data)$outcome_names
   row_names <- attributes(data)$row_indices
-  date_indices <- attributes(data)$dates
+  date_indices <- attributes(data)$date_indices
   frequency <- attributes(data)$frequency
   data_start <- attributes(data)$data_start
   data_stop <- attributes(data)$data_stop
@@ -162,7 +162,7 @@ plot.windows <- function(windows, data, show_labels = TRUE) {
   outcome_names <- attributes(data)$outcome_names
   row_names <- as.numeric(row.names(data[[1]]))
   n_outcomes <- length(outcome_cols)
-  date_indices <- attributes(data)$dates
+  date_indices <- attributes(data)$date_indices
   groups <- attributes(data)$groups
   skip <- attributes(windows)$skip
 

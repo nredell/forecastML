@@ -32,12 +32,6 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
                          metrics = c("mae", "mape", "mdape", "smape"),
                          models = NULL, horizons = NULL, windows = NULL, group_filter = NULL) {
 
-  #data_results <- data_valid
-  #data_results <- data_forecasts
-  #data_test <- data_seatbelts[(nrow(data_seatbelts) - length(test_indices) + 1):nrow(data_seatbelts), ]
-  #data <- data_results
-  #test_indices <- unique(data$forecast_period)
-
   data <- data_results
 
   if (!(methods::is(data, "training_results") || methods::is(data, "forecast_results"))) {

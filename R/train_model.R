@@ -31,7 +31,7 @@ train_model <- function(lagged_df, windows, model_function, model_name = NULL) {
   outcome_cols <- attributes(data)$outcome_cols
   outcome_names <- attributes(data)$outcome_names
   row_indices <- attributes(data)$row_indices
-  date_indices <- attributes(data)$dates
+  date_indices <- attributes(data)$date_indices
   horizons <- attributes(data)$horizons
   data_stop <- attributes(data)$data_stop
   n_outcomes <- length(outcome_cols)
