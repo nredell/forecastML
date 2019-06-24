@@ -170,7 +170,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
           forecast_horizons <- data_forecast[[j]][, "horizon", drop = FALSE]
           data_for_forecast <- data_forecast[[j]][, !names(data_forecast[[j]]) %in% c("horizon", "row_number"), drop = FALSE]  # Remove "horizon" for predict().
 
-          data_pred <- prediction_fun(data_results$model, data_for_forecast)  # Forecast.
+          data_pred <- prediction_fun(data_results$model, data_for_forecast)  # User-defined prediction function.
 
           if (!is.null(groups)) {
 
@@ -225,9 +225,10 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
 
           } else {  # Add date column for forecast horizons.
 
-            max_date <- max(attributes(data_forecast)$dates, na.rm = TRUE)
+            max_date <- max(date_indices, na.rm = TRUE)
 
-            data_merge <- data.frame("date" = seq(max_date, by = attributes(data_forecast)$frequency, length = max(unique(data_temp$horizon), na.rm = TRUE)))
+            # Date seq from 1 step past the max date to 1:n_horizons.
+            data_merge <- data.frame("date" = seq(max_date, by = attributes(data_forecast)$frequency, length = max(unique(data_temp$horizon), na.rm = TRUE) + 1)[-1])
             data_merge$horizon <- 1:nrow(data_merge)
 
             data_temp <- dplyr::left_join(data_temp, data_merge, by = "horizon")
@@ -502,12 +503,6 @@ plot.forecast_results <- function(forecast_results, data_actual = NULL, actual_i
     data_actual <- data_actual[, c(outcome_names, groups), drop = FALSE]
 
     data_actual$index <- actual_indices
-
-    if (!is.null(date_indices)) {
-
-      data_actual$index <- date_indices[data_actual$index]
-
-    }
 
     if (!is.null(group_filter)) {
 
