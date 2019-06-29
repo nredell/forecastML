@@ -144,12 +144,15 @@ create_windows <- function(lagged_df, window_length = 12,
 #' Plot validation datasets across time.
 #'
 #' @param windows An object of class 'windows' from create_windows().
-#' @param data An object of class 'lagged_df' from create_lagged_df().
+#' @param lagged_df An object of class 'lagged_df' from create_lagged_df().
 #' @param show_labels Show validation dataset IDs on the plot.
+#' @param group_filter A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").
 #' @return A plot of the outer-loop nested cross-validation windows.
 #' @example /R/examples/example_plot_windows.R
 #' @export
-plot.windows <- function(windows, data, show_labels = TRUE) {
+plot.windows <- function(windows, lagged_df, show_labels = TRUE, group_filter = NULL) {
+
+  data <- lagged_df
 
   if (!methods::is(windows, "windows")) {
     stop("The 'windows' argument takes an object of class 'windows' as input. Run window_skip() first.")
@@ -161,45 +164,86 @@ plot.windows <- function(windows, data, show_labels = TRUE) {
 
   outcome_cols <- attributes(data)$outcome_cols
   outcome_names <- attributes(data)$outcome_names
-  row_names <- as.numeric(row.names(data[[1]]))
+  row_names <- as.numeric(row.names(data[[1]]))  # To-do: for index-based lagged_dfs, adjust for first row differences across variable lookbacks.
   n_outcomes <- length(outcome_cols)
   date_indices <- attributes(data)$date_indices
   groups <- attributes(data)$groups
   skip <- attributes(windows)$skip
 
-  data_plot <- as.data.frame(data)
+  # If there are multiple horizons in the lagged_df, select the first dataset and columns for plotting.
+  data_plot <- dplyr::select(data[[1]], outcome_names, groups)
 
-  if (is.null(date_indices)) {
+  if (is.null(date_indices)) {  # index-based x-axis in plot.
 
     data_plot$index <- row_names
 
-  } else {
+  } else {  # date-based x-axis in plot.
 
     if (is.null(groups)) {
-      data_plot$index <- date_indices[row_names]  # Removes the dates from predictor lags.
+
+      data_plot$index <- date_indices[row_names]  # Removes the dates from the beginning of a dataset; right now dates are for all dates given and indices are not.
+
     } else {
+
       data_plot$index <- date_indices
     }
-
   }
 
+  if (!is.null(group_filter)) {
+
+    data_plot <- dplyr::filter(data_plot, eval(parse(text = group_filter)))
+  }
+
+  # Create different line segments in ggplot with `color = ggplot_color_group`.
   data_plot$ggplot_color_group <- apply(data_plot[, groups], 1, function(x) {paste(x, collapse = "-")})
 
   data_windows <- windows
   data_windows$window <- 1:nrow(data_windows)
 
-  data_plot_group <- data_windows %>%
-    dplyr::group_by(window_length, window) %>%
-    dplyr::summarise("index" = start + ((stop - start) / 2))  # Window midpoint for plot label.
-  data_plot_group$label_height <- ifelse(min(data_plot[, 1:n_outcomes], na.rm = TRUE) < 0,
-                                         (max(data_plot[, 1:n_outcomes], na.rm = TRUE) - abs(min(data_plot[, 1:n_outcomes], na.rm = TRUE))) / 2,
-                                         (max(data_plot[, 1:n_outcomes], na.rm = TRUE) + abs(min(data_plot[, 1:n_outcomes], na.rm = TRUE))) / 2)
-  data_plot_group <- data_plot_group[!is.na(data_plot_group$window), ]
+  # Find the x and y coordinates for the plot labels
+  if (isTRUE(show_labels) || missing(show_labels)) {
+
+    data_plot_group <- data_windows %>%
+      dplyr::group_by(window_length, window) %>%
+      dplyr::summarise("index" = start + ((stop - start) / 2))  # Window midpoint for plot label.
+    data_plot_group$label_height <- ifelse(min(data_plot[, 1:n_outcomes], na.rm = TRUE) < 0,
+                                           (max(data_plot[, 1:n_outcomes], na.rm = TRUE) - abs(min(data_plot[, 1:n_outcomes], na.rm = TRUE))) / 2,
+                                           (max(data_plot[, 1:n_outcomes], na.rm = TRUE) + abs(min(data_plot[, 1:n_outcomes], na.rm = TRUE))) / 2)
+    data_plot_group <- data_plot_group[!is.na(data_plot_group$window), ]
+  }
+
+  # Fill in date gaps with NAs so ggplot doesn't connect line segments where there were no entries recorded.
+  if (!is.null(groups)) {
+
+    data_plot_template <- expand.grid("index" = seq(min(date_indices, na.rm = TRUE), max(date_indices, na.rm = TRUE), by = attributes(data)$frequency),
+                                      "ggplot_color_group" = unique(data_plot$ggplot_color_group),
+                                      stringsAsFactors = FALSE)
+
+    data_plot <- dplyr::left_join(data_plot_template, data_plot, by = c("index", "ggplot_color_group"))
+
+    data_plot$ggplot_color_group <- ordered(data_plot$ggplot_color_group)
+
+    # Create a dataset of points for those instances where there the outcomes are NA before and after a given instance.
+    # Points are needed because ggplot will not plot a 1-instance geom_line().
+    data_plot_point <- data_plot %>%
+      dplyr::group_by(ggplot_color_group) %>%
+      dplyr::mutate("lag" = dplyr::lag(eval(parse(text = outcome_names)), 1),
+                    "lead" = dplyr::lead(eval(parse(text = outcome_names)), 1)) %>%
+      dplyr::filter(is.na(lag) & is.na(lead))
+
+    data_plot_point$ggplot_color_group <- factor(data_plot_point$ggplot_color_group, ordered = TRUE, levels(data_plot$ggplot_color_group))
+  }
 
   p <- ggplot()
   p <- p + geom_rect(data = windows, aes(xmin = start, xmax = stop,
                                          ymin = -Inf, ymax = Inf), fill = "grey85", show.legend = FALSE)
-  p <- p + geom_line(data = data_plot, aes(x = index, y = eval(parse(text = outcome_names)), color = ordered(ggplot_color_group)))
+  p <- p + geom_line(data = data_plot, aes(x = index, y = eval(parse(text = outcome_names)), color = ggplot_color_group),
+                     size = 1.05)
+
+  if (!is.null(groups) & nrow(data_plot_point) >= 1) {
+    p <- p + geom_point(data = data_plot_point, aes(x = index, y = eval(parse(text = outcome_names)), color = ggplot_color_group),
+                        show.legend = FALSE)
+  }
 
   if (isTRUE(show_labels) || missing(show_labels)) {
     p <- p + geom_label(data = data_plot_group, aes(x = index, y = label_height, label = window),

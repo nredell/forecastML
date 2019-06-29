@@ -277,7 +277,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
 #' @param horizons Filter results by horizon (optional).
 #' @param windows Filter results by validation window number (optional).
 #' @param valid_indices Filter results by validation row index (optional).
-#'
+#' @param group_filter A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").
 #' @return Diagnostic plots of class 'ggplot'.
 #' @export
 plot.training_results <- function(training_results,
