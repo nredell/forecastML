@@ -32,6 +32,7 @@ train_model <- function(lagged_df, windows, model_function, model_name) {
   outcome_names <- attributes(data)$outcome_names
   row_indices <- attributes(data)$row_indices
   date_indices <- attributes(data)$date_indices
+  frequency <- attributes(data)$frequency
   horizons <- attributes(data)$horizons
   data_stop <- attributes(data)$data_stop
   n_outcomes <- length(outcome_cols)
@@ -89,6 +90,7 @@ train_model <- function(lagged_df, windows, model_function, model_name) {
   attr(data_out, "outcome_names") <- outcome_names
   attr(data_out, "row_indices") <- row_indices
   attr(data_out, "date_indices") <- date_indices
+  attr(data_out, "frequency") <- frequency
   attr(data_out, "data_stop") <- data_stop
   attr(data_out, "horizons") <- horizons
   attr(data_out, "groups") <- groups
@@ -131,6 +133,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
   outcome_names <- attributes(model_list[[1]])$outcome_names
   row_indices <- attributes(model_list[[1]])$row_indices
   date_indices <- attributes(model_list[[1]])$date_indices
+  frequency <- attributes(model_list[[1]])$frequency
 
   if (is.null(data_forecast)) {
 
@@ -252,6 +255,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
   attr(data_out, "outcome_names") <- outcome_names
   attr(data_out, "row_indices") <- row_indices
   attr(data_out, "date_indices") <- date_indices
+  attr(data_out, "frequency") <- frequency
   attr(data_out, "data_stop") <- data_stop  # To-do: this may only be relevant for class "forecast_results".
   attr(data_out, "groups") <- groups
 
@@ -272,11 +276,11 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
 #' based on predictions on the outer-loop validation datasets.
 #'
 #' @param training_results An object of class 'training_results' from predict.forecast_model().
-#' @param type Plot type, default is "prediction".
+#' @param type Plot type, default is "prediction" for hold-out sample predictions.
 #' @param models Filter results by user-defined model name from train_model() (optional).
 #' @param horizons Filter results by horizon (optional).
 #' @param windows Filter results by validation window number (optional).
-#' @param valid_indices Filter results by validation row index (optional).
+#' @param valid_indices Filter results by validation row indices or dates (optional).
 #' @param group_filter A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").
 #' @return Diagnostic plots of class 'ggplot'.
 #' @export
@@ -286,6 +290,7 @@ plot.training_results <- function(training_results,
                                   windows = NULL, valid_indices = NULL, group_filter = NULL) {
 
   data <- training_results
+  #data <- data_cv
 
   if (!methods::is(data, "training_results")) {
     stop("The 'data' argument takes an object of class 'training_results' as input. Run predict() on a 'forecast_model' object first.")
@@ -308,6 +313,7 @@ plot.training_results <- function(training_results,
   outcome_cols <- attributes(data)$outcome_cols
   outcome_names <- attributes(data)$outcome_names
   date_indices <- attributes(data)$date_indices
+  frequency <- attributes(data)$frequency
   groups <- attributes(data)$group
   n_outcomes <- length(outcome_cols)
 
@@ -330,17 +336,53 @@ plot.training_results <- function(training_results,
   if (methods::is(valid_indices, "Date")) {
 
     data_plot <- data_plot[data_plot$date_indices %in% valid_indices, ]  # Filter plots by dates.
+    data_plot$index <- data_plot$date_indices
 
   } else {
 
     data_plot <- data_plot[data_plot$valid_indices %in% valid_indices, ]  # Filter plots by row indices.
+
+    if (!is.null(date_indices)) {
+
+      data_plot$index <- data_plot$date_indices
+
+    } else {
+
+      data_plot$index <- data_plot$valid_indices
+
+    }
   }
 
   if (!is.null(group_filter)) {
 
     data_plot <- dplyr::filter(data_plot, eval(parse(text = group_filter)))
   }
+  #----------------------------------------------------------------------------
+  # Create different line segments in ggplot with `color = ggplot_color_group`.
+  data_plot$ggplot_color_group <- apply(data_plot[,  c("model", groups)], 1, function(x) {paste(x, collapse = "-")})
 
+  data_plot$ggplot_color_group <- ordered(data_plot$ggplot_color_group, levels = unique(data_plot$ggplot_color_group))
+  #----------------------------------------------------------------------------
+  # Fill in date gaps with NAs so ggplot doesn't connect line segments where there were no entries recorded.
+  if (!is.null(groups)) {
+
+    data_plot_template <- expand.grid("index" = seq(min(date_indices, na.rm = TRUE), max(date_indices, na.rm = TRUE), by = frequency),
+                                      "ggplot_color_group" = unique(data_plot$ggplot_color_group),
+                                      "horizon" = horizons,
+                                      stringsAsFactors = FALSE)
+
+    data_plot <- dplyr::left_join(data_plot_template, data_plot, by = c("index", "horizon", "ggplot_color_group"))
+
+    # Create a dataset of points for those instances where there the outcomes are NA before and after a given instance.
+    # Points are needed because ggplot will not plot a 1-instance geom_line().
+    data_plot_point <- data_plot %>%
+      dplyr::group_by(ggplot_color_group) %>%
+      dplyr::mutate("lag" = dplyr::lag(eval(parse(text = outcome_names)), 1),
+                    "lead" = dplyr::lead(eval(parse(text = outcome_names)), 1)) %>%
+      dplyr::filter(is.na(lag) & is.na(lead))
+
+    data_plot_point$ggplot_color_group <- factor(data_plot_point$ggplot_color_group, ordered = TRUE, levels(data_plot$ggplot_color_group))
+  }
   #----------------------------------------------------------------------------
 
   if (type %in% c("prediction", "residual")) {
@@ -351,37 +393,55 @@ plot.training_results <- function(training_results,
 
     # If date indices exist, plot with them.
     if (!is.null(date_indices)) {
-      data_plot$valid_indices <- data_plot$date_indices
+      data_plot$index <- data_plot$date_indices
     }
-
-    data_plot$group <- apply(data_plot[, c("model", "horizon", groups), drop = FALSE], 1, paste, collapse = " + ")
-
-    data_plot$group <- ordered(data_plot$group, levels = unique(data_plot$group))
 
     if (type == "prediction") {
 
-      p <- ggplot(data_plot[data_plot$outcome != outcome_names, ], aes(x = valid_indices, y = value, group = group, color = factor(model)))
+      p <- ggplot(data_plot[data_plot$outcome != outcome_names, ], aes(x = index, y = value, group = ggplot_color_group, color = ggplot_color_group))
       p <- p + geom_line(size = 1.05, linetype = 1)
-      p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
-                         aes(x = valid_indices, y = value), color = "grey50")
+
+      if (is.null(groups)) {
+
+        p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ], aes(x = index, y = value), color = "grey50")
+
+      } else {
+
+        p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ], aes(x = index, y = value, group = ggplot_color_group,
+                                                                                       color = ggplot_color_group), linetype = 2)
+      }
 
     } else if (type == "residual") {
 
-      p <- ggplot(data_plot[data_plot$outcome != outcome_names, ], aes(x = valid_indices, y = residual, group = group, color = factor(model)))
+      p <- ggplot(data_plot[data_plot$outcome != outcome_names, ], aes(x = index, y = residual, group = ggplot_color_group, color = ggplot_color_group))
       p <- p + geom_line(size = 1.05, linetype = 1)
       p <- p + geom_hline(yintercept = 0)
     }
 
+    if (!is.null(groups) & nrow(data_plot_point) >= 1) {
+
+      # Actuals - geom_line() is 1 point.
+      p <- p + geom_point(data = data_plot_point, aes(x = index, y = eval(parse(text = outcome_names)), color = ggplot_color_group),
+                          shape = 1, show.legend = FALSE)
+
+      # Predictions - geom_line() is 1 point.
+      p <- p + geom_point(data = data_plot_point, aes(x = index, y = eval(parse(text = paste0(outcome_names, "_pred"))), color = ggplot_color_group),
+                          show.legend = FALSE)
+    }
+
     p <- p + scale_color_viridis_d()
-    p <- p + facet_grid(horizon ~ .)
+    p <- p + facet_grid(horizon ~ ., drop = TRUE)
     p <- p + theme_bw()
       if (type == "prediction") {
         p <- p + xlab("Dataset index/row") + ylab("Outcome") + labs(color = "Model") +
         ggtitle("Forecasts vs. Actuals Through Time - Faceted by horizon")
       } else if (type == "residual") {
         p <- p + xlab("Dataset index/row") + ylab("Residual") + labs(color = "Model") +
-        ggtitle("Forecast Error Through Time - Faceted by forecast horizon")
+        ggtitle("Forecast Error Through Time - Faceted by forecast horizon",
+                subtitle = "Dashed lines and empty points are actuals")
       }
+    p
+
     return(p)
   }
   #----------------------------------------------------------------------------

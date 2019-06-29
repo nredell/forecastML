@@ -193,6 +193,7 @@ plot.windows <- function(windows, lagged_df, show_labels = TRUE, group_filter = 
 
     data_plot <- dplyr::filter(data_plot, eval(parse(text = group_filter)))
   }
+  #----------------------------------------------------------------------------
 
   # Create different line segments in ggplot with `color = ggplot_color_group`.
   data_plot$ggplot_color_group <- apply(data_plot[, groups], 1, function(x) {paste(x, collapse = "-")})
@@ -211,7 +212,7 @@ plot.windows <- function(windows, lagged_df, show_labels = TRUE, group_filter = 
                                            (max(data_plot[, 1:n_outcomes], na.rm = TRUE) + abs(min(data_plot[, 1:n_outcomes], na.rm = TRUE))) / 2)
     data_plot_group <- data_plot_group[!is.na(data_plot_group$window), ]
   }
-
+  #----------------------------------------------------------------------------
   # Fill in date gaps with NAs so ggplot doesn't connect line segments where there were no entries recorded.
   if (!is.null(groups)) {
 
@@ -233,6 +234,7 @@ plot.windows <- function(windows, lagged_df, show_labels = TRUE, group_filter = 
 
     data_plot_point$ggplot_color_group <- factor(data_plot_point$ggplot_color_group, ordered = TRUE, levels(data_plot$ggplot_color_group))
   }
+  #----------------------------------------------------------------------------
 
   p <- ggplot()
   p <- p + geom_rect(data = windows, aes(xmin = start, xmax = stop,
