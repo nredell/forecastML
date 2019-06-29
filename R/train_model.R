@@ -289,14 +289,14 @@ plot.training_results <- function(training_results,
                                   models = NULL, horizons = NULL,
                                   windows = NULL, valid_indices = NULL, group_filter = NULL) {
 
-  data <- training_results
-  #data <- data_cv
+  #data <- training_results
+  data <- data_valid
+
+  type <- type[1]
 
   if (!methods::is(data, "training_results")) {
     stop("The 'data' argument takes an object of class 'training_results' as input. Run predict() on a 'forecast_model' object first.")
   }
-
-  type <- type[1]
 
   if (type == "forecast_stability") {
     if (!xor(is.null(windows), is.null(valid_indices))) {
@@ -359,7 +359,7 @@ plot.training_results <- function(training_results,
   }
   #----------------------------------------------------------------------------
   # Create different line segments in ggplot with `color = ggplot_color_group`.
-  data_plot$ggplot_color_group <- apply(data_plot[,  c("model", groups)], 1, function(x) {paste(x, collapse = "-")})
+  data_plot$ggplot_color_group <- apply(data_plot[,  c("model", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
 
   data_plot$ggplot_color_group <- ordered(data_plot$ggplot_color_group, levels = unique(data_plot$ggplot_color_group))
   #----------------------------------------------------------------------------
