@@ -382,6 +382,10 @@ plot.training_results <- function(training_results,
       dplyr::filter(is.na(lag) & is.na(lead))
 
     data_plot_point$ggplot_color_group <- factor(data_plot_point$ggplot_color_group, ordered = TRUE, levels(data_plot$ggplot_color_group))
+
+    data_plot <- data_plot[data_plot$date_indices %in% date_indices[valid_indices], ]
+    data_plot_point <- data_plot_point[data_plot_point$date_indices %in% date_indices[valid_indices], ]
+
   }
   #----------------------------------------------------------------------------
 
@@ -440,8 +444,6 @@ plot.training_results <- function(training_results,
         ggtitle("Forecast Error Through Time - Faceted by forecast horizon",
                 subtitle = "Dashed lines and empty points are actuals")
       }
-    p
-
     return(p)
   }
   #----------------------------------------------------------------------------
