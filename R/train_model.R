@@ -289,8 +289,7 @@ plot.training_results <- function(training_results,
                                   models = NULL, horizons = NULL,
                                   windows = NULL, valid_indices = NULL, group_filter = NULL) {
 
-  #data <- training_results
-  data <- data_valid
+  data <- training_results
 
   type <- type[1]
 
