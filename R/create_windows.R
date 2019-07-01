@@ -242,9 +242,11 @@ plot.windows <- function(windows, lagged_df, show_labels = TRUE, group_filter = 
   p <- p + geom_line(data = data_plot, aes(x = index, y = eval(parse(text = outcome_names)), color = ggplot_color_group),
                      size = 1.05)
 
-  if (!is.null(groups) & nrow(data_plot_point) >= 1) {
-    p <- p + geom_point(data = data_plot_point, aes(x = index, y = eval(parse(text = outcome_names)), color = ggplot_color_group),
-                        show.legend = FALSE)
+  if (!is.null(groups)) {
+    if (nrow(data_plot_point) >= 1) {
+      p <- p + geom_point(data = data_plot_point, aes(x = index, y = eval(parse(text = outcome_names)), color = ggplot_color_group),
+                          show.legend = FALSE)
+    }
   }
 
   if (isTRUE(show_labels) || missing(show_labels)) {
