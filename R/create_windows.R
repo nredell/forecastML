@@ -24,6 +24,7 @@ create_windows <- function(lagged_df, window_length = 12,
                            include_partial_window = TRUE) {
 
   data <- lagged_df
+  #data <- data_train
 
   if(!methods::is(data, "lagged_df")) {
     stop("This function takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
@@ -59,10 +60,6 @@ create_windows <- function(lagged_df, window_length = 12,
   if(!window_stop >= data_stop) {
     stop(paste0("The end of all validation windows needs to occur on or before row/date ", data_stop, " which is the end of the dataset."))
   }
-
-  # if(!window_stop - window_start + 1 >= max(window_length)) {
-  #   stop(paste0("The length of at least one user-defined validation window, ", window_stop - window_start + 1, ", must be >= the longest 'window_length' of ", max(window_length), "."))
-  # }
 
   # Creating windows with a non-date index.
   if (is.null(date_indices)) {

@@ -290,6 +290,7 @@ plot.training_results <- function(training_results,
                                   windows = NULL, valid_indices = NULL, group_filter = NULL) {
 
   data <- training_results
+  #data <- data_cv
 
   type <- type[1]
 
@@ -421,17 +422,17 @@ plot.training_results <- function(training_results,
       p <- p + geom_hline(yintercept = 0)
     }
 
-    if (!is.null(groups)) {
-      if(nrow(data_plot_point) >= 1) {
-        # Actuals - geom_line() is 1 point.
-        p <- p + geom_point(data = data_plot_point, aes(x = index, y = eval(parse(text = outcome_names)), color = ggplot_color_group),
-                            shape = 1, show.legend = FALSE)
-
-        # Predictions - geom_line() is 1 point.
-        p <- p + geom_point(data = data_plot_point, aes(x = index, y = eval(parse(text = paste0(outcome_names, "_pred"))), color = ggplot_color_group),
-                            show.legend = FALSE)
-      }
-    }
+    # if (!is.null(groups)) {
+    #   if(nrow(data_plot_point) >= 1) {
+    #     # Actuals - geom_line() is 1 point.
+    #     p <- p + geom_point(data = data_plot_point, aes(x = index, y = eval(parse(text = outcome_names)), color = ggplot_color_group),
+    #                         shape = 1, show.legend = FALSE)
+    #
+    #     # Predictions - geom_line() is 1 point.
+    #     p <- p + geom_point(data = data_plot_point, aes(x = index, y = eval(parse(text = paste0(outcome_names, "_pred"))), color = ggplot_color_group),
+    #                         show.legend = FALSE)
+    #   }
+    # }
 
     p <- p + scale_color_viridis_d()
     p <- p + facet_grid(horizon ~ ., drop = TRUE)
