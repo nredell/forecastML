@@ -4,16 +4,17 @@
 \alias{return_error}
 \title{Compute forecast error}
 \usage{
-return_error(data_results, data_test = NULL, metrics = c("mae", "mape",
-  "mdape", "smape"), models = NULL, horizons = NULL, windows = NULL)
+return_error(data_results, data_test = NULL, test_indices = NULL,
+  metrics = c("mae", "mape", "mdape", "smape"), models = NULL,
+  horizons = NULL, windows = NULL, group_filter = NULL)
 }
 \arguments{
 \item{data_results}{An object of class 'training_results' or 'forecast_results'.}
 
-\item{data_test}{Optional. A data.frame used to assess the accuracy of a 'forecast_results'
-object. The outcome/target name needs to be present; the remaining columns are ignored. The
-first 1:h rows of data_test are matched to the first 1:h-step-ahead forecasts for each
-horizon-specific forecast model.}
+\item{data_test}{If 'data_results' is an object of class 'forecast_results', a data.frame used to
+assess the accuracy of a 'forecast_results' object. 'data_test' should have the outcome/target columns and any grouping columns.}
+
+\item{test_indices}{Required if 'data_test' is given. A vector or 1-column data.frame of numeric row indices or dates (class'Date') with length nrow(data_test).}
 
 \item{metrics}{Common forecast error metrics. See the Error Metrics section below for details.}
 
@@ -22,6 +23,8 @@ horizon-specific forecast model.}
 \item{horizons}{Filter results by horizon (optional).}
 
 \item{windows}{Filter results by validation window number (optional).}
+
+\item{group_filter}{A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").}
 }
 \value{
 A 'validation_error' or 'forecast_error' object: A list of data.frames

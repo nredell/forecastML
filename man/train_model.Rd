@@ -4,7 +4,7 @@
 \alias{train_model}
 \title{Train a model across horizons and validation datasets}
 \usage{
-train_model(lagged_df, windows, model_function, model_name = NULL)
+train_model(lagged_df, windows, model_function, model_name)
 }
 \arguments{
 \item{lagged_df}{An object of class 'lagged_df' from create_lagged_df().}
@@ -13,10 +13,10 @@ train_model(lagged_df, windows, model_function, model_name = NULL)
 
 \item{model_function}{A user-defined wrapper function for model training (see example).}
 
-\item{model_name}{A name for the model (required).}
+\item{model_name}{A name for the model.}
 }
 \value{
-A'forecast_model' object: A nested list of model results, nested by horizon > validation dataset.
+A'forecast_model' object: A nested list of model results, nested by model forecast horizon > validation dataset.
 }
 \description{
 Train a user-defined forecast model for each horizon, h, and across the validation

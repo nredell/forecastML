@@ -5,28 +5,44 @@
 \title{Create datasets with lagged features}
 \usage{
 create_lagged_df(data, type = c("train", "forecast"), outcome_cols = 1,
-  horizons = NULL, lookback = NULL, lookback_control = NULL)
+  horizons, lookback = NULL, lookback_control = NULL, groups = NULL,
+  dates = NULL, frequency = NULL)
 }
 \arguments{
-\item{data}{A data.frame with the target to be forecasted plus features/predictors.}
+\item{data}{A data.frame with the target to be forecasted and features/predictors. An optional date column can be given in the 'dates' argument
+(required for grouped time-series). Note that forecastML only works with regularly spaced time/date intervals and that missing
+rows--usually due to periods when no data was collected--will result in poorly trained models due to incorrect predictor lags.}
 
-\item{type}{The type of dataset to return.}
+\item{type}{The type of dataset to return--(a) model training or (b)forecast prediction. The default is 'train'.}
 
-\item{outcome_cols}{The column index of the target to be forecasted; only univariate forecasting is supported at present.}
+\item{outcome_cols}{The column index--an integer--of the target to be forecasted. Forecasting only one outcome column is allowed at present, however,
+groups of time-series can be forecasted if they are stacked vertically in a long dataset and the 'groups', 'dates', and 'frequency' arguments
+are specified.}
 
-\item{horizons}{Required. A vector of one or more forecast horizons, h, measured in dataset rows. For each horizon, 1:h
+\item{horizons}{A vector of one or more forecast horizons, h, measured in dataset rows. For each horizon, 1:h
 forecasts are returned (e.g., 'horizon = 12' trains a model to minimize 12-step-ahead error and returns forecasts
 for 1:12 steps into the future).}
 
-\item{lookback}{The lag--in dataset rows--for each predictor. Lags that don't support direct forecasting for a given
-horizon are dropped. Either 'lookback' or 'lookback_control' need to be specified.}
+\item{lookback}{A vector giving the lags--in dataset rows--for creating the lagged features. All non-grouping features in the
+input dataset, 'data', are lagged by the same values which, for non-grouped time-series, will produce an input dataset with dimensions
+nrow(data) by (n_features * length(lookback)). Lags that don't support direct forecasting for a given horizon
+are dropped. Either 'lookback' or 'lookback_control' need to be specified.}
 
-\item{lookback_control}{A list of vectors, specifying potentially unique lags for each predictor. The length
-of the list should equal ncol(data) and be ordered the same as the columns in data). Lags that don't support
-direct forecasting to 'horizon' will throw an error.}
+\item{lookback_control}{A list of vectors, specifying potentially unique lags for each feature. The length
+of the list should equal ncol(data) and be ordered the same as the columns in 'data'. For grouped time-series, lags for the grouping columns
+should have a lookback_control value of 0. 'NULL' lookback_control values drop columns from the input dataset.
+Lags that don't support direct forecasting for a given horizon
+are dropped. Either 'lookback' or 'lookback_control' need to be specified.}
+
+\item{groups}{Column name(s) that give the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but are not lagged.
+Note that combining feature lags with grouped time-series will result in NA values throughout the data.}
+
+\item{dates}{A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal nrow(data). Required if 'groups' are given.}
+
+\item{frequency}{A string taking the same input as `scales::date_breaks()` e.g., '1 month', '7 days', etc.". Required if 'dates' are given.}
 }
 \value{
-A 'lagged_df' object: A list of data.frames with new columns for the lagged predictors.
+A 'lagged_df' or 'grouped_lagged_df' object: A list of data.frames with new columns for the lagged predictors.
 }
 \description{
 Create a list of datasets with lagged predictors to (a) train forecasting models for

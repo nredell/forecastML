@@ -11,7 +11,9 @@ output:
 
 ***
 
-# Purpose <img src="forecastML_logo.png" alt="forecastML logo" align="right" width="150" height="150" style="display: inline-block;">
+# Purpose
+
+<img src="forecastML_logo.png" alt="forecastML logo" align="right" width="150" height="150" style="display: inline-block;">
 
 The purpose of `forecastML` is to provide a series of functions and visualizations that simplify the process of 
 multi-step-ahead direct forecasting with standard machine learning algorithms. It's aimed at 
@@ -79,9 +81,9 @@ forecast horizons with `forecastML::create_lagged_df()`
 knitr::opts_chunk$set(fig.width = 9, fig.height = 6)
 ```
 
-```{r, include = FALSE}
+```{r, eval = FALSE, include = FALSE}
 devtools::document()
-devtools::load_all(export_all = FALSE)
+devtools::load_all(export_all = TRUE)
 ```
 
 <br>
@@ -115,14 +117,15 @@ library(forecastML)
 
 ## Load packages and data
 
-```{r, warnings = FALSE, messages = FALSE}
-library(datasets)
+```{r, warning = FALSE, message = FALSE}
 library(ggplot2)
 library(glmnet)
 library(randomForest)
 library(DT)
 
-data <- as.data.frame(datasets::Seatbelts)
+data("data_seatbelts", package = "forecastML")
+data <- data_seatbelts
+
 data <- data[, c("DriversKilled", "kms", "PetrolPrice", "law")]
 DT::datatable(head(data, 5))
 ```
@@ -159,13 +162,9 @@ The `lookback` argument in `forecastML::create_lagged_df()` specifies the predic
 horizons <- 1:ts_frequency
 lookback <- 1:15
 
-data_list <- forecastML::create_lagged_df(data_train, type = "train", outcome_cols = 1,
-                                          lookback = NULL, horizon = horizons, lookback_control = lookback_control)
-
-data_list <- forecastML::create_lagged_df(data_train, type = "train", outcome_cols = 1,
-                                          lookback = lookback, horizon = horizons)
-
-summary(data_list)
+data_list <- forecastML::create_lagged_df(data_train, type = "train",
+                                          outcome_cols = 1, lookback = lookback,
+                                          horizons = horizons)
 ```
 
 ***
@@ -188,13 +187,6 @@ create lagged predictors from a minimum of 1 lag to a maximum of 15 lags; howeve
 for direct forecasting at a given forecast horizon are removed from the modeling dataset.
 
 ```{r}
-
-data_list <- forecastML::create_lagged_df(data_train, type = "train", outcome_cols = 1,
-                                          lookback = lookback, horizon = horizons)
-
-methods::is(attributes(data_list[[1]])$lookback, "list")
-
-
 plot(data_list)
 ```
 
@@ -335,6 +327,7 @@ validation window.
 ```{r}
 data_results <- predict(model_results, model_results_2,
                         prediction_function = list(prediction_function, prediction_function_2))
+
 ```
 
 <br>
@@ -517,8 +510,11 @@ plot(data_hyper, data_results, data_error, type = "error", c(1, 6, 12))
 To forecast with the direct forecasting method, we need to create another dataset of lagged predictors. 
 We can do this by running `create_lagged_df()` and setting `type = "forecast"`.
 
-This function takes the last rows of data_train and creates lagged predictors that allow forecasting from 
-1 step ahead to N horizons for each horizon-specific model. Below is the forecast dataset for a 6-step-ahead forecast.
+For non-grouped time-series, this function takes the last rows of data_train and creates lagged predictors that allow forecasting from 
+1-step-ahead to *N* horizons for each horizon-specific model. Below is the forecast dataset for a 6-step-ahead forecast.
+
+The `row_number` column gives the row index for the most recent period of actuals. In the example below, the `row_number` 180 
+represents the last row in our model-building dataset `data_train`.
 
 ```{r}
 data_forecast_list <- forecastML::create_lagged_df(data_train, type = "forecast", 
@@ -541,6 +537,8 @@ a data.frame of forecasts with the following columns:
 * **model_forecast_horizon:** The forecast horizon that the model was trained on.
 * **horizon:** Forecast horizon, ranging from 1 to model_forecast_horizon.
 * **window_length:** Number of dataset rows in each validation window (partial windows have the user-specified window_length).
+* **window_number:** The validation window number.
+* **forecast_period:** The dataset row/date for the forecast.
 * **\<outcome_pred>:** The forecasts.
 
 An S3 object of class, `forecast_results`, is returned. This object will have different plotting and error methods than 
@@ -564,9 +562,13 @@ It's clear from the plots that our Random Forest model is producing less accurat
 sensitive to the data on which it was trained--producing a handful of erratic forecasts.
 
 ```{r}
-plot(data_forecast, data_train[-(1:150), ], horizons = c(1, 6, 12), 
-     facet_plot = c("model", "model_forecast_horizon"))
-plot(data_forecast, data_test, facet_plot = "model", horizons = c(1, 6, 12))
+plot(data_forecast, data_actual = data_train[-(1:150), ],
+     actual_indices = as.numeric(row.names(data_train[-(1:150), ])),
+     horizons = c(1, 6, 12), facet_plot = c("model", "model_forecast_horizon"))
+
+plot(data_forecast, data_actual = data_test, 
+     actual_indices = as.numeric(row.names(data_test)),
+     facet_plot = "model", horizons = c(1, 6, 12))
 ```
 
 ***
@@ -587,8 +589,9 @@ of forecast error metrics with the following columns is returned:
 * **\<error_metrics>:** Forecast error metrics.
 
 ```{r}
-data_error <- forecastML::return_error(data_forecast, data_test = data_test, 
-                                       metrics = c("mae", "mape", "smape"))
+data_error <- forecastML::return_error(data_forecast, data_test = data_test,
+                                       test_indices = as.numeric(row.names(data_test)),
+                                       metrics = c("mae", "mape", "smape", "mdape"))
 
 DT::datatable(head(data_error$error_by_horizon, 10), options = list(scrollX = TRUE))
 ```
@@ -649,8 +652,8 @@ plot(data_results, type = "forecast_stability", valid_indices = 109:120)
 
 ## forecastML::return_error
 
-```{r, eval = FALSE}
-data_error <- forecastML::return_error(data_results, metrics = c("mae", "mape", "smape"),
+```{r}
+data_error <- forecastML::return_error(data_results, metrics = c("mae", "mape", "mdape", "smape"),
                                        models = NULL)
 
 DT::datatable(head(data_error$error_global), options = list(scrollX = TRUE))
@@ -661,7 +664,7 @@ plot(data_error, data_results, type = "horizon")
 
 ## forecastML::return_hyper
 
-```{r, eval = FALSE}
+```{r}
 data_hyper <- forecastML::return_hyper(model_results, hyper_function)
 
 plot(data_hyper, data_results, data_error, type = "stability", horizons = c(1, 6, 12))
@@ -681,10 +684,13 @@ data_forecast_list <- forecastML::create_lagged_df(data_train, type = "forecast"
 data_forecast <- predict(model_results, prediction_function = list(prediction_function), 
                          data_forecast = data_forecast_list)
 
-plot(data_forecast, data_train[-(1:150), ], type = "forecast", horizons = c(1, 6, 12), 
+plot(data_forecast, data_actual = data[-(1:150), ],
+     actual_indices = as.numeric(row.names(data[-(1:150), ])),
+     horizons = c(1, 6, 12), 
      facet_plot = c("model", "model_forecast_horizon")) + ggplot2::theme(legend.position = "none")
 
-plot(data_forecast, data_test, type = "forecast", facet_plot = NULL, horizons = c(1, 6, 12))
+plot(data_forecast, data_actual = data_test, actual_indices = as.numeric(row.names(data_test)),
+     facet_plot = NULL, horizons = c(1, 6, 12))
 ```
 
 ***
@@ -695,7 +701,8 @@ plot(data_forecast, data_test, type = "forecast", facet_plot = NULL, horizons = 
 
 ```{r}
 data_error <- forecastML::return_error(data_forecast, data_test = data_test, 
-                                       metrics = c("mae", "mape", "smape"))
+                                       test_indices = as.numeric(row.names(data_test)),
+                                       metrics = c("mae", "mape", "mdape", "smape"))
 
 DT::datatable(data_error$error_by_horizon, options = list(scrollX = TRUE))
 DT::datatable(data_error$error_global, options = list(scrollX = TRUE))

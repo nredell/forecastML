@@ -4,14 +4,17 @@
 \alias{plot.windows}
 \title{Plot validation datasets}
 \usage{
-\method{plot}{windows}(windows, data, show_labels = TRUE)
+\method{plot}{windows}(windows, lagged_df, show_labels = TRUE,
+  group_filter = NULL)
 }
 \arguments{
 \item{windows}{An object of class 'windows' from create_windows().}
 
-\item{data}{An object of class 'lagged_df' from create_lagged_df().}
+\item{lagged_df}{An object of class 'lagged_df' from create_lagged_df().}
 
 \item{show_labels}{Show validation dataset IDs on the plot.}
+
+\item{group_filter}{A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").}
 }
 \value{
 A plot of the outer-loop nested cross-validation windows.

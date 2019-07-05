@@ -7,12 +7,12 @@
 \method{plot}{training_results}(training_results, type = c("prediction",
   "residual", "forecast_stability", "forecast_variability"),
   models = NULL, horizons = NULL, windows = NULL,
-  valid_indices = NULL)
+  valid_indices = NULL, group_filter = NULL)
 }
 \arguments{
 \item{training_results}{An object of class 'training_results' from predict.forecast_model().}
 
-\item{type}{Plot type, default is "prediction".}
+\item{type}{Plot type, default is "prediction" for hold-out sample predictions.}
 
 \item{models}{Filter results by user-defined model name from train_model() (optional).}
 
@@ -20,7 +20,9 @@
 
 \item{windows}{Filter results by validation window number (optional).}
 
-\item{valid_indices}{Filter results by validation row index (optional).}
+\item{valid_indices}{Filter results by validation row indices or dates (optional).}
+
+\item{group_filter}{A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").}
 }
 \value{
 Diagnostic plots of class 'ggplot'.
