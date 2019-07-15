@@ -166,7 +166,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
   # Each item in the list is a data.frame of lagged features that allow direct forecasting.
   # to the given horizon.
   if (type == "train") {
-    #i <- j <- 1
+
     data_out <- lapply(seq_along(horizon), function(i) {
 
       forecast_horizon <- horizon[i]
@@ -211,7 +211,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
               dplyr::lag(unlist(.), lookback_over_horizon[i])
             }
 
-            body(lag_functions[[i]])[[2]][[3]] <- get('lookback_over_horizon')[i]
+            body(lag_functions[[i]])[[2]][[3]] <- get('lookback_over_horizon')[i]  # Chnage the body of the function to reflect the feature-specific lag.
           }
 
             if (!is.null(groups)) {  # Create lagged features by group.
@@ -226,20 +226,18 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
                 data_x <- data[, c(groups, var_names[j])] %>%
                   dplyr::group_by_at(dplyr::vars(groups)) %>%
                   dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions)
-                data_x <- data_x[, (ncol(data_x) - length(lag_functions) + 1):ncol(data_x), drop = FALSE]
+                data_x <- data_x[, (ncol(data_x) - length(lag_functions) + 1):ncol(data_x), drop = FALSE]  # Keep only the lagged feature columns
               }
 
             } else {  # No user-defined groupings, compute lagged variables without `dplyr::group_by`.
 
-              # data_out <- data %>%
-              #   dplyr::mutate('lagged_var' = dplyr::lag(!!rlang::sym(var_names[j]), k))
-
               data_x <- data[, c(groups, var_names[j]), drop = FALSE] %>%
                 dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions)
-              data_x <- data_x[, (ncol(data_x) - length(lag_functions) + 1):ncol(data_x), drop = FALSE]
+              data_x <- data_x[, (ncol(data_x) - length(lag_functions) + 1):ncol(data_x), drop = FALSE]  # Keep only the lagged feature columns
 
             }  # End feature-level lag creation across `lookback_over_horizon`.
 
+          # Rename lagged features
           if (!var_names[j] %in% groups) {
 
             names(data_x) <- unlist(lapply(var_names[j], function(x){paste0(x, "_lag_", lookback_over_horizon)}))
