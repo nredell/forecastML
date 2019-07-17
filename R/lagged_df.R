@@ -365,7 +365,24 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
             } else {  # A non-group lagged feature.
               #j <- 1
-              data_x <- data[, c(groups, var_names[j])] %>%
+
+              # The purpose of the block of code below is to address the issue of creating forecasting data.frames for grouped
+              # data when the groups have no data in the recent past--past being from the max(dates) or forecast date.
+              # Instead of removing these groups from the dataset, we'll set the predictor values to NA for lags that would
+              # be impossible given the forecast date and the date frequency. Namely. data from any date older than
+              # frequency * max(lookback) isn't used by the model when forecasting. Setting these older values to NA is
+              # simpler than adjusting lag values on the fly using the most recent group-level data.
+              data_x <- dplyr::bind_cols("date" = dates, data[, c(groups, var_names[j])])
+
+              numeric_date_frequency <- as.numeric(paste(unlist(stringr::str_extract_all(frequency, "0|1|2|3|4|5|6|7|8|9")), collapse = ""))
+
+              furthest_lookback_in_time <- paste0(max(lookback_over_horizon, na.rm = TRUE) * numeric_date_frequency - 1, gsub("0|1|2|3|4|5|6|7|8|9", "", frequency))
+
+              furthest_lookback_in_time <- max(dates, na.rm = TRUE) %m-% lubridate::period(furthest_lookback_in_time)
+
+              data_x[data_x$date < furthest_lookback_in_time, var_names[j]] <- NA
+
+              data_x <- data_x %>%
                 dplyr::group_by_at(dplyr::vars(groups)) %>%
                 dplyr::mutate("row_number" = 1:dplyr::n()) %>%
                 dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions) %>%
