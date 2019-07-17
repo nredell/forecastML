@@ -170,8 +170,10 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
 
         } else {  # Forecast.
 
+          forecast_period <- data_forecast[[j]][, "index", drop = FALSE]
+          names(forecast_period) <- "forecast_period"
           forecast_horizons <- data_forecast[[j]][, "horizon", drop = FALSE]
-          data_for_forecast <- data_forecast[[j]][, !names(data_forecast[[j]]) %in% c("horizon", "row_number"), drop = FALSE]  # Remove "horizon" for predict().
+          data_for_forecast <- data_forecast[[j]][, !names(data_forecast[[j]]) %in% c("index", "horizon"), drop = FALSE]  # Remove ID columns for predict().
 
           data_pred <- prediction_fun(data_results$model, data_for_forecast)  # User-defined prediction function.
 
@@ -211,7 +213,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
                                   "horizon" = forecast_horizons,
                                   "window_length" = data_results$window,
                                   "window_number" = k,
-                                  "forecast_period" = NA)  # For data.frame position, filled in in the code below.
+                                  "forecast_period" = forecast_period)
 
           if (is.null(groups)) {
 
@@ -220,23 +222,6 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
           } else {
 
             data_temp <- cbind(data_temp, data_groups, data_pred)
-          }
-
-          if (is.null(date_indices)) {  # Add row index column for forecast horizons.
-
-            data_temp$forecast_period <- max(row_indices, na.rm = TRUE) + data_temp$horizon
-
-          } else {  # Add date column for forecast horizons.
-
-            max_date <- max(date_indices, na.rm = TRUE)
-
-            # Date seq from 1 step past the max date to 1:n_horizons.
-            data_merge <- data.frame("date" = seq(max_date, by = attributes(data_forecast)$frequency, length = max(unique(data_temp$horizon), na.rm = TRUE) + 1)[-1])
-            data_merge$horizon <- 1:nrow(data_merge)
-
-            data_temp <- dplyr::left_join(data_temp, data_merge, by = "horizon")
-            data_temp$forecast_period <- data_temp$date
-            data_temp$date <- NULL
           }
         }  # End forecast results.
 
@@ -551,7 +536,7 @@ plot.forecast_results <- function(forecast_results, data_actual = NULL, actual_i
     stop("The 'forecast_results' argument takes an object of class 'forecast_results' as input. Run predict() on a 'forecast_model' object first.")
   }
 
-  type <- "forecast"  # only one plot option at present.
+  type <- "forecast"  # Only one plot option at present.
 
   outcome_cols <- attributes(data_forecast)$outcome_cols
   outcome_names <- attributes(data_forecast)$outcome_names
