@@ -406,14 +406,21 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
         data_x <- data_x[!sapply(data_x, is.null)]
         data_x <- Reduce(function(x, y) {dplyr::full_join(x, y, by = c("row_number", "horizon"))}, data_x)
 
-        data_x <- dplyr::select(data_x, -row_number)
+        if (is.null(dates)) {
 
-        date_of_forecast <- data.frame("horizon" = 1:forecast_horizon,
-                                       "index" = seq(max(dates, na.rm = TRUE), by = frequency, length.out = forecast_horizon))
+          names(data_x)[names(data_x) == "row_number"] <- "index"
 
-        data_x <- dplyr::left_join(data_x, date_of_forecast, by = "horizon")
+        } else {
 
-        data_x <- data_x[, c(ncol(data_x), 1:(ncol(data_x) - 1))]
+          data_x <- dplyr::select(data_x, -row_number)
+
+          date_of_forecast <- data.frame("horizon" = 1:forecast_horizon,
+                                         "index" = seq(max(dates, na.rm = TRUE), by = frequency, length.out = forecast_horizon))
+
+          data_x <- dplyr::left_join(data_x, date_of_forecast, by = "horizon")
+
+          data_x <- data_x[, c(ncol(data_x), 1:(ncol(data_x) - 1))]
+        }
 
       } else {  # Grouped dataset.
 
