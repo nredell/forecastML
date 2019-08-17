@@ -4,8 +4,8 @@
 
 The purpose of `forecastML` is to provide a series of functions and visualizations that simplify the process of 
 multi-step-ahead direct forecasting with standard machine learning algorithms. It's aimed at 
-helping the user quickly assess the (a) accuracy, (b) stability, and (c) generalizability of single-outcome forecasts 
-produced from potentially high-dimensional modeling datasets.
+helping the user quickly assess the (a) accuracy, (b) stability, and (c) generalizability of grouped and ungrouped 
+single-outcome forecasts produced from potentially high-dimensional modeling datasets.
 
 This package is inspired by Bergmeir, Hyndman, and Koo's 2018 paper 
 [A note on the validity of cross-validation for evaluating autoregressive time series prediction](https://robjhyndman.com/papers/cv-wp.pdf). 
@@ -31,7 +31,12 @@ library(forecastML)
 ```
 ## Walkthrough
 
-Detailed **[forecastML overview vignette](https://nredell.github.io/data_science_blog/forecastML/)**.
+* Detailed **[forecastML overview vignette](https://nredell.github.io/data_science_blog/forecastML/)**.
+
+* **[Creating custom feature lags for model training](https://nredell.github.io/data_science_blog/forecastML/lagged_features.nb.html)**.
+
+* Coming soon:
+    + Vignette for forecasting with grouped/nested/hierarchical time-series.
 
 ## Example
 
