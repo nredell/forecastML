@@ -13,7 +13,7 @@ create_lagged_df(data, type = c("train", "forecast"), outcome_cols = 1,
 (required for grouped time-series). Note that forecastML only works with regularly spaced time/date intervals and that missing
 rows--usually due to periods when no data was collected--will result in poorly trained models due to incorrect predictor lags.}
 
-\item{type}{The type of dataset to return--(a) model training or (b)forecast prediction. The default is 'train'.}
+\item{type}{The type of dataset to return--(a) model training or (b) forecast prediction. The default is 'train'.}
 
 \item{outcome_cols}{The column index--an integer--of the target to be forecasted. Forecasting only one outcome column is allowed at present, however,
 groups of time-series can be forecasted if they are stacked vertically in a long dataset and the 'groups', 'dates', and 'frequency' arguments
@@ -39,10 +39,27 @@ Note that combining feature lags with grouped time-series will result in NA valu
 
 \item{dates}{A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal nrow(data). Required if 'groups' are given.}
 
-\item{frequency}{A string taking the same input as `scales::date_breaks()` e.g., '1 month', '7 days', etc.". Required if 'dates' are given.}
+\item{frequency}{A string taking the same input as `scales::date_breaks()` e.g., '1 month', '7 days', etc. Required if 'dates' are given.}
 }
 \value{
 A 'lagged_df' or 'grouped_lagged_df' object: A list of data.frames with new columns for the lagged predictors.
+The length of the returned list is equal to the number of forecast horizons and is in the order of
+horizons supplied to the 'horizons' argument.
+
+The contents of the returned data.frame(s) are as follows:
+
+\describe{
+  \item{\strong{type = 'train', non-grouped:}}{A data.frame of lagged features.}
+  \item{\strong{type = 'train', grouped:}}{A data.frame of unlagged grouping columns followed by lagged features.}
+  \item{\strong{type = 'forecast', non-grouped:}}{(1) An 'index' column giving the row index or date of the
+  forecast periods (e.g., a 100 row non-date-based training dataset would start with an index of 101). (2) A 'horizon' column
+  that indicates the forecast period from 1:max(horizons). (3) Lagged features identical to the
+  'train', non-grouped dataset.}
+  \item{\strong{type = 'forecast', grouped:}}{(1) An 'index' column giving the date of the
+  forecast periods. The first forecast date for each group is the maximum date from the 'dates' argument
+  + 1 * 'frequency' which is the user-supplied date frequency.(2) A 'horizon' column that indicates
+  the forecast period from 1:max(horizons). (3) Lagged features identical to the train', grouped dataset.}
+}
 }
 \description{
 Create a list of datasets with lagged predictors to (a) train forecasting models for

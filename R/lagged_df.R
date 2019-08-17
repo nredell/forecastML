@@ -6,7 +6,7 @@
 #' @param data A data.frame with the target to be forecasted and features/predictors. An optional date column can be given in the 'dates' argument
 #' (required for grouped time-series). Note that forecastML only works with regularly spaced time/date intervals and that missing
 #' rows--usually due to periods when no data was collected--will result in poorly trained models due to incorrect predictor lags.
-#' @param type The type of dataset to return--(a) model training or (b)forecast prediction. The default is 'train'.
+#' @param type The type of dataset to return--(a) model training or (b) forecast prediction. The default is 'train'.
 #' @param outcome_cols The column index--an integer--of the target to be forecasted. Forecasting only one outcome column is allowed at present, however,
 #' groups of time-series can be forecasted if they are stacked vertically in a long dataset and the 'groups', 'dates', and 'frequency' arguments
 #' are specified.
@@ -25,18 +25,32 @@
 #' @param groups Column name(s) that give the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but are not lagged.
 #' Note that combining feature lags with grouped time-series will result in NA values throughout the data.
 #' @param dates A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal nrow(data). Required if 'groups' are given.
-#' @param frequency A string taking the same input as `scales::date_breaks()` e.g., '1 month', '7 days', etc.". Required if 'dates' are given.
+#' @param frequency A string taking the same input as `scales::date_breaks()` e.g., '1 month', '7 days', etc. Required if 'dates' are given.
 #' @return A 'lagged_df' or 'grouped_lagged_df' object: A list of data.frames with new columns for the lagged predictors.
-#' The colums of the returned data.frame represent
-#' \enumerate{
-#'   \item \strong{index}: The
-#'   \item Second item
+#' The length of the returned list is equal to the number of forecast horizons and is in the order of
+#' horizons supplied to the 'horizons' argument.
+#'
+#' The contents of the returned data.frame(s) are as follows:
+#'
+#' \describe{
+#'   \item{\strong{type = 'train', non-grouped:}}{A data.frame of lagged features.}
+#'   \item{\strong{type = 'train', grouped:}}{A data.frame of unlagged grouping columns followed by lagged features.}
+#'   \item{\strong{type = 'forecast', non-grouped:}}{(1) An 'index' column giving the row index or date of the
+#'   forecast periods (e.g., a 100 row non-date-based training dataset would start with an index of 101). (2) A 'horizon' column
+#'   that indicates the forecast period from 1:max(horizons). (3) Lagged features identical to the
+#'   'train', non-grouped dataset.}
+#'   \item{\strong{type = 'forecast', grouped:}}{(1) An 'index' column giving the date of the
+#'   forecast periods. The first forecast date for each group is the maximum date from the 'dates' argument
+#'   + 1 * 'frequency' which is the user-supplied date frequency.(2) A 'horizon' column that indicates
+#'   the forecast period from 1:max(horizons). (3) Lagged features identical to the train', grouped dataset.}
 #' }
+#'
 #' @example /R/examples/example_create_lagged_df.R
 #'
 #' @import ggplot2
 #' @importFrom stats as.formula complete.cases cov sd
 #' @importFrom magrittr %>%
+#' @importFrom lubridate %m-%
 #'
 #' @export
 create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols = 1,
@@ -294,7 +308,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
     data_stop <- NULL  # An attribute for grouped datasets that is assigned to with <<- in the loop below.
 
-    #i <- 1
+    #i <- 3
     data_out <- lapply(seq_along(horizon), function(i) {
 
       forecast_horizon <- horizon[i]
@@ -305,7 +319,6 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
         lookback_over_horizon <- lookback[lookback >= forecast_horizon]
       }
 
-      #j <- 1
       data_x <- lapply(1:ncol(data), function(j) {
 
         # Only create lagged features that allow direct forecasting to max(i)--unique lags for each feature.
@@ -333,14 +346,16 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
           # Create a list of lag functions for dplyr::mutate_at(). This approach is approximately 30% faster than the
           # previous sapply approach of mutating and adding one lagged feature column at a time.
+          # This list of functions has slightly different lags from type = 'train' to account for the whole
+          # future aspect of this data.frame.
           lag_functions <- vector("list", length(lookback_over_horizon))
           for (i in seq_along(lag_functions)) {
 
             lag_functions[[i]] <- function(.) {
-              dplyr::lag(unlist(.), lookback_over_horizon[i])# - forecast_horizon)
+              dplyr::lag(unlist(.), lookback_over_horizon[i] - forecast_horizon)
             }
 
-            body(lag_functions[[i]])[[2]][[3]] <- get('lookback_over_horizon')[i]# - forecast_horizon  # Change the body of the function to reflect the feature-specific lag.
+            body(lag_functions[[i]])[[2]][[3]] <- get('lookback_over_horizon')[i] - forecast_horizon  # Change the body of the function to reflect the feature-specific lag.
             names(lag_functions)[i] <- paste0(var_names[j], "_lag_", lookback_over_horizon[i])
           }
 
@@ -349,7 +364,6 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
             # If the current feature in the loop is a grouping feature, return the grouping feature without lags.
             if (var_names[j] %in% groups) {
 
-              #j <- 2
               data_x <- data[, groups, drop = FALSE] %>%
                 dplyr::group_by_at(dplyr::vars(groups)) %>%
                 dplyr::mutate("row_number" = 1:dplyr::n(),
@@ -369,13 +383,12 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
               data_x <- dplyr::select(data_x, row_number, horizon, groups)
 
-            } else {  # A non-group lagged feature.
-              #j <- 1
+              } else {  # A non-group lagged feature for grouped data.
 
               # The purpose of the block of code below is to address the issue of creating forecasting data.frames for grouped
               # data when the groups have no data in the recent past--past being from the max(dates) or forecast date.
               # Instead of removing these groups from the dataset, we'll set the predictor values to NA for lags that would
-              # be impossible given the forecast date and the date frequency. Namely. data from any date older than
+              # be impossible given the forecast date and the date frequency. Namely, data from any date older than
               # frequency * max(lookback) isn't used by the model when forecasting. Setting these older values to NA is
               # simpler than adjusting lag values on the fly using the most recent group-level data.
               data_x <- dplyr::bind_cols("date" = dates, data[, c(groups, var_names[j])])
@@ -438,7 +451,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
           data_x <- dplyr::select(data_x, -row_number)
 
           date_of_forecast <- data.frame("horizon" = 1:forecast_horizon,
-                                         "index" = seq(max(dates, na.rm = TRUE), by = frequency, length.out = forecast_horizon))
+                                         "index" = seq(max(dates, na.rm = TRUE), by = frequency, length.out = forecast_horizon + 1)[-1])
 
           data_x <- dplyr::left_join(data_x, date_of_forecast, by = "horizon")
 
@@ -456,7 +469,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
         data_x <- dplyr::select(data_x, -row_number)
 
         date_of_forecast <- data.frame("horizon" = 1:forecast_horizon,
-                                       "index" = seq(max(dates, na.rm = TRUE), by = frequency, length.out = forecast_horizon))
+                                       "index" = seq(max(dates, na.rm = TRUE), by = frequency, length.out = forecast_horizon + 1)[-1])
 
         data_x <- dplyr::left_join(data_x, date_of_forecast, by = "horizon")
 
