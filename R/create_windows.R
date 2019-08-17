@@ -193,7 +193,7 @@ plot.windows <- function(windows, lagged_df, show_labels = TRUE, group_filter = 
   #----------------------------------------------------------------------------
 
   # Create different line segments in ggplot with `color = ggplot_color_group`.
-  data_plot$ggplot_color_group <- apply(data_plot[, groups], 1, function(x) {paste(x, collapse = "-")})
+  data_plot$ggplot_color_group <- apply(data_plot[, groups, drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
 
   data_windows <- windows
   data_windows$window <- 1:nrow(data_windows)
