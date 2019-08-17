@@ -33,8 +33,9 @@ library(forecastML)
 
 * Detailed **[forecastML overview vignette](https://nredell.github.io/data_science_blog/forecastML/)**.
 
-* Coming soon: 
-    + Vignette for creating custom lags for select predictors.
+* **[Creating custom feature lags for model training](https://nredell.github.io/data_science_blog/forecastML/lagged_features.nb.html)**.
+
+* Coming soon:
     + Vignette for forecasting with grouped/nested/hierarchical time-series.
 
 ## Example
