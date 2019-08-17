@@ -22,8 +22,8 @@ Imports:
     rlang (>= 0.3.0.1),
     stats,
     magrittr (>= 1.5),
-    stringr,
-    lubridate
+    stringr (>= 1.4.0),
+    lubridate (>= 1.7.4)
 RoxygenNote: 6.1.1
 Collate: 
     'create_windows.R'
