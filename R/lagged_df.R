@@ -27,6 +27,11 @@
 #' @param dates A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal nrow(data). Required if 'groups' are given.
 #' @param frequency A string taking the same input as `scales::date_breaks()` e.g., '1 month', '7 days', etc.". Required if 'dates' are given.
 #' @return A 'lagged_df' or 'grouped_lagged_df' object: A list of data.frames with new columns for the lagged predictors.
+#' The colums of the returned data.frame represent
+#' \enumerate{
+#'   \item \strong{index}: The
+#'   \item Second item
+#' }
 #' @example /R/examples/example_create_lagged_df.R
 #'
 #' @import ggplot2
@@ -167,6 +172,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
   # to the given horizon.
   if (type == "train") {
 
+    #i <- j <- 1
     data_out <- lapply(seq_along(horizon), function(i) {
 
       forecast_horizon <- horizon[i]
@@ -211,7 +217,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
               dplyr::lag(unlist(.), lookback_over_horizon[i])
             }
 
-            body(lag_functions[[i]])[[2]][[3]] <- get('lookback_over_horizon')[i]  # Chnage the body of the function to reflect the feature-specific lag.
+            body(lag_functions[[i]])[[2]][[3]] <- get('lookback_over_horizon')[i]  # Change the body of the function to reflect the feature-specific lag.
           }
 
             if (!is.null(groups)) {  # Create lagged features by group.
@@ -223,7 +229,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
               } else {  # This feature is not a grouping feature and we'll compute lagged versions.
 
-                data_x <- data[, c(groups, var_names[j])] %>%
+                data_x <- data[, c(groups, var_names[j]), drop = FALSE] %>%
                   dplyr::group_by_at(dplyr::vars(groups)) %>%
                   dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions)
                 data_x <- data_x[, (ncol(data_x) - length(lag_functions) + 1):ncol(data_x), drop = FALSE]  # Keep only the lagged feature columns
@@ -231,8 +237,8 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
             } else {  # No user-defined groupings, compute lagged variables without `dplyr::group_by`.
 
-              data_x <- data[, c(groups, var_names[j]), drop = FALSE] %>%
-                dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions)
+              data_x <- data[, var_names[j], drop = FALSE] %>%
+                dplyr::mutate_at(dplyr::vars(var_names[j]), .funs = lag_functions)
               data_x <- data_x[, (ncol(data_x) - length(lag_functions) + 1):ncol(data_x), drop = FALSE]  # Keep only the lagged feature columns
 
             }  # End feature-level lag creation across `lookback_over_horizon`.
