@@ -24,7 +24,6 @@ create_windows <- function(lagged_df, window_length = 12,
                            include_partial_window = TRUE) {
 
   data <- lagged_df
-  #data <- data_train
 
   if(!methods::is(data, "lagged_df")) {
     stop("This function takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
@@ -198,7 +197,7 @@ plot.windows <- function(windows, lagged_df, show_labels = TRUE, group_filter = 
   data_windows <- windows
   data_windows$window <- 1:nrow(data_windows)
 
-  # Find the x and y coordinates for the plot labels
+  # Find the x and y coordinates for the plot labels.
   if (isTRUE(show_labels) || missing(show_labels)) {
 
     data_plot_group <- data_windows %>%
@@ -230,6 +229,8 @@ plot.windows <- function(windows, lagged_df, show_labels = TRUE, group_filter = 
       dplyr::filter(is.na(lag) & is.na(lead))
 
     data_plot_point$ggplot_color_group <- factor(data_plot_point$ggplot_color_group, ordered = TRUE, levels(data_plot$ggplot_color_group))
+  } else {
+    data_plot$ggplot_color_group <- ordered(data_plot$ggplot_color_group)
   }
   #----------------------------------------------------------------------------
 
