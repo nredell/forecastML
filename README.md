@@ -11,9 +11,10 @@ This package is inspired by Bergmeir, Hyndman, and Koo's 2018 paper
 [A note on the validity of cross-validation for evaluating autoregressive time series prediction](https://robjhyndman.com/papers/cv-wp.pdf). 
 In particular, `forecastML` makes use of 
 
-* **lagged predictors** and 
+* **lagged predictors**,
 * **nested cross-validation** with (a) user-specified standard cross-validation in the inner loop and (b) block-contiguous validation 
-datasets in the outer loop
+datasets in the outer loop, and
+* **parallel processing** with the `future` package 
 
 to build and evaluate high-dimensional forecast models **without having to use methods that are time-series specific**. 
 
@@ -29,14 +30,15 @@ The following quote from Bergmeir et al.'s article nicely sums up the aim of thi
 devtools::install_github("nredell/forecastML")
 library(forecastML)
 ```
-## Walkthrough
+## Vignettes
 
 * Detailed **[forecastML overview vignette](https://nredell.github.io/data_science_blog/forecastML/)**.
 
 * **[Creating custom feature lags for model training](https://nredell.github.io/data_science_blog/forecastML/lagged_features.nb.html)**.
 
 * Coming soon:
-    + Vignette for forecasting with grouped/nested/hierarchical time-series.
+    + Forecasting with grouped/nested/hierarchical time-series.
+    + Examples of parallel processing with the `future` package.
 
 ## Example
 
