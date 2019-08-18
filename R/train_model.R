@@ -2,17 +2,25 @@
 #' Train a model across horizons and validation datasets
 #'
 #' Train a user-defined forecast model for each horizon, h, and across the validation
-#' datasets, d. A total of h * d models are trained--more if the user-defined model
-#' performs any inner-loop cross-validation.
+#' datasets, d. A total of h * d models are trained--more if the user-defined modeling function
+#' performs any inner-loop cross-validation. These models can, however, be trained in parallel
+#' with the \code{future} package.
 #'
 #' @param lagged_df An object of class 'lagged_df' from create_lagged_df().
 #' @param windows An object of class 'windows' from create_windows().
 #' @param model_function A user-defined wrapper function for model training (see example).
 #' @param model_name A name for the model.
-#' @return A'forecast_model' object: A nested list of model results, nested by model forecast horizon > validation dataset.
+#' @param use_future Boolean. If \code{TRUE}, the \code{future} package is used for training models in parallel.
+#' There are two options for parallelization: parallel across either (1) model forecast horizons or (b) validation windows.
+#' If forecasting with many horizon-specific models, consider running
+#' \code{future::plan(list(future::multiprocess, future::sequential))} prior to this function to train these models
+#' in parallel. If forecasting across many validation windows, consider running
+#' \code{future::plan(list(future::sequential, future::multiprocess))} prior to this function to train these models
+#' in parallel.
+#' @return A 'forecast_model' object: A nested list of model results, nested by model forecast horizon > validation dataset.
 #' @example /R/examples/example_train_model.R
 #' @export
-train_model <- function(lagged_df, windows, model_function, model_name) {
+train_model <- function(lagged_df, windows, model_function, model_name, use_future = FALSE) {
 
   data <- lagged_df
 
@@ -41,10 +49,19 @@ train_model <- function(lagged_df, windows, model_function, model_name) {
 
   window_indices <- windows
 
-  # Seq along model forecast horizon > cross-validation windows.
-  data_out <- lapply(data, function(data) {
+  #----------------------------------------------------------------------------
+  # Setting the model training loops to parallel processing depending on user input.
+  if (isTRUE(use_future)) {
+    lapply_function <- future.apply::future_lapply
+  } else {
+    lapply_function <- lapply
+  }
+  #----------------------------------------------------------------------------
 
-    model_plus_valid_data <- lapply(1:nrow(window_indices), function(i) {
+  # Seq along model forecast horizon > cross-validation windows.
+  data_out <- lapply_function(data, function(data) {  # model forecast horizon.
+
+    model_plus_valid_data <- lapply_function(1:nrow(window_indices), function(i) {  # validation windows within model forecast horizon.
 
       window_length <- window_indices[i, "window_length"]
 

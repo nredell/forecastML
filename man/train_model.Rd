@@ -2,9 +2,10 @@
 % Please edit documentation in R/train_model.R
 \name{train_model}
 \alias{train_model}
-\title{Train a model across horizons and validation datasets}
+\title{Train a model across horizons and validation data sets}
 \usage{
-train_model(lagged_df, windows, model_function, model_name)
+train_model(lagged_df, windows, model_function, model_name,
+  use_future = FALSE)
 }
 \arguments{
 \item{lagged_df}{An object of class 'lagged_df' from create_lagged_df().}
@@ -14,14 +15,23 @@ train_model(lagged_df, windows, model_function, model_name)
 \item{model_function}{A user-defined wrapper function for model training (see example).}
 
 \item{model_name}{A name for the model.}
+
+\item{use_future}{Boolean. If \code{TRUE}, the \code{future} package is used for training models in parallel.
+There are two options for parallelization: parallel across either (1) model forecast horizons or (b) validation windows.
+If forecasting with many horizon-specific models, consider running
+\code{future::plan(list(future::multiprocess, future::sequential))} prior to this function to train these models
+in parallel. If forecasting across many validation windows, consider running
+\code{future::plan(list(future::sequential, future::multiprocess))} prior to this function to train these models
+in parallel.}
 }
 \value{
-A'forecast_model' object: A nested list of model results, nested by model forecast horizon > validation dataset.
+A 'forecast_model' object: A nested list of model results, nested by model forecast horizon > validation dataset.
 }
 \description{
 Train a user-defined forecast model for each horizon, h, and across the validation
-datasets, d. A total of h * d models are trained--more if the user-defined model
-performs any inner-loop cross-validation.
+data sets, d. A total of h * d models are trained--more if the user-defined modeling function
+performs any inner-loop cross-validation. These models can, however, be trained in parallel
+with the \code{future} package.
 }
 \examples{
 \donttest{

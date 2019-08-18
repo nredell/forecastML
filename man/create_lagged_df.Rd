@@ -6,7 +6,7 @@
 \usage{
 create_lagged_df(data, type = c("train", "forecast"), outcome_cols = 1,
   horizons, lookback = NULL, lookback_control = NULL, groups = NULL,
-  dates = NULL, frequency = NULL)
+  dates = NULL, frequency = NULL, use_future = FALSE)
 }
 \arguments{
 \item{data}{A data.frame with the target to be forecasted and features/predictors. An optional date column can be given in the 'dates' argument
@@ -40,6 +40,10 @@ Note that combining feature lags with grouped time-series will result in NA valu
 \item{dates}{A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal nrow(data). Required if 'groups' are given.}
 
 \item{frequency}{A string taking the same input as `scales::date_breaks()` e.g., '1 month', '7 days', etc. Required if 'dates' are given.}
+
+\item{use_future}{Boolean. If \code{TRUE}, the \code{future} package is used for creating lagged data.frames.
+\code{multisession} or \code{multiprocess} futures are especially useful for (a) grouped time series with many groups and
+(b) high-dimensional data sets with many lags per feature.}
 }
 \value{
 A 'lagged_df' or 'grouped_lagged_df' object: A list of data.frames with new columns for the lagged predictors.

@@ -26,6 +26,9 @@
 #' Note that combining feature lags with grouped time-series will result in NA values throughout the data.
 #' @param dates A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal nrow(data). Required if 'groups' are given.
 #' @param frequency A string taking the same input as `scales::date_breaks()` e.g., '1 month', '7 days', etc. Required if 'dates' are given.
+#' @param use_future Boolean. If \code{TRUE}, the \code{future} package is used for creating lagged data.frames.
+#' \code{multisession} or \code{multiprocess} futures are especially useful for (a) grouped time series with many groups and
+#' (b) high-dimensional data sets with many lags per feature.
 #' @return A 'lagged_df' or 'grouped_lagged_df' object: A list of data.frames with new columns for the lagged predictors.
 #' The length of the returned list is equal to the number of forecast horizons and is in the order of
 #' horizons supplied to the 'horizons' argument.
@@ -55,7 +58,8 @@
 #' @export
 create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols = 1,
                              horizons, lookback = NULL, lookback_control = NULL,
-                             groups = NULL, dates = NULL, frequency = NULL) {
+                             groups = NULL, dates = NULL, frequency = NULL,
+                             use_future = FALSE) {
 
   if (!methods::is(data, c("data.frame"))) {stop("The 'data' argument takes an object of class 'data.frame'.")}
 
@@ -182,6 +186,13 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
     stop("The 'dates' argument needs to be specified with grouped data.")
   }
   #----------------------------------------------------------------------------
+  # Setting the lagged feature loops to parallel processing depending on user input.
+  if (isTRUE(use_future)) {
+    lapply_function <- future.apply::future_lapply
+  } else {
+    lapply_function <- lapply
+  }
+  #----------------------------------------------------------------------------
   # Each item in the list is a data.frame of lagged features that allow direct forecasting.
   # to the given horizon.
   if (type == "train") {
@@ -197,8 +208,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
         lookback_over_horizon <- lookback[lookback >= forecast_horizon]
       }
 
-      data_x <- lapply(1:ncol(data), function(j) {
-
+      data_x <- lapply_function(1:ncol(data), function(j) {
         # Only create lagged features that allow direct forecasting to max(i)--unique lags for each feature.
         if (!is.null(lookback_control)) {
           # As a convenience to the user a single-horizon forecast that uses a custom lookback doesn't need to be a nested list.
@@ -319,7 +329,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
         lookback_over_horizon <- lookback[lookback >= forecast_horizon]
       }
 
-      data_x <- lapply(1:ncol(data), function(j) {
+      data_x <- lapply_function(1:ncol(data), function(j) {
 
         # Only create lagged features that allow direct forecasting to max(i)--unique lags for each feature.
         if (!is.null(lookback_control)) {
