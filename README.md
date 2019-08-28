@@ -1,5 +1,8 @@
 [![lifecycle](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental)
 
+[![Travis Build
+Status](https://travis-ci.org/nredell/forecastML.svg?branch=master)](https://travis-ci.org/nredell/forecastML)
+
 # package::forecastML <img src="forecastML_logo.png" alt="forecastML logo" align="right" height="138.5" style="display: inline-block;">
 
 The purpose of `forecastML` is to provide a series of functions and visualizations that simplify the process of 
