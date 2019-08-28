@@ -2,7 +2,7 @@
 % Please edit documentation in R/train_model.R
 \name{train_model}
 \alias{train_model}
-\title{Train a model across horizons and validation data sets}
+\title{Train a model across horizons and validation datasets}
 \usage{
 train_model(lagged_df, windows, model_function, model_name,
   use_future = FALSE)
@@ -29,7 +29,7 @@ A 'forecast_model' object: A nested list of model results, nested by model forec
 }
 \description{
 Train a user-defined forecast model for each horizon, h, and across the validation
-data sets, d. A total of h * d models are trained--more if the user-defined modeling function
+datasets, d. A total of h * d models are trained--more if the user-defined modeling function
 performs any inner-loop cross-validation. These models can, however, be trained in parallel
 with the \code{future} package.
 }
