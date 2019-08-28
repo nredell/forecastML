@@ -316,8 +316,8 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
       }
 
       data_out
-    })  # End the creation of modeling datasets for all forecast model horizons.
-  }
+    })  # End loop 'i' and return 'data_out'.
+  }  # End `type = train` dataset creation.
   #----------------------------------------------------------------------------
 
   if (type == "forecast") {  # Create a dataset for forecasting H steps into the future.
