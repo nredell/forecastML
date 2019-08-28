@@ -6,7 +6,8 @@
 \usage{
 create_lagged_df(data, type = c("train", "forecast"), outcome_cols = 1,
   horizons, lookback = NULL, lookback_control = NULL, groups = NULL,
-  dates = NULL, frequency = NULL, use_future = FALSE)
+  static_features = NULL, dates = NULL, frequency = NULL,
+  use_future = FALSE)
 }
 \arguments{
 \item{data}{A data.frame with the target to be forecasted and features/predictors. An optional date column can be given in the 'dates' argument
@@ -34,7 +35,11 @@ should have a lookback_control value of 0. 'NULL' lookback_control values drop c
 Lags that don't support direct forecasting for a given horizon
 are dropped. Either 'lookback' or 'lookback_control' need to be specified.}
 
-\item{groups}{Column name(s) that give the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but are not lagged.
+\item{groups}{Column name(s) that identify the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but are not lagged.
+Note that combining feature lags with grouped time-series will result in NA values throughout the data.}
+
+\item{static_features}{For grouped time-series only. Column name(s) that identify featuers that do not change through time.
+These columns are used as model predictors but are not lagged.
 Note that combining feature lags with grouped time-series will result in NA values throughout the data.}
 
 \item{dates}{A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal nrow(data). Required if 'groups' are given.}
