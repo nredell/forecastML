@@ -126,3 +126,22 @@ plot(data_forecasts, data_seatbelts[-(1:150), ], as.numeric(row.names(data_seatb
 ```
 ![](./validation_data_forecasts.png)
 ![](./forecasts.png)
+
+***
+
+## Roadmap
+
+The following steps outline the functionality that I'd like to add leading up to an eventual 
+CRAN release.
+
+1. A `forecastML::create_future_df()` function that allows the user to easily modify the 
+future values of select features. For example, in retail demand forecasting, if the user knows that 
+a promotion is occurring in 3 months, they could incorporate this information into their forecasts 
+and see the impact of the planned promotion 4 to h months into the future.
+
+2. Support for probabalistic forecasting by allowing the user to return more than 1 column in the 
+user-defined `predict()` function.
+
+3. Thorough documentation including an `R` `pkgdown` site and cheat sheets.
+
+4. Thorough testing with `R` package `testthat`.
