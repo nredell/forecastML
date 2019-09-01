@@ -98,6 +98,7 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
       model_plus_valid_data
     })  # End model training across nested cross-validation windows for the horizon in "data".
 
+    names(model_plus_valid_data) <- paste0("window_", 1:nrow(window_indices))
     attr(model_plus_valid_data, "horizon") <- attributes(data)$horizon
     model_plus_valid_data
   })  # End training across horizons.
