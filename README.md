@@ -5,9 +5,10 @@ Status](https://travis-ci.org/nredell/forecastML.svg?branch=master)](https://tra
 # package::forecastML <img src="forecastML_logo.png" alt="forecastML logo" align="right" height="138.5" style="display: inline-block;">
 
 The purpose of `forecastML` is to provide a series of functions and visualizations that simplify the process of 
-multi-step-ahead direct forecasting with standard machine learning algorithms. It's aimed at 
-helping the user quickly assess the (a) accuracy, (b) stability, and (c) generalizability of grouped and ungrouped 
-single-outcome forecasts produced from potentially high-dimensional modeling datasets.
+**multi-step-ahead direct forecasting with standard machine learning algorithms**. It's a wrapper package aimed at providing 
+**maximum flexibility** in model-building--choose any machine learning algorithm from any `R` package--while helping 
+the user quickly assess the (a) accuracy, (b) stability, and (c) generalizability of grouped (i.e., 
+multiple related time-series) and ungrouped single-outcome forecasts produced from potentially high-dimensional modeling datasets.
 
 This package is inspired by Bergmeir, Hyndman, and Koo's 2018 paper 
 [A note on the validity of cross-validation for evaluating autoregressive time series prediction](https://robjhyndman.com/papers/cv-wp.pdf). 
@@ -38,8 +39,9 @@ library(forecastML)
 
 * **[Creating custom feature lags for model training](https://nredell.github.io/data_science_blog/forecastML/lagged_features.nb.html)**.
 
+* **[Forecasting with multiple or grouped time-series](https://nredell.github.io/data_science_blog/forecastML/grouped_forecast.nb.html)**.
+
 * Coming soon:
-    + Forecasting with grouped/nested/hierarchical time-series.
     + Examples of parallel processing with the `future` package.
 
 ## Example
