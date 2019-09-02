@@ -1,7 +1,3 @@
-^forecasts\.png$
-^validation_data_forecasts\.png$
-^forecastML_logo\.png$
-^vignettes$
 ^\.Rhistory$
 ^build_package$
 ^LICENSE\.md$

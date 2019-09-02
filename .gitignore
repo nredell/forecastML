@@ -1,5 +1,8 @@
 build_package
+inst/doc
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
+vignettes/*.html
+vignettes/*.R

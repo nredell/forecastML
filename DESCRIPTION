@@ -38,4 +38,8 @@ Depends:
     R (>= 3.4.0),
     ggplot2 (>= 3.1.0)
 Suggests: 
-    glmnet (>= 2.0.16)
+    glmnet (>= 2.0.16),
+    DT,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

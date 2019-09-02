@@ -1,19 +1,17 @@
 ---
 title: "Custom Feature Lags"
+author: "Nickalus Redell, nickalusredell@gmail.com"
 date: "`r lubridate::today()`"
-author: "Nick Redell, nickredell@hotmail.com"
-output:
-  html_notebook:
-    code_folding: show
-    toc: yes
-    toc_float: yes
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{my-vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 ***
 
 ## Purpose
-
-<img src="forecastML_logo.png" alt="forecastML logo" align="right" width="150" height="150" style="display: inline-block;">
 
 The purpose of this vignette is to demonstrate how custom predictor or feature 
 lags can be created for forecast model inputs in `forecastML` with the `forecastML::create_lagged_df()` 
@@ -26,11 +24,6 @@ outcome--e.g., 3 and 12 months for monthly data--is a good place to start.
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(fig.width = 9, fig.height = 6)
-```
-
-```{r, eval = FALSE, include = FALSE}
-devtools::document()
-devtools::load_all(export_all = TRUE)
 ```
 
 
@@ -165,8 +158,6 @@ plot(data_train)[[remove_col]]  # we're selecting 1 of our 4 feature-level plots
 * Inspecting the modeling data.frame confirms that the 12-month-lagged feature for 
 `PetrolPrice` is not a feature in our 12-month-out forecast model training data set.
 
-```{r, results = 'hide'}
-DT::datatable(head(data_train[[which(horizons == 12)]]))
+```{r}
+DT::datatable(head(data_train$horizon_12))
 ```
-
-***
