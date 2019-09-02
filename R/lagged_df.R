@@ -437,7 +437,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
                 data_x$row_number <- data_x$max_row_number + data_x$horizon
 
                 data_x <- dplyr::select(data_x, .data$row_number, .data$horizon,
-                                        .data$groups, .data$static_features)
+                                        groups, static_features)
 
                 } else {  # Exit the 'j' loop and return 'NULL' because the group/static features are already computed.
 
