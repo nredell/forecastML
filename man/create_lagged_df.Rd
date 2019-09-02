@@ -2,7 +2,7 @@
 % Please edit documentation in R/lagged_df.R
 \name{create_lagged_df}
 \alias{create_lagged_df}
-\title{Create datasets with lagged features}
+\title{Create model training and forecasting datasets with lagged, grouped, and static features}
 \usage{
 create_lagged_df(data, type = c("train", "forecast"), outcome_cols = 1,
   horizons, lookback = NULL, lookback_control = NULL, groups = NULL,
@@ -20,60 +20,79 @@ rows--usually due to periods when no data was collected--will result in poorly t
 groups of time-series can be forecasted if they are stacked vertically in a long dataset and the 'groups', 'dates', and 'frequency' arguments
 are specified.}
 
-\item{horizons}{A vector of one or more forecast horizons, h, measured in dataset rows. For each horizon, 1:h
-forecasts are returned (e.g., 'horizon = 12' trains a model to minimize 12-step-ahead error and returns forecasts
-for 1:12 steps into the future).}
+\item{horizons}{A numeric vector of one or more forecast horizons, h, measured in dataset rows. For each horizon, 1:h
+forecasts are returned (e.g., 'horizon = 12' trains a model to minimize 1 to 12-step-ahead error and returns forecasts
+for 1:12 steps into the future). If \code{dates} are given, a horizon of 1, for example, would equal 1 * \code{frequency} in calendar time.}
 
-\item{lookback}{A vector giving the lags--in dataset rows--for creating the lagged features. All non-grouping features in the
-input dataset, 'data', are lagged by the same values which, for non-grouped time-series, will produce an input dataset with dimensions
+\item{lookback}{A numeric vector giving the lags--in dataset rows--for creating the lagged features. All non-grouping and
+non-static features in the input dataset, 'data', are lagged by the same values which, for
+non-grouped time-series, will produce an input dataset with dimensions
 nrow(data) by (n_features * length(lookback)). Lags that don't support direct forecasting for a given horizon
-are dropped. Either 'lookback' or 'lookback_control' need to be specified.}
+are dropped. Either \code{lookback} or \code{lookback_control} need to be specified.}
 
-\item{lookback_control}{A list of vectors, specifying potentially unique lags for each feature. The length
-of the list should equal ncol(data) and be ordered the same as the columns in 'data'. For grouped time-series, lags for the grouping columns
-should have a lookback_control value of 0. 'NULL' lookback_control values drop columns from the input dataset.
+\item{lookback_control}{A list of numeric vectors, specifying potentially unique lags for each feature. The length
+of the list should equal ncol(data) and be ordered the same as the columns in 'data'. For grouped time-series, lags for the grouping column(s)
+and static feature columns should have a lookback_control value of 0. \code{list(NULL)} \code{lookback_control} values drop columns from the input dataset.
 Lags that don't support direct forecasting for a given horizon
-are dropped. Either 'lookback' or 'lookback_control' need to be specified.}
+are dropped. Either \code{lookback} or \code{lookback_control} need to be specified.}
 
 \item{groups}{Column name(s) that identify the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but are not lagged.
 Note that combining feature lags with grouped time-series will result in NA values throughout the data.}
 
-\item{static_features}{For grouped time-series only. Column name(s) that identify featuers that do not change through time.
-These columns are used as model predictors but are not lagged.
+\item{static_features}{For grouped time-series only. Column name(s) that identify features that do not change through time.
+These columns are used as model features but are not lagged.
 Note that combining feature lags with grouped time-series will result in NA values throughout the data.}
 
-\item{dates}{A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal nrow(data). Required if 'groups' are given.}
+\item{dates}{A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal nrow(data). Required if \code{groups} are given.}
 
-\item{frequency}{A string taking the same input as `scales::date_breaks()` e.g., '1 month', '7 days', etc. Required if 'dates' are given.}
+\item{frequency}{A string taking the same input as \code{base::seq(..., by = "frequency")} e.g., '1 month', '7 days', etc. Required if \code{dates} are given.}
 
 \item{use_future}{Boolean. If \code{TRUE}, the \code{future} package is used for creating lagged data.frames.
 \code{multisession} or \code{multiprocess} futures are especially useful for (a) grouped time series with many groups and
 (b) high-dimensional data sets with many lags per feature.}
 }
 \value{
-A 'lagged_df' or 'grouped_lagged_df' object: A list of data.frames with new columns for the lagged predictors.
+A 'lagged_df' or 'grouped_lagged_df' S3 object: A list of data.frames with new columns for the lagged/non-lagged features.
 The length of the returned list is equal to the number of forecast horizons and is in the order of
-horizons supplied to the 'horizons' argument.
+horizons supplied to the \code{horizons} argument. Horizon-specific datasets can be accessed with
+\code{my_lagged_df$horizon_h} where 'h' gives the forecast horizon.
 
 The contents of the returned data.frame(s) are as follows:
 
 \describe{
   \item{\strong{type = 'train', non-grouped:}}{A data.frame of lagged features.}
-  \item{\strong{type = 'train', grouped:}}{A data.frame of unlagged grouping columns followed by lagged features.}
+  \item{\strong{type = 'train', grouped:}}{A data.frame of unlagged grouping columns followed by lagged and static features.}
   \item{\strong{type = 'forecast', non-grouped:}}{(1) An 'index' column giving the row index or date of the
   forecast periods (e.g., a 100 row non-date-based training dataset would start with an index of 101). (2) A 'horizon' column
   that indicates the forecast period from 1:max(horizons). (3) Lagged features identical to the
   'train', non-grouped dataset.}
   \item{\strong{type = 'forecast', grouped:}}{(1) An 'index' column giving the date of the
-  forecast periods. The first forecast date for each group is the maximum date from the 'dates' argument
-  + 1 * 'frequency' which is the user-supplied date frequency.(2) A 'horizon' column that indicates
-  the forecast period from 1:max(horizons). (3) Lagged features identical to the train', grouped dataset.}
+  forecast periods. The first forecast date for each group is the maximum date from the \code{dates} argument
+  + 1 * \code{frequency} which is the user-supplied date frequency.(2) A 'horizon' column that indicates
+  the forecast period from \code{1:max(horizons)}. (3) Lagged and static features identical to the train', grouped dataset.}
 }
 }
 \description{
-Create a list of datasets with lagged predictors to (a) train forecasting models for
-specified forecast horizons and (b) forecast with lagged predictors.
+Create a list of datasets with lagged, grouped, and static features to (a) train forecasting models for
+specified forecast horizons and (b) forecast into the future with a trained ML model.
 }
+\section{Methods and related functions}{
+
+
+The output of of \code{create_lagged_df} is passed into
+
+\itemize{
+  \item \code{\link{create_windows}}
+}
+
+and has the following generic S3 methods
+
+\itemize{
+  \item \code{\link{summary}}
+  \item \code{\link{plot}}
+}
+}
+
 \examples{
 \donttest{
 # Sampled Seatbelts data from the R package datasets.

@@ -8,13 +8,16 @@ train_model(lagged_df, windows, model_function, model_name,
   use_future = FALSE)
 }
 \arguments{
-\item{lagged_df}{An object of class 'lagged_df' from create_lagged_df().}
+\item{lagged_df}{An object of class 'lagged_df' from \code{create_lagged_df}.}
 
-\item{windows}{An object of class 'windows' from create_windows().}
+\item{windows}{An object of class 'windows' from \code{create_windows}.}
 
-\item{model_function}{A user-defined wrapper function for model training (see example).}
+\item{model_function}{A user-defined wrapper function for model training that takes 2
+positional arguments--(1) a data.frame made with \code{create_lagged_df} and
+(2) the column index of the modeled outcome--and returns a model which is used
+as input in the user-defined prediction function (see example).}
 
-\item{model_name}{A name for the model.}
+\item{model_name}{A name for the model. Required.}
 
 \item{use_future}{Boolean. If \code{TRUE}, the \code{future} package is used for training models in parallel.
 There are two options for parallelization: parallel across either (1) model forecast horizons or (b) validation windows.
@@ -25,7 +28,9 @@ in parallel. If forecasting across many validation windows, consider running
 in parallel.}
 }
 \value{
-A 'forecast_model' object: A nested list of model results, nested by model forecast horizon > validation dataset.
+A 'forecast_model' S3 object: A nested list of trained models. Models can be accessed with
+\code{my_trained_model$horizon_h$window_w} where 'h' gives the forecast horizon and 'w' gives
+the validation dataset window numbwer from \code{create_windows}.
 }
 \description{
 Train a user-defined forecast model for each horizon, h, and across the validation
@@ -33,6 +38,19 @@ datasets, d. A total of h * d models are trained--more if the user-defined model
 performs any inner-loop cross-validation. These models can, however, be trained in parallel
 with the \code{future} package.
 }
+\section{Methods and related functions}{
+
+
+The output of of \code{train_model} is passed into
+
+has the following generic S3 methods
+
+\itemize{
+  \item \code{\link{predict}}
+  \item \code{\link{plot}}
+}
+}
+
 \examples{
 \donttest{
 # Sampled Seatbelts data from the R package datasets.

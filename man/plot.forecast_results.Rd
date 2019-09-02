@@ -4,20 +4,20 @@
 \alias{plot.forecast_results}
 \title{Plot an object of class forecast_results}
 \usage{
-\method{plot}{forecast_results}(forecast_results, data_actual = NULL,
+\method{plot}{forecast_results}(x, data_actual = NULL,
   actual_indices = NULL, models = NULL, horizons = NULL,
   windows = NULL, facet_plot = c("model", "model_forecast_horizon"),
-  group_filter = NULL)
+  group_filter = NULL, ...)
 }
 \arguments{
-\item{forecast_results}{An object of class 'forecast_results' from predict.forecast_model().}
+\item{x}{An object of class 'forecast_results' from \code{predict.forecast_model}.}
 
 \item{data_actual}{A data.frame containing the target/outcome name and any grouping columns.}
 
 \item{actual_indices}{Required if 'data_actual' is given. A vector or 1-column data.frame of numeric row indices or dates (class'Date') with length nrow(data_actual).
 The data can be historical and/or holdout/test data, forecasts and actuals are matched by row.names().}
 
-\item{models}{Filter results by user-defined model name from train_model() (optional).}
+\item{models}{Filter results by user-defined model name from \code{train_model} (optional).}
 
 \item{horizons}{Filter results by horizon (optional).}
 
@@ -26,6 +26,8 @@ The data can be historical and/or holdout/test data, forecasts and actuals are m
 \item{facet_plot}{Adjust the plot display through ggplot2::facet_grid(). facet_plot = NULL plots results in one facet.}
 
 \item{group_filter}{A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").}
+
+\item{...}{Arguments passed to \code{base::plot}}
 }
 \value{
 Forecast plot of class 'ggplot'.

@@ -4,21 +4,24 @@
 \alias{plot.forecast_model_hyper}
 \title{Plot hyperparameters}
 \usage{
-\method{plot}{forecast_model_hyper}(data_hyper, data_results, data_error,
-  type = c("stability", "error"), horizons = NULL, windows = NULL)
+\method{plot}{forecast_model_hyper}(x, data_results, data_error,
+  type = c("stability", "error"), horizons = NULL, windows = NULL,
+  ...)
 }
 \arguments{
-\item{data_hyper}{An object of class 'forecast_model_hyper' from return_hyper().}
+\item{x}{An object of class 'forecast_model_hyper' from \code{return_hyper}.}
 
-\item{data_results}{An object of class 'training_results' from predict.forecast_model(..., data_forecast = NULL).}
+\item{data_results}{An object of class 'training_results' from \code{predict.forecast_model(..., data_forecast = NULL)}.}
 
-\item{data_error}{An object of class 'validation_error' from return_error(..., data_test = NULL).}
+\item{data_error}{An object of class 'validation_error' from \code{return_error(..., data_test = NULL)}.}
 
 \item{type}{Select plot type; 'stability' is the default plot.}
 
 \item{horizons}{Filter results by horizon (optional).}
 
 \item{windows}{Filter results by validation window number (optional).}
+
+\item{...}{Arguments passed to \code{base::plot}}
 }
 \value{
 Hyperparameter plots of class 'ggplot'.

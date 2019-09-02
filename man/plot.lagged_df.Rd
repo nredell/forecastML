@@ -4,13 +4,15 @@
 \alias{plot.lagged_df}
 \title{Plot datasets with lagged predictors}
 \usage{
-\method{plot}{lagged_df}(object)
+\method{plot}{lagged_df}(x, ...)
 }
 \arguments{
-\item{object}{An object of class 'lagged_df' from create_lagged_df().}
+\item{x}{An object of class 'lagged_df' from \code{create_lagged_df}.}
+
+\item{...}{Arguments passed to \code{base::plot}}
 }
 \value{
-A single plot if 'lookback' was specified in create_lagged_df();
+A single plot if 'lookback' was specified in \code{create_lagged_df};
 a list of plots, one per predictor, if 'lookback_control' was specified.
 }
 \description{

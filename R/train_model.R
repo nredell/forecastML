@@ -1,4 +1,3 @@
-
 #' Train a model across horizons and validation datasets
 #'
 #' Train a user-defined forecast model for each horizon, h, and across the validation
@@ -6,10 +5,13 @@
 #' performs any inner-loop cross-validation. These models can, however, be trained in parallel
 #' with the \code{future} package.
 #'
-#' @param lagged_df An object of class 'lagged_df' from create_lagged_df().
-#' @param windows An object of class 'windows' from create_windows().
-#' @param model_function A user-defined wrapper function for model training (see example).
-#' @param model_name A name for the model.
+#' @param lagged_df An object of class 'lagged_df' from \code{create_lagged_df}.
+#' @param windows An object of class 'windows' from \code{create_windows}.
+#' @param model_function A user-defined wrapper function for model training that takes 2
+#' positional arguments--(1) a data.frame made with \code{create_lagged_df} and
+#' (2) the column index of the modeled outcome--and returns a model which is used
+#' as input in the user-defined prediction function (see example).
+#' @param model_name A name for the model. Required.
 #' @param use_future Boolean. If \code{TRUE}, the \code{future} package is used for training models in parallel.
 #' There are two options for parallelization: parallel across either (1) model forecast horizons or (b) validation windows.
 #' If forecasting with many horizon-specific models, consider running
@@ -17,7 +19,20 @@
 #' in parallel. If forecasting across many validation windows, consider running
 #' \code{future::plan(list(future::sequential, future::multiprocess))} prior to this function to train these models
 #' in parallel.
-#' @return A 'forecast_model' object: A nested list of model results, nested by model forecast horizon > validation dataset.
+#' @return A 'forecast_model' S3 object: A nested list of trained models. Models can be accessed with
+#' \code{my_trained_model$horizon_h$window_w} where 'h' gives the forecast horizon and 'w' gives
+#' the validation dataset window numbwer from \code{create_windows}.
+#'
+#' @section Methods and related functions:
+#'
+#' The output of of \code{train_model} is passed into
+#'
+#' has the following generic S3 methods
+#'
+#' \itemize{
+#'   \item \code{\link{predict}}
+#'   \item \code{\link{plot}}
+#' }
 #' @example /R/examples/example_train_model.R
 #' @export
 train_model <- function(lagged_df, windows, model_function, model_name, use_future = FALSE) {
@@ -278,22 +293,22 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
 #' Several diagnostic plots can be returned to assess the quality of the forecats
 #' based on predictions on the outer-loop validation datasets.
 #'
-#' @param training_results An object of class 'training_results' from predict.forecast_model().
+#' @param x An object of class 'training_results' from \code{predict.forecast_model}.
 #' @param type Plot type, default is "prediction" for hold-out sample predictions.
-#' @param models Filter results by user-defined model name from train_model() (optional).
+#' @param models Filter results by user-defined model name from \code{train_model} (optional).
 #' @param horizons Filter results by horizon (optional).
 #' @param windows Filter results by validation window number (optional).
 #' @param valid_indices Filter results by validation row indices or dates (optional).
 #' @param group_filter A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").
+#' @param ... Arguments passed to \code{base::plot}
 #' @return Diagnostic plots of class 'ggplot'.
 #' @export
-plot.training_results <- function(training_results,
+plot.training_results <- function(x,
                                   type = c("prediction", "residual", "forecast_stability", "forecast_variability"),
                                   models = NULL, horizons = NULL,
-                                  windows = NULL, valid_indices = NULL, group_filter = NULL) {
+                                  windows = NULL, valid_indices = NULL, group_filter = NULL, ...) {
 
   data <- training_results
-  #data <- data_cv
 
   type <- type[1]
 
@@ -425,18 +440,6 @@ plot.training_results <- function(training_results,
       p <- p + geom_hline(yintercept = 0)
     }
 
-    # if (!is.null(groups)) {
-    #   if(nrow(data_plot_point) >= 1) {
-    #     # Actuals - geom_line() is 1 point.
-    #     p <- p + geom_point(data = data_plot_point, aes(x = index, y = eval(parse(text = outcome_names)), color = ggplot_color_group),
-    #                         shape = 1, show.legend = FALSE)
-    #
-    #     # Predictions - geom_line() is 1 point.
-    #     p <- p + geom_point(data = data_plot_point, aes(x = index, y = eval(parse(text = paste0(outcome_names, "_pred"))), color = ggplot_color_group),
-    #                         show.legend = FALSE)
-    #   }
-    # }
-
     p <- p + scale_color_viridis_d()
     p <- p + facet_grid(horizon ~ ., drop = TRUE)
     p <- p + theme_bw()
@@ -531,22 +534,23 @@ plot.training_results <- function(training_results,
 #'
 #' A forecast plot for each horizon for each model in predict.forecast_model().
 #'
-#' @param forecast_results An object of class 'forecast_results' from predict.forecast_model().
+#' @param x An object of class 'forecast_results' from \code{predict.forecast_model}.
 #' @param data_actual A data.frame containing the target/outcome name and any grouping columns.
 #' @param actual_indices Required if 'data_actual' is given. A vector or 1-column data.frame of numeric row indices or dates (class'Date') with length nrow(data_actual).
 #' The data can be historical and/or holdout/test data, forecasts and actuals are matched by row.names().
-#' @param models Filter results by user-defined model name from train_model() (optional).
+#' @param models Filter results by user-defined model name from \code{train_model} (optional).
 #' @param horizons Filter results by horizon (optional).
 #' @param windows Filter results by validation window number (optional).
 #' @param facet_plot Adjust the plot display through ggplot2::facet_grid(). facet_plot = NULL plots results in one facet.
 #' @param group_filter A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").
+#' @param ... Arguments passed to \code{base::plot}
 #' @return Forecast plot of class 'ggplot'.
 #' @export
-plot.forecast_results <- function(forecast_results, data_actual = NULL, actual_indices = NULL,
+plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
                                   models = NULL, horizons = NULL,
                                   windows = NULL,
                                   facet_plot = c("model", "model_forecast_horizon"),
-                                  group_filter = NULL) {
+                                  group_filter = NULL, ...) {
 
   data_forecast <- forecast_results
 
@@ -657,7 +661,6 @@ plot.forecast_results <- function(forecast_results, data_actual = NULL, actual_i
     p <- p + theme_bw()
     p <- p + xlab("Dataset row / index") + ylab("Outcome") + labs(color = toupper(gsub("_", " ", paste(plot_group, collapse = " + \n")))) +
       ggtitle("N-Step-Ahead Model Forecasts")
-    #p + theme(legend.position = "none")
     return(p)
   }
 }

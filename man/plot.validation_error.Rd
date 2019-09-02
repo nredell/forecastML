@@ -4,24 +4,26 @@
 \alias{plot.validation_error}
 \title{Plot validation dataset forecast error}
 \usage{
-\method{plot}{validation_error}(data_error, data_results,
-  type = c("time", "horizon", "global"), models = NULL,
-  horizons = NULL, windows = NULL, group_filter = NULL)
+\method{plot}{validation_error}(x, data_results, type = c("time",
+  "horizon", "global"), models = NULL, horizons = NULL,
+  windows = NULL, group_filter = NULL, ...)
 }
 \arguments{
-\item{data_error}{An object of class 'validation_error' from return_error().}
+\item{x}{An object of class 'validation_error' from \code{return_error}.}
 
-\item{data_results}{An object of class 'training_results' from predict.forecast_model().}
+\item{data_results}{An object of class 'training_results' from \code{predict.forecast_model}.}
 
 \item{type}{Select plot type; 'time' is the default plot.}
 
-\item{models}{Filter results by user-defined model name from train_model() (optional).}
+\item{models}{Filter results by user-defined model name from \code{train_model} (optional).}
 
 \item{horizons}{Filter results by horizon (optional).}
 
 \item{windows}{Filter results by validation window number (optional).}
 
 \item{group_filter}{A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").}
+
+\item{...}{Arguments passed to \code{base::plot}}
 }
 \value{
 Forecast error plots of class 'ggplot'.

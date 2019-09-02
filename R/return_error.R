@@ -193,17 +193,18 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 #' Plot validation dataset forecast error
 #'
 #' Plot forecast error at various levels of aggregation across validation datasets.
-#' @param data_error An object of class 'validation_error' from return_error().
-#' @param data_results An object of class 'training_results' from predict.forecast_model().
+#' @param x An object of class 'validation_error' from \code{return_error}.
+#' @param data_results An object of class 'training_results' from \code{predict.forecast_model}.
 #' @param type Select plot type; 'time' is the default plot.
-#' @param models Filter results by user-defined model name from train_model() (optional).
+#' @param models Filter results by user-defined model name from \code{train_model} (optional).
 #' @param horizons Filter results by horizon (optional).
 #' @param windows Filter results by validation window number (optional).
 #' @param group_filter A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").
+#' @param ... Arguments passed to \code{base::plot}
 #' @return Forecast error plots of class 'ggplot'.
 #' @export
-plot.validation_error <- function(data_error, data_results, type = c("time", "horizon", "global"),
-                                  models = NULL, horizons = NULL, windows = NULL, group_filter = NULL) {
+plot.validation_error <- function(x, data_results, type = c("time", "horizon", "global"),
+                                  models = NULL, horizons = NULL, windows = NULL, group_filter = NULL, ...) {
 
   if(!methods::is(data_error, "validation_error")) {
     stop("The 'data_error' argument takes an object of class 'validation_error' as input. Run return_error() first.")

@@ -5,7 +5,7 @@
 #' the stability of hyperparameters in the nested cross-validation and across
 #' forecast horizons.
 #'
-#' @param forecast_model An object of class 'forecast_model' from train_model().
+#' @param forecast_model An object of class 'forecast_model' from \code{train_model}.
 #' @param hyper_function A user-defined function for retrieving model hyperparameters (requierd).
 #' @return An object of class 'forecast_model_hyper': A data.frame of model-specific hyperparameters.
 #' @example /R/examples/example_return_hyper.R
@@ -68,19 +68,20 @@ return_hyper <- function(forecast_model, hyper_function = NULL) {
 #'
 #' Plot hyperparameter stability and relationship with error metrics across validation datasets.
 #'
-#' @param data_hyper An object of class 'forecast_model_hyper' from return_hyper().
-#' @param data_results An object of class 'training_results' from predict.forecast_model(..., data_forecast = NULL).
-#' @param data_error An object of class 'validation_error' from return_error(..., data_test = NULL).
+#' @param x An object of class 'forecast_model_hyper' from \code{return_hyper}.
+#' @param data_results An object of class 'training_results' from \code{predict.forecast_model(..., data_forecast = NULL)}.
+#' @param data_error An object of class 'validation_error' from \code{return_error(..., data_test = NULL)}.
 #' @param type Select plot type; 'stability' is the default plot.
 #' @param horizons Filter results by horizon (optional).
 #' @param windows Filter results by validation window number (optional).
+#' @param ... Arguments passed to \code{base::plot}
 #' @return Hyperparameter plots of class 'ggplot'.
 #' @example /R/examples/example_return_hyper.R
 #' @export
-plot.forecast_model_hyper <- function(data_hyper, data_results, data_error,
+plot.forecast_model_hyper <- function(x, data_results, data_error,
                                       type = c("stability", "error"),
                                       horizons = NULL,
-                                      windows = NULL) {
+                                      windows = NULL, ...) {
 
   if(!methods::is(data_hyper, "forecast_model_hyper")) {
     stop("The 'data_hyper' argument takes an object of class 'forecast_model_hyper' as input. Run return_hyper() first.")

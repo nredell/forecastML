@@ -2,35 +2,52 @@
 % Please edit documentation in R/create_windows.R
 \name{create_windows}
 \alias{create_windows}
-\title{Create validation datasets for the outer loop of nested cross-validation}
+\title{Create time-contiguous validation datasets for model evaluation}
 \usage{
 create_windows(lagged_df, window_length = 12, window_start = NULL,
   window_stop = NULL, skip = 0, include_partial_window = TRUE)
 }
 \arguments{
-\item{lagged_df}{An object of class 'lagged_df' or'grouped_lagged_df' from create_lagged_df().}
+\item{lagged_df}{An object of class 'lagged_df' or'grouped_lagged_df' from \code{\link{create_lagged_df}}.}
 
 \item{window_length}{An integer that defines the length of the contiguous validation dataset in dataset rows/dates.
-If dates were given in create_lagged_df(), the validation window is window_length * date frequency.
-Setting 'window_length = 0' trains the model on the entire dataset--useful for re-training after examining
-the nested cross-validation results.}
+If dates were given in \code{create_lagged_df}, the validation window is 'window_length' * 'date frequency' in calendar time.
+Setting \code{window_length = 0} trains the model on the entire dataset--used for re-training after examining
+the cross-validation results.}
 
 \item{window_start}{An optional index or date identifying the row/date to start creating contiguous validation datasets.}
 
 \item{window_stop}{An optional index or date identifying the row to stop creating contiguous validation datasets.}
 
 \item{skip}{An integer giving a fixed number of dataset rows/time to skip between validation datasets. If dates were given
-in create_lagged_df(), the time between validation windows is skip * date frequency.}
+in \code{create_lagged_df}, the time between validation windows is \code{skip} * 'date frequency'.}
 
-\item{include_partial_window}{Keep validation datasets that are shorter than window_length.}
+\item{include_partial_window}{Keep validation datasets that are shorter than \code{window_length}.}
 }
 \value{
-A'windows' object: A list of matrices, one per horizon, giving the indices for the validation datasets.
+A'windows' S3 object: A list of data.frame(s), one per horizon, giving the indices for the validation datasets.
 }
 \description{
-Create blocks of contiguous validation windows to assess the likely forecast accuracy
-of various models.
+Flexibly ceate blocks of time-contiguous validation datasets to assess the likely forecast accuracy
+of trained models in at various times in the past. These validation datasets are similar to
+the outer loop of a nested cross-validation model training setup.
 }
+\section{Methods and related functions}{
+
+
+The output of of \code{create_windows} is passed into
+
+\itemize{
+  \item \code{\link{train_model}}
+}
+
+and has the following generic S3 methods
+
+\itemize{
+  \item \code{\link{plot}}
+}
+}
+
 \examples{
 \donttest{
 # Sampled Seatbelts data from the R package datasets.
