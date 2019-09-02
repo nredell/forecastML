@@ -165,6 +165,8 @@ create_windows <- function(lagged_df, window_length = 12,
 #' @export
 plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, ...) {
 
+  x <- windows
+
   data <- lagged_df
 
   if (!methods::is(windows, "windows")) {

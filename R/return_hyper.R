@@ -83,6 +83,8 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
                                       horizons = NULL,
                                       windows = NULL, ...) {
 
+  data_hyper <- x
+
   if(!methods::is(data_hyper, "forecast_model_hyper")) {
     stop("The 'data_hyper' argument takes an object of class 'forecast_model_hyper' as input. Run return_hyper() first.")
   }
@@ -97,7 +99,7 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
 
   type <- type[1]
 
-  data_results <- dplyr::distinct(data_results, valid_indices, .keep_all = TRUE)
+  data_results <- dplyr::distinct(data_results, rlang::.data$valid_indices, .keep_all = TRUE)
 
   outcome_cols <- attributes(data_hyper)$outcome_cols
   outcome_names <- attributes(data_hyper)$outcome_names
@@ -157,8 +159,10 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
     data_error_merge <- data_error$error_by_window
 
     data_error_merge <- dplyr::select(data_error_merge,
-                                      model, horizon, window_number,
-                                      error_metrics)
+                                      rlang::.data$model,
+                                      rlang::.data$horizon,
+                                      rlang::.data$window_number,
+                                      rlang::.data$error_metrics)
     data_error_merge$model <- as.character(data_error_merge$model)
 
     if (length(hyper_num) > 0) {

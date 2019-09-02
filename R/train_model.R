@@ -308,7 +308,7 @@ plot.training_results <- function(x,
                                   models = NULL, horizons = NULL,
                                   windows = NULL, valid_indices = NULL, group_filter = NULL, ...) {
 
-  data <- training_results
+  data <- x
 
   type <- type[1]
 
@@ -552,7 +552,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
                                   facet_plot = c("model", "model_forecast_horizon"),
                                   group_filter = NULL, ...) {
 
-  data_forecast <- forecast_results
+  data_forecast <- x
 
   if(!methods::is(data_forecast, "forecast_results")) {
     stop("The 'forecast_results' argument takes an object of class 'forecast_results' as input. Run predict() on a 'forecast_model' object first.")

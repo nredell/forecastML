@@ -74,6 +74,7 @@
 #' @importFrom stats as.formula complete.cases cov sd
 #' @importFrom magrittr %>%
 #' @importFrom lubridate %m-%
+#' @importFrom rlang .data
 #'
 #' @export
 create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols = 1,
@@ -415,10 +416,10 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
                 data_x <- data[, c(groups, static_features), drop = FALSE] %>%
                   dplyr::group_by_at(dplyr::vars(groups)) %>%
                   dplyr::mutate("row_number" = 1:dplyr::n(),
-                                "max_row_number" = max(row_number, na.rm = TRUE)) %>%
-                  dplyr::filter(row_number == max_row_number) %>%
+                                "max_row_number" = max(rlang::.data$row_number, na.rm = TRUE)) %>%
+                  dplyr::filter(rlang::.data$row_number == rlang::.data$max_row_number) %>%
                   dplyr::ungroup() %>%
-                  dplyr::select(!!groups, !!static_features, max_row_number)
+                  dplyr::select(!!groups, !!static_features, rlang::.data$max_row_number)
 
                 # Create the same, static dataset for forecasting into the future, the only difference
                 # being an index which indicates the forecast horizon.
@@ -434,7 +435,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
                 # for max(dates) + 1 and onward. I need to see if its removal affects anything downstream.
                 data_x$row_number <- data_x$max_row_number + data_x$horizon
 
-                data_x <- dplyr::select(data_x, row_number, horizon, groups, static_features)
+                data_x <- dplyr::select(data_x, rlang::.data$row_number, horizon, groups, static_features)
 
                 } else {  # Exit the 'j' loop and return 'NULL' because the group/static features are already computed.
 
@@ -463,13 +464,13 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
                 dplyr::group_by_at(dplyr::vars(groups)) %>%
                 dplyr::mutate("row_number" = 1:dplyr::n()) %>%
                 dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions) %>%
-                dplyr::mutate("max_row_number" = max(row_number, na.rm = TRUE),
-                              "horizon" = max_row_number - row_number + 1) %>%
+                dplyr::mutate("max_row_number" = max(rlang::.data$row_number, na.rm = TRUE),
+                              "horizon" = rlang::.data$max_row_number - rlang::.data$row_number + 1) %>%
                 dplyr::filter(horizon <= forecast_horizon) %>%
-                dplyr::mutate("horizon" = rev(horizon),
-                              "row_number" = max_row_number + horizon) %>%
+                dplyr::mutate("horizon" = rev(rlang::.data$horizon),
+                              "row_number" = rlang::.data$max_row_number + rlang::.data$horizon) %>%
                 dplyr::ungroup() %>%
-                dplyr::select(row_number, horizon, groups, names(lag_functions))
+                dplyr::select(rlang::.data$row_number, horizon, groups, names(lag_functions))
 
               } else {  # Return 'NULL' for non-group static features.
 
@@ -482,12 +483,12 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
             data_x <- data[, var_names[j], drop = FALSE] %>%
               dplyr::mutate("row_number" = 1:dplyr::n()) %>%
               dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions) %>%
-              dplyr::mutate("max_row_number" = max(row_number, na.rm = TRUE),
-                            "horizon" = max_row_number - row_number + 1) %>%
+              dplyr::mutate("max_row_number" = max(rlang::.data$row_number, na.rm = TRUE),
+                            "horizon" = rlang::.data$max_row_number - rlang::.data$row_number + 1) %>%
               dplyr::filter(horizon <= forecast_horizon) %>%
-              dplyr::mutate("horizon" = rev(horizon),
-                            "row_number" = max_row_number + horizon) %>%
-              dplyr::select(row_number, horizon, groups, names(lag_functions))
+              dplyr::mutate("horizon" = rev(rlang::.data$horizon),
+                            "row_number" = rlang::.data$max_row_number + rlang::.data$horizon) %>%
+              dplyr::select(rlang::.data$row_number, horizon, groups, names(lag_functions))
 
           }  # End feature-level lag creation across `lookback_over_horizon`.
 
@@ -511,7 +512,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
         } else {
 
-          data_x <- dplyr::select(data_x, -row_number)
+          data_x <- dplyr::select(data_x, -rlang::.data$row_number)
 
           date_of_forecast <- data.frame("horizon" = 1:forecast_horizon,
                                          "index" = seq(max(dates, na.rm = TRUE), by = frequency, length.out = forecast_horizon + 1)[-1])
@@ -529,7 +530,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
         # Keep row number, which gives the last row of actuals for each time-series, for the data_stop attribute.
         data_stop <<- data_x[, "row_number", drop = TRUE] - 1  # To-do: check the downstream effects of removing this 1 and re-indexing.
 
-        data_x <- dplyr::select(data_x, -row_number)
+        data_x <- dplyr::select(data_x, -rlang::.data$row_number)
 
         date_of_forecast <- data.frame("horizon" = 1:forecast_horizon,
                                        "index" = seq(max(dates, na.rm = TRUE), by = frequency, length.out = forecast_horizon + 1)[-1])
@@ -630,7 +631,7 @@ summary.lagged_df <- function(object, ...) {
 #' @export
 plot.lagged_df <- function(x, ...) {
 
-  data <- object
+  data <- x
 
   if(!methods::is(data, "lagged_df")) {
     stop("This method takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
@@ -738,13 +739,13 @@ plot.lagged_df <- function(x, ...) {
 
     lapply(1:n_predictors, function(i) {
 
-      data_plot_predictor_1 <- dplyr::filter(data_plot, feature == "Feature" & predictor_number == i)
+      data_plot_predictor_1 <- dplyr::filter(data_plot, rlang::.data$feature == "Feature" & rlang::.data$predictor_number == i)
       data_plot_predictor_1$feature_match <- paste0(data_plot_predictor_1$horizon, "-", data_plot_predictor_1$time)
       data_plot_predictor_2 <- data_grid_past
       data_plot_predictor_2$feature <- "No feature"
       data_plot_predictor_2$feature_match <- paste0(data_plot_predictor_2$horizon, "-", data_plot_predictor_2$time)
       data_plot_predictor_2 <- data_plot_predictor_2[!(data_plot_predictor_2$feature_match %in% data_plot_predictor_1$feature_match), ]
-      data_plot_predictor_3 <- dplyr::filter(data_plot, feature == "Forecast")
+      data_plot_predictor_3 <- dplyr::filter(data_plot, rlang::.data$feature == "Forecast")
       data_plot_predictor <- dplyr::bind_rows(data_plot_predictor_1, data_plot_predictor_2, data_plot_predictor_3)
 
       data_plot_predictor <- data_plot_predictor[as.numeric(data_plot_predictor$horizon) %in% horizon, ]
