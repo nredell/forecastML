@@ -19,7 +19,7 @@ Imports:
     tidyr (>= 0.8.1),
     purrr (>= 0.2.4),
     dplyr (>= 0.7.8),
-    rlang (>= 0.3.0.1),
+    rlang (>= 0.4.0),
     stats,
     magrittr (>= 1.5),
     stringr (>= 1.4.0),

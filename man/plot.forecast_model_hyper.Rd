@@ -34,8 +34,8 @@ Plot hyperparameter stability and relationship with error metrics across validat
 # Sampled Seatbelts data from the R package datasets.
 data("data_seatbelts", package = "forecastML")
 
-# Example - Training data for 12 horizon-specific models w/ common lags per predictor.
-horizons <- 1:12
+# Example - Training data for 2 horizon-specific models w/ common lags per predictor.
+horizons <- c(1, 12)
 lookback <- 1:15
 
 data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_cols = 1,
@@ -91,10 +91,13 @@ hyper_function <- function(model) {
   return(data_hyper)
 }
 
+data_error <- return_error(data_valid)
+
 data_hyper <- return_hyper(model_results, hyper_function)
 
 plot(data_hyper, data_valid, data_error, type = "stability",
-     horizons = c(1, 6, 12))
+     horizons = c(1, 12))
+
 plot(data_hyper, data_valid, data_error, type = "error")
 }
 }

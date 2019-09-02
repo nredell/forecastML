@@ -62,7 +62,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 
     data_test$forecast_period <- test_indices
 
-    data_test <- dplyr::select(data_test, rlang::.data$forecast_period, rlang::.data$outcome_names, !!groups)
+    data_test <- dplyr::select(data_test, .data$forecast_period, .data$outcome_names, !!groups)
 
     data <- dplyr::inner_join(data, data_test, by = c("forecast_period", groups))
   }
@@ -94,15 +94,15 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 
     # Compute error metrics at the validation window level.
     data_1 <- data %>%
-      dplyr::group_by_at(dplyr::vars(rlang::.data$model, rlang::.data$horizon,
-                                     rlang::.data$window_number, !!groups)) %>%
-      dplyr::summarise("window_start" = min(rlang::.data$valid_indices, na.rm = TRUE),
-                       "window_stop" = max(rlang::.data$valid_indices, na.rm = TRUE),
-                       "window_midpoint" = base::mean(rlang::.data$valid_indices, na.rm = TRUE),
-                       "mae" = base::mean(abs(rlang::.data$residual), na.rm = TRUE),
-                       "mape" = base::mean(abs(rlang::.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
-                       "mdape" = stats::median(abs(rlang::.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
-                       "smape" = base::mean(2 * abs(rlang::.data$residual) /
+      dplyr::group_by_at(dplyr::vars(.data$model, .data$horizon,
+                                     .data$window_number, !!groups)) %>%
+      dplyr::summarise("window_start" = min(.data$valid_indices, na.rm = TRUE),
+                       "window_stop" = max(.data$valid_indices, na.rm = TRUE),
+                       "window_midpoint" = base::mean(.data$valid_indices, na.rm = TRUE),
+                       "mae" = base::mean(abs(.data$residual), na.rm = TRUE),
+                       "mape" = base::mean(abs(.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                       "mdape" = stats::median(abs(.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                       "smape" = base::mean(2 * abs(.data$residual) /
                                         (base::abs((eval(parse(text = outcome_names)))) + base::abs(eval(parse(text = paste0(outcome_names, "_pred"))))),
                                       na.rm = TRUE) * 100)
     data_1$mape <- with(data_1, ifelse(is.infinite(mape), NA, mape))
@@ -110,13 +110,13 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 
     # Compute error metric by horizon and window length across all validation windows.
     data_2 <- data %>%
-      dplyr::group_by_at(dplyr::vars(rlang::.data$model, rlang::.data$horizon, !!groups)) %>%
-      dplyr::summarise("window_start" = min(rlang::.data$valid_indices, na.rm = TRUE),
-                       "window_stop" = max(rlang::.data$valid_indices, na.rm = TRUE),
-                       "mae" = base::mean(abs(rlang::.data$residual), na.rm = TRUE),
-                       "mape" = base::mean(base::abs(rlang::.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
-                       "mdape" = stats::median(base::abs(rlang::.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
-                       "smape" = base::mean(2 * base::abs(rlang::.data$residual) /
+      dplyr::group_by_at(dplyr::vars(.data$model, .data$horizon, !!groups)) %>%
+      dplyr::summarise("window_start" = min(.data$valid_indices, na.rm = TRUE),
+                       "window_stop" = max(.data$valid_indices, na.rm = TRUE),
+                       "mae" = base::mean(abs(.data$residual), na.rm = TRUE),
+                       "mape" = base::mean(base::abs(.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                       "mdape" = stats::median(base::abs(.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                       "smape" = base::mean(2 * base::abs(.data$residual) /
                                          (base::abs((eval(parse(text = outcome_names)))) + base::abs(eval(parse(text = paste0(outcome_names, "_pred"))))),
                                           na.rm = TRUE) * 100)
     data_2$mape <- with(data_2, ifelse(is.infinite(mape), NA, mape))
@@ -124,13 +124,13 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 
     # Compute error metric by model.
     data_3 <- data %>%
-      dplyr::group_by_at(dplyr::vars(rlang::.data$model, !!groups)) %>%
-      dplyr::summarise("window_start" = min(rlang::.data$valid_indices, na.rm = TRUE),
-                       "window_stop" = max(rlang::.data$valid_indices, na.rm = TRUE),
-                       "mae" = base::mean(base::abs(rlang::.data$residual), na.rm = TRUE),
-                       "mape" = base::mean(base::abs(rlang::.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
-                       "mdape" = stats::median(abs(rlang::.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
-                       "smape" = base::mean(2 * base::abs(rlang::.data$residual) /
+      dplyr::group_by_at(dplyr::vars(.data$model, !!groups)) %>%
+      dplyr::summarise("window_start" = min(.data$valid_indices, na.rm = TRUE),
+                       "window_stop" = max(.data$valid_indices, na.rm = TRUE),
+                       "mae" = base::mean(base::abs(.data$residual), na.rm = TRUE),
+                       "mape" = base::mean(base::abs(.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                       "mdape" = stats::median(abs(.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                       "smape" = base::mean(2 * base::abs(.data$residual) /
                                          (base::abs((eval(parse(text = outcome_names)))) + base::abs(eval(parse(text = paste0(outcome_names, "_pred"))))),
                                           na.rm = TRUE) * 100)
     data_3$mape <- with(data_3, ifelse(is.infinite(mape), NA, mape))
@@ -142,13 +142,13 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 
       # Compute error metric by horizon and window length across all validation windows.
       data_2 <- data %>%
-        dplyr::group_by(rlang::.data$model, rlang::.data$model_forecast_horizon, rlang::.data$horizon) %>%
-        dplyr::group_by_at(dplyr::vars(rlang::.data$model, !!groups, rlang::.data$model_forecast_horizon,
-                                       rlang::.data$horizon)) %>%
-        dplyr::summarise("mae" = base::mean(base::abs(rlang::.data$residual), na.rm = TRUE),
-                         "mape" = base::mean(base::abs(rlang::.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
-                         "mdape" = stats::median(abs(rlang::.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
-                         "smape" = base::mean(2 * base::abs(rlang::.data$residual) /
+        dplyr::group_by(.data$model, .data$model_forecast_horizon, .data$horizon) %>%
+        dplyr::group_by_at(dplyr::vars(.data$model, !!groups, .data$model_forecast_horizon,
+                                       .data$horizon)) %>%
+        dplyr::summarise("mae" = base::mean(base::abs(.data$residual), na.rm = TRUE),
+                         "mape" = base::mean(base::abs(.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                         "mdape" = stats::median(abs(.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                         "smape" = base::mean(2 * base::abs(.data$residual) /
                                            (base::abs((eval(parse(text = outcome_names)))) + base::abs(eval(parse(text = paste0(outcome_names, "_pred"))))),
                                             na.rm = TRUE) * 100)
       data_2$mape <- with(data_2, ifelse(is.infinite(mape), NA, mape))
@@ -156,12 +156,12 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 
       # Compute error metric by model.
       data_3 <- data %>%
-        dplyr::group_by_at(dplyr::vars(rlang::.data$model, !!groups,
-                                       rlang::.data$model_forecast_horizon)) %>%
-        dplyr::summarise("mae" = base::mean(base::abs(rlang::.data$residual), na.rm = TRUE),
-                         "mape" = base::mean(abs(rlang::.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
-                         "mdape" = stats::median(base::abs(rlang::.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
-                         "smape" = base::mean(2 * base::abs(rlang::.data$residual) /
+        dplyr::group_by_at(dplyr::vars(.data$model, !!groups,
+                                       .data$model_forecast_horizon)) %>%
+        dplyr::summarise("mae" = base::mean(base::abs(.data$residual), na.rm = TRUE),
+                         "mape" = base::mean(abs(.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                         "mdape" = stats::median(base::abs(.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                         "smape" = base::mean(2 * base::abs(.data$residual) /
                                            (base::abs((eval(parse(text = outcome_names)))) + base::abs(eval(parse(text = paste0(outcome_names, "_pred"))))),
                                             na.rm = TRUE) * 100)
       data_3$mape <- with(data_3, ifelse(is.infinite(mape), NA, mape))
@@ -172,8 +172,8 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
     if (is.null(data_test)) {  #  data_1 is an empty data.frame for forecast error results and dplyr::select throws an error.
       data_1 <- dplyr::select(data_1, -error_metrics_missing)
     }
-    data_2 <- dplyr::select(data_2, -rlang::.data$error_metrics_missing)
-    data_3 <- dplyr::select(data_3, -rlang::.data$error_metrics_missing)
+    data_2 <- dplyr::select(data_2, -.data$error_metrics_missing)
+    data_3 <- dplyr::select(data_3, -.data$error_metrics_missing)
   }
 
   data_out <- list("error_by_window" = data_1, "error_by_horizon" = data_2, "error_global" = data_3)
@@ -257,15 +257,15 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
 
     p <- ggplot()
     if (length(unique(data_plot$window_midpoint)) != 1) {
-      p <- p + geom_line(data = data_plot, aes(x = rlang::.data$window_midpoint,
-                                               y = rlang::.data$value,
-                                               color = rlang::.data$ggplot_color_group,
-                                               group = rlang::.data$ggplot_color_group), size = 1.05)
+      p <- p + geom_line(data = data_plot, aes(x = .data$window_midpoint,
+                                               y = .data$value,
+                                               color = .data$ggplot_color_group,
+                                               group = .data$ggplot_color_group), size = 1.05)
     }
-    p <- p + geom_point(data = data_plot, aes(x = rlang::.data$window_midpoint,
-                                              y = rlang::.data$value,
-                                              color = rlang::.data$ggplot_color_group,
-                                              group = rlang::.data$ggplot_color_group), show.legend = FALSE)
+    p <- p + geom_point(data = data_plot, aes(x = .data$window_midpoint,
+                                              y = .data$value,
+                                              color = .data$ggplot_color_group,
+                                              group = .data$ggplot_color_group), show.legend = FALSE)
     p <- p + scale_color_viridis_d()
     p <- p + facet_grid(error_metric ~ horizon, scales = "free")
     p <- p + theme_bw()
@@ -299,26 +299,26 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
 
     p <- ggplot()
     p <- p + geom_point(data = data_plot,
-                        aes(x = ordered(rlang::.data$horizon),
-                            y = rlang::.data$value,
-                            color = rlang::.data$ggplot_color_group,
-                            group = rlang::.data$ggplot_color_group), size = 1.05)
+                        aes(x = ordered(.data$horizon),
+                            y = .data$value,
+                            color = .data$ggplot_color_group,
+                            group = .data$ggplot_color_group), size = 1.05)
 
     if (length(unique(data_plot$horizon)) != 1) {
         p <- p + geom_line(data = data_plot,
-                           aes(x = ordered(rlang::.data$horizon),
-                               y = rlang::.data$value,
-                               color = rlang::.data$ggplot_color_group,
-                               group = rlang::.data$ggplot_color_group),
+                           aes(x = ordered(.data$horizon),
+                               y = .data$value,
+                               color = .data$ggplot_color_group,
+                               group = .data$ggplot_color_group),
                            size = 1.05, alpha = .20, show.legend = FALSE)
     }
 
     p <- p + geom_label(data = data_plot,
-                        aes(x = ordered(rlang::.data$horizon),
-                            y = rlang::.data$value,
-                            color = rlang::.data$ggplot_color_group,
-                            group = rlang::.data$ggplot_label_group,
-                            label = round(rlang::.data$value, 1)),
+                        aes(x = ordered(.data$horizon),
+                            y = .data$value,
+                            color = .data$ggplot_color_group,
+                            group = .data$ggplot_label_group,
+                            label = round(.data$value, 1)),
                         position = position_dodge(.5), show.legend = FALSE)
 
     p <- p + scale_color_viridis_d()
@@ -356,19 +356,19 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
 
     p <- ggplot(data_plot)
     p <- p + geom_bar(data = data_plot,
-                      aes(x = rlang::.data$model,
-                          y = rlang::.data$value,
-                          fill = rlang::.data$ggplot_fill_group,
-                          group = rlang::.data$ggplot_color_group),
+                      aes(x = .data$model,
+                          y = .data$value,
+                          fill = .data$ggplot_fill_group,
+                          group = .data$ggplot_color_group),
                       stat = "identity", position = position_dodge(width = 1))
     p <- p + geom_label(data = data_plot,
-                        aes(x = rlang::.data$model,
-                            y = rlang::.data$value,
-                            label = round(rlang::.data$value, 1),
-                            group = rlang::.data$ggplot_color_group),
+                        aes(x = .data$model,
+                            y = .data$value,
+                            label = round(.data$value, 1),
+                            group = .data$ggplot_color_group),
                         show.legend = FALSE, position = position_dodge(width = 1))
     p <- p + scale_fill_viridis_d()
-    p <- p + facet_grid(rlang::.data$error_metric ~ ., scales = "free")
+    p <- p + facet_grid(.data$error_metric ~ ., scales = "free")
     p <- p + theme_bw()
     p <- p + xlab("") + ylab("Forecast error metric") + labs(fill = "", alpha = NULL) +
       ggtitle("Forecast Error - Faceted by metric")

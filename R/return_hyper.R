@@ -99,7 +99,7 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
 
   type <- type[1]
 
-  data_results <- dplyr::distinct(data_results, rlang::.data$valid_indices, .keep_all = TRUE)
+  data_results <- dplyr::distinct(data_results, .data$valid_indices, .keep_all = TRUE)
 
   outcome_cols <- attributes(data_hyper)$outcome_cols
   outcome_names <- attributes(data_hyper)$outcome_names
@@ -139,22 +139,22 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
     if (length(hyper_num) > 0) {
       if (length(unique(data_hyper_num$window_number)) > 1) {
         p <- p + geom_line(data = data_hyper_num,
-                           aes(x = ordered(rlang::.data$window_number),
-                               y = rlang::.data$value,
-                               group = rlang::.data$group), alpha = .5)
+                           aes(x = ordered(.data$window_number),
+                               y = .data$value,
+                               group = .data$group), alpha = .5)
       }
       p <- p + geom_point(data = data_hyper_num,
-                          aes(x = ordered(rlang::.data$window_number),
-                              y = rlang::.data$value,
-                              group = rlang::.data$group))
+                          aes(x = ordered(.data$window_number),
+                              y = .data$value,
+                              group = .data$group))
     }
     if (length(hyper_cat) > 0) {
       p <- p + geom_bar(data = data_hyper_cat,
-                        aes(x = ordered(rlang::.data$window_number),
-                            fill = ordered(rlang::.data$value)),
+                        aes(x = ordered(.data$window_number),
+                            fill = ordered(.data$value)),
                         position = position_dodge(), alpha = .5)
     }
-    p <- p + facet_grid(rlang::.data$hyper ~ rlang::.data$horizon, scales = "free")
+    p <- p + facet_grid(hyper ~ horizon, scales = "free")
     p <- p + theme_bw()
     p <- p + xlab("Window number") + ylab("Hyperparameter value/count") +
       labs(color = "Horizon - Window", fill = "Hyper") + ggtitle("Hyperparameter Stability Across Validation Windows")
@@ -168,10 +168,10 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
     data_error_merge <- data_error$error_by_window
 
     data_error_merge <- dplyr::select(data_error_merge,
-                                      rlang::.data$model,
-                                      rlang::.data$horizon,
-                                      rlang::.data$window_number,
-                                      rlang::.data$error_metrics)
+                                      .data$model,
+                                      .data$horizon,
+                                      .data$window_number,
+                                      error_metrics)
     data_error_merge$model <- as.character(data_error_merge$model)
 
     if (length(hyper_num) > 0) {
@@ -192,24 +192,24 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
     if (length(hyper_num) > 0) {
       if (length(unique(data_hyper_num$window_number)) > 1) {
         p <- p + geom_line(data = data_hyper_num,
-                           aes(x = rlang::.data$value,
-                               y = rlang::.data$error,
-                               color = factor(rlang::.data$horizon)),
+                           aes(x = .data$value,
+                               y = .data$error,
+                               color = factor(.data$horizon)),
                            alpha = .5, show.legend = FALSE)
       }
       p <- p + geom_point(data = data_hyper_num,
-                          aes(x = rlang::.data$value,
-                              y = rlang::.data$error,
-                              color = factor(rlang::.data$horizon)), alpha = .5)
+                          aes(x = .data$value,
+                              y = .data$error,
+                              color = factor(.data$horizon)), alpha = .5)
     }
     if (length(hyper_cat) > 0) {
       p <- p + geom_bar(data = data_hyper_cat,
-                        aes(x = ordered(rlang::.data$value),
-                            fill = ordered(rlang::.data$horizon)),
+                        aes(x = ordered(.data$value),
+                            fill = ordered(.data$horizon)),
                         position = position_dodge(), alpha = .5)
     }
     p <- p + scale_color_viridis_d()
-    p <- p + facet_grid(rlang::.data$error_metric ~ rlang::.data$hyper, scales = "free")
+    p <- p + facet_grid(error_metric ~ hyper, scales = "free")
     p <- p + theme_bw()
     p <- p + xlab("Hyperparameter value") + ylab("Error metric") +
       labs(color = "Horizon") + ggtitle("Forecast Error and Hyperparameter Values - Faceted by horizon")
