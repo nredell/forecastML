@@ -2,7 +2,7 @@
 [![Travis Build
 Status](https://travis-ci.org/nredell/forecastML.svg?branch=master)](https://travis-ci.org/nredell/forecastML)
 
-# package::forecastML <img src="forecastML_logo.png" alt="forecastML logo" align="right" height="138.5" style="display: inline-block;">
+# package::forecastML <img src="./man/figures/forecastML_logo.png" alt="forecastML logo" align="right" height="138.5" style="display: inline-block;">
 
 The purpose of `forecastML` is to provide a series of functions and visualizations that simplify the process of 
 **multi-step-ahead direct forecasting with standard machine learning algorithms**. It's a wrapper package aimed at providing 
@@ -126,8 +126,8 @@ data_forecasts <- predict(model_results, prediction_function = list(prediction_f
 
 plot(data_forecasts, data_seatbelts[-(1:150), ], as.numeric(row.names(data_seatbelts[-(1:150), ])), horizons = c(1, 6, 12))
 ```
-![](./validation_data_forecasts.png)
-![](./forecasts.png)
+![](./tools/validation_data_forecasts.png)
+![](./tools/forecasts.png)
 
 ***
 
