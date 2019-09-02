@@ -86,6 +86,6 @@ model_results <- train_model(data_train, windows,
 
 # View the results for the model (a) trained on the first horizon
 # and (b) to be assessed on the first outer-loop validation window.
-model_results[[1]][[1]]$model
+model_results$horizon_1$window_1$model
 }
 }

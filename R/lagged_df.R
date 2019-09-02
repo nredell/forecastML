@@ -75,6 +75,7 @@
 #' @importFrom magrittr %>%
 #' @importFrom lubridate %m-%
 #' @importFrom rlang .data
+#' @importFrom purrr map2
 #'
 #' @export
 create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols = 1,
