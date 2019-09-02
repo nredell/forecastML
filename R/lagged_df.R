@@ -724,7 +724,7 @@ plot.lagged_df <- function(x, ...) {
 
     data_plot$horizon <- factor(data_plot$horizon, levels = sort(unique(as.numeric(data_plot$horizon))), ordered = TRUE)
 
-    p <- ggplot(data_plot, aes(x = time, y = horizon, fill = feature))
+    p <- ggplot(data_plot, aes(x = rlang::.data$time, y = rlang::.data$horizon, fill = rlang::.data$feature))
     p <- p + geom_tile(color = "gray85")
     p <- p + scale_fill_viridis_d()
     p <- p + geom_vline(xintercept = 0, size = 2)
@@ -751,7 +751,7 @@ plot.lagged_df <- function(x, ...) {
       data_plot_predictor <- data_plot_predictor[as.numeric(data_plot_predictor$horizon) %in% horizon, ]
       data_plot_predictor$horizon <- factor(data_plot_predictor$horizon, levels = sort(unique(as.numeric(data_plot_predictor$horizon))), ordered = TRUE)
 
-      p <- ggplot(data_plot_predictor, aes(x = time, y = horizon, fill = feature))
+      p <- ggplot(data_plot_predictor, aes(x = rlang::.data$time, y = rlang::.data$horizon, fill = rlang::.data$feature))
       p <- p + geom_tile(color = "gray85")
       p <- p + scale_fill_viridis_d()
       p <- p + geom_vline(xintercept = 0, size = 2)

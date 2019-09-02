@@ -394,10 +394,10 @@ plot.training_results <- function(x,
     # Create a dataset of points for those instances where there the outcomes are NA before and after a given instance.
     # Points are needed because ggplot will not plot a 1-instance geom_line().
     data_plot_point <- data_plot %>%
-      dplyr::group_by(ggplot_color_group) %>%
+      dplyr::group_by(rlang::.data$ggplot_color_group) %>%
       dplyr::mutate("lag" = dplyr::lag(eval(parse(text = outcome_names)), 1),
                     "lead" = dplyr::lead(eval(parse(text = outcome_names)), 1)) %>%
-      dplyr::filter(is.na(lag) & is.na(lead))
+      dplyr::filter(is.na(rlang::.data$lag) & is.na(rlang::.data$lead))
 
     data_plot_point$ggplot_color_group <- factor(data_plot_point$ggplot_color_group, ordered = TRUE, levels(data_plot$ggplot_color_group))
 
@@ -420,28 +420,35 @@ plot.training_results <- function(x,
 
     if (type == "prediction") {
 
-      p <- ggplot(data_plot[data_plot$outcome != outcome_names, ], aes(x = index, y = value, group = ggplot_color_group, color = ggplot_color_group))
+      p <- ggplot(data_plot[data_plot$outcome != outcome_names, ],
+                  aes(x = rlang::.data$index, y = rlang::.data$value,
+                      group = rlang::.data$ggplot_color_group, color = rlang::.data$ggplot_color_group))
       p <- p + geom_line(size = 1.05, linetype = 1)
 
       if (is.null(groups)) {
 
-        p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ], aes(x = index, y = value), color = "grey50")
+        p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
+                           aes(x = rlang::.data$index, y = rlang::.data$value), color = "grey50")
 
       } else {
 
-        p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ], aes(x = index, y = value, group = ggplot_color_group,
-                                                                                       color = ggplot_color_group), linetype = 2)
+        p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
+                           aes(x = rlang::.data$index, y = rlang::.data$value,
+                               group = rlang::.data$ggplot_color_group,
+                               color = rlang::.data$ggplot_color_group), linetype = 2)
       }
 
     } else if (type == "residual") {
 
-      p <- ggplot(data_plot[data_plot$outcome != outcome_names, ], aes(x = index, y = residual, group = ggplot_color_group, color = ggplot_color_group))
+      p <- ggplot(data_plot[data_plot$outcome != outcome_names, ],
+                  aes(x = rlang::.data$index, y = rlang::.data$residual,
+                      group = rlang::.data$ggplot_color_group, color = rlang::.data$ggplot_color_group))
       p <- p + geom_line(size = 1.05, linetype = 1)
       p <- p + geom_hline(yintercept = 0)
     }
 
     p <- p + scale_color_viridis_d()
-    p <- p + facet_grid(horizon ~ ., drop = TRUE)
+    p <- p + facet_grid(rlang::.data$horizon ~ ., drop = TRUE)
     p <- p + theme_bw()
       if (type == "prediction") {
         p <- p + xlab("Dataset index/row") + ylab("Outcome") + labs(color = "Model") +
@@ -475,14 +482,20 @@ plot.training_results <- function(x,
 
       p <- ggplot()
       if (max(data_plot$horizon) != 1) {
-        p <- p + geom_line(data = data_plot, aes(x = forecast_origin, y = eval(parse(text = paste0(outcome_names, "_pred"))), color = factor(model)), size = 1, linetype = 1, show.legend = FALSE)
+        p <- p + geom_line(data = data_plot, aes(x = rlang::.data$forecast_origin,
+                                                 y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                                                 color = factor(rlang::.data$model)), size = 1, linetype = 1, show.legend = FALSE)
       }
-      p <- p + geom_point(data = data_plot, aes(x = forecast_origin, y = eval(parse(text = paste0(outcome_names, "_pred"))), color = factor(model)))
-      p <- p + geom_point(data = data_plot, aes(x = valid_indices, y = eval(parse(text = outcome_names)), fill = "Actual"))
+      p <- p + geom_point(data = data_plot, aes(x = rlang::.data$forecast_origin,
+                                                y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                                                color = factor(rlang::.data$model)))
+      p <- p + geom_point(data = data_plot, aes(x = rlang::.data$valid_indices,
+                                                y = eval(parse(text = outcome_names)), fill = "Actual"))
       p <- p + scale_color_viridis_d()
       p <- p + facet_wrap(~ valid_indices)
 
-      p <- p + geom_line(data = data_outcome, aes(x = index, y = eval(parse(text = outcome_names))), color = "gray50")
+      p <- p + geom_line(data = data_outcome, aes(x = rlang::.data$index,
+                                                  y = eval(parse(text = outcome_names))), color = "gray50")
       p <- p + theme_bw()
       p <- p + xlab("Dataset index/row") + ylab("Outcome") + labs(color = "Model") + labs(fill = NULL) +
         ggtitle("Rolling Origin Forecast Stability - Faceted by dataset index/row")
@@ -493,22 +506,26 @@ plot.training_results <- function(x,
   if (type %in% c("forecast_variability")) {
 
     data_plot_summary <- data_plot %>%
-      dplyr::group_by(model, valid_indices, window_length, window_number) %>%
-      dplyr::summarise("cov" = abs(sd(eval(parse(text = paste0(outcome_names, "_pred"))), na.rm = TRUE) / mean(eval(parse(text = paste0(outcome_names, "_pred"))), na.rm = TRUE))) %>%
-      dplyr::distinct(model, valid_indices, window_length, .keep_all = TRUE)
+      dplyr::group_by(rlang::.data$model, rlang::.data$valid_indices,
+                      rlang::.data$window_length, rlang::.data$window_number) %>%
+      dplyr::summarise("cov" = base::abs(stats::sd(eval(parse(text = paste0(outcome_names, "_pred"))), na.rm = TRUE) / mean(eval(parse(text = paste0(outcome_names, "_pred"))), na.rm = TRUE))) %>%
+      dplyr::distinct(rlang::.data$model, rlang::.data$valid_indices,
+                      rlang::.data$window_length, .keep_all = TRUE)
     data_plot_summary$group <- with(data_plot_summary, paste0(window_length))
     data_plot_summary$group <- ordered(data_plot_summary$group)
 
     data_outcome <- data_plot_summary
     data_outcome$window_number <- NULL
-    data_outcome <- dplyr::distinct(data_outcome, valid_indices, window_length, .keep_all = TRUE)
+    data_outcome <- dplyr::distinct(data_outcome, rlang::.data$valid_indices,
+                                    rlang::.data$window_length, .keep_all = TRUE)
 
     data_outcome <- dplyr::left_join(data_outcome, data_plot, by = c("model", "valid_indices", "window_length"))
-    data_outcome <- dplyr::distinct(data_outcome, valid_indices, window_length, .keep_all = TRUE)
+    data_outcome <- dplyr::distinct(data_outcome, rlang::.data$valid_indices,
+                                    rlang::.data$window_length, .keep_all = TRUE)
 
     # For each plot facet, create columns to min-max scale the original time-series data.
     data_outcome <- data_outcome %>%
-      dplyr::group_by(window_length) %>%
+      dplyr::group_by(rlang::.data$window_length) %>%
       dplyr::mutate("min_scale" = min(cov, na.rm = TRUE),
                     "max_scale" = max(cov, na.rm = TRUE)) %>%
       dplyr::ungroup()
@@ -517,9 +534,17 @@ plot.training_results <- function(x,
                                       (max(data_outcome[, outcome_names, drop = TRUE], na.rm = TRUE) - min(data_outcome[, outcome_names, drop = TRUE], na.rm = TRUE))) + data_outcome$min_scale
 
     p <- ggplot()
-    p <- p + geom_line(data = data_plot_summary, aes(x = valid_indices, y = cov, color = factor(model), group = paste0(model, window_number)), size = 1, linetype = 1, alpha = .50)
-    p <- p + geom_point(data = data_plot_summary, aes(x = valid_indices, y = cov, color = factor(model), group = paste0(model, window_number)), show.legend = FALSE)
-    p <- p + geom_line(data = data_outcome, aes(valid_indices, outcome_scaled, group = window_number), color = "grey50")
+    p <- p + geom_line(data = data_plot_summary, aes(x = rlang::.data$valid_indices,
+                                                     y = rlang::.data$cov, color = factor(rlang::.data$model),
+                                                     group = paste0(rlang::.data$model, rlang::.data$window_number)), size = 1,
+                       linetype = 1, alpha = .50)
+    p <- p + geom_point(data = data_plot_summary, aes(x = rlang::.data$valid_indices,
+                                                      y = rlang::.data$cov,
+                                                      color = factor(rlang::.data$model),
+                                                      group = paste0(rlang::.data$model, rlang::.data$window_number)),
+                        show.legend = FALSE)
+    p <- p + geom_line(data = data_outcome, aes(rlang::.data$valid_indices, rlang::.data$outcome_scaled,
+                                                group = rlang::.data$window_number), color = "grey50")
     p <- p + scale_color_viridis_d()
     p <- p + theme_bw()
     p <- p + xlab("Dataset index/row") + ylab("Coefficient of variation (Abs)") + labs(color = "Model") +
@@ -627,15 +652,15 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
     if (1 %in% horizons) {  # Use geom_point instead of geom_line to plot a 1-step-ahead forecast.
 
       p <- p + geom_point(data = data_forecast[data_forecast$model_forecast_horizon == 1, ],
-                          aes(x = forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
-                              color = plot_group, group = plot_group), show.legend = FALSE)
+                          aes(x = rlang::.data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                              color = rlang::.data$plot_group, group = rlang::.data$plot_group), show.legend = FALSE)
       }
 
     if (!all(1 == horizons)) {  # Plot forecasts for model forecast horizons > 1.
 
       p <- p + geom_line(data = data_forecast[data_forecast$model_forecast_horizon != 1, ],
-                         aes(x = forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
-                             color = plot_group, group = plot_group))
+                         aes(x = rlang::.data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                             color = rlang::.data$plot_group, group = rlang::.data$plot_group))
       }
 
     p <- p + geom_vline(xintercept = attributes(data_forecast)$data_stop, color = "red")
@@ -646,10 +671,13 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
       data_actual$plot_group <- ordered(data_actual$plot_group, levels = unique(data_actual$plot_group))
 
       if (is.null(groups)) {
-        p <- p + geom_line(data = data_actual, aes(x = index, y = eval(parse(text = outcome_names))), color = "grey50")
+        p <- p + geom_line(data = data_actual, aes(x = rlang::.data$index,
+                                                   y = eval(parse(text = outcome_names))), color = "grey50")
       } else {
-        p <- p + geom_line(data = data_actual, aes(x = index, y = eval(parse(text = outcome_names)),
-                                                   color = plot_group, group = plot_group))
+        p <- p + geom_line(data = data_actual, aes(x = rlang::.data$index,
+                                                   y = eval(parse(text = outcome_names)),
+                                                   color = rlang::.data$plot_group,
+                                                   group = rlang::.data$plot_group))
       }
     }
 

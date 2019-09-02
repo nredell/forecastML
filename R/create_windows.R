@@ -165,7 +165,7 @@ create_windows <- function(lagged_df, window_length = 12,
 #' @export
 plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, ...) {
 
-  x <- windows
+  windows <- x
 
   data <- lagged_df
 
@@ -220,11 +220,11 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
   if (isTRUE(show_labels) || missing(show_labels)) {
 
     data_plot_group <- data_windows %>%
-      dplyr::group_by(window_length, window) %>%
-      dplyr::summarise("index" = start + ((stop - start) / 2))  # Window midpoint for plot label.
+      dplyr::group_by(rlang::.data$window_length, rlang::.data$window) %>%
+      dplyr::summarise("index" = rlang::.data$start + ((rlang::.data$stop - rlang::.data$start) / 2))  # Window midpoint for plot label.
     data_plot_group$label_height <- ifelse(min(data_plot[, 1:n_outcomes], na.rm = TRUE) < 0,
-                                           (max(data_plot[, 1:n_outcomes], na.rm = TRUE) - abs(min(data_plot[, 1:n_outcomes], na.rm = TRUE))) / 2,
-                                           (max(data_plot[, 1:n_outcomes], na.rm = TRUE) + abs(min(data_plot[, 1:n_outcomes], na.rm = TRUE))) / 2)
+                                           (max(data_plot[, 1:n_outcomes], na.rm = TRUE) - base::abs(min(data_plot[, 1:n_outcomes], na.rm = TRUE))) / 2,
+                                           (max(data_plot[, 1:n_outcomes], na.rm = TRUE) + base::abs(min(data_plot[, 1:n_outcomes], na.rm = TRUE))) / 2)
     data_plot_group <- data_plot_group[!is.na(data_plot_group$window), ]
   }
   #----------------------------------------------------------------------------
@@ -242,10 +242,10 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
     # Create a dataset of points for those instances where there the outcomes are NA before and after a given instance.
     # Points are needed because ggplot will not plot a 1-instance geom_line().
     data_plot_point <- data_plot %>%
-      dplyr::group_by(ggplot_color_group) %>%
+      dplyr::group_by(rlang::.data$ggplot_color_group) %>%
       dplyr::mutate("lag" = dplyr::lag(eval(parse(text = outcome_names)), 1),
                     "lead" = dplyr::lead(eval(parse(text = outcome_names)), 1)) %>%
-      dplyr::filter(is.na(lag) & is.na(lead))
+      dplyr::filter(is.na(rlang::.data$lag) & is.na(rlang::.data$lead))
 
     data_plot_point$ggplot_color_group <- factor(data_plot_point$ggplot_color_group, ordered = TRUE, levels(data_plot$ggplot_color_group))
   } else {
@@ -254,21 +254,21 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
   #----------------------------------------------------------------------------
 
   p <- ggplot()
-  p <- p + geom_rect(data = windows, aes(xmin = start, xmax = stop,
+  p <- p + geom_rect(data = windows, aes(xmin = rlang::.data$start, xmax = rlang::.data$stop,
                                          ymin = -Inf, ymax = Inf), fill = "grey85", show.legend = FALSE)
-  p <- p + geom_line(data = data_plot, aes(x = index, y = eval(parse(text = outcome_names)), color = ggplot_color_group),
-                     size = 1.05)
+  p <- p + geom_line(data = data_plot, aes(x = rlang::.data$index, y = eval(parse(text = outcome_names)),
+                                           color = rlang::.data$ggplot_color_group), size = 1.05)
 
   if (!is.null(groups)) {
     if (nrow(data_plot_point) >= 1) {
-      p <- p + geom_point(data = data_plot_point, aes(x = index, y = eval(parse(text = outcome_names)), color = ggplot_color_group),
-                          show.legend = FALSE)
+      p <- p + geom_point(data = data_plot_point, aes(x = rlang::.data$index, y = eval(parse(text = outcome_names)),
+                                                      color = rlang::.data$ggplot_color_group), show.legend = FALSE)
     }
   }
 
   if (isTRUE(show_labels) || missing(show_labels)) {
-    p <- p + geom_label(data = data_plot_group, aes(x = index, y = label_height, label = window),
-                        color = "black", size = 4)
+    p <- p + geom_label(data = data_plot_group, aes(x = rlang::.data$index, y = rlang::.data$label_height,
+                                                    label = rlang::.data$window), color = "black", size = 4)
   }
 
   p <- p + theme_bw()
