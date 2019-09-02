@@ -4,12 +4,10 @@ author: "Nickalus Redell, nickalusredell@gmail.com"
 date: "`r lubridate::today()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{my-vignette}
+  %\VignetteIndexEntry{Custom Feature Lags}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
-***
 
 ## Purpose
 
@@ -23,7 +21,7 @@ outcome--e.g., 3 and 12 months for monthly data--is a good place to start.
 ***
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(fig.width = 9, fig.height = 6)
+knitr::opts_chunk$set(fig.width = 6, fig.height = 4)
 ```
 
 
@@ -49,7 +47,7 @@ DT::datatable(head(data, 5))
 * Dates are optional for forecasting with non-grouped data, but we'll add a date column here to 
 illustrate the functionality.
 
-* The data set does not come with a date column, but the data was collected monthly from 1969 
+* The dataset does not come with a date column, but the data was collected monthly from 1969 
 through 1984. This actually works out nicely because dates are passed in a separate argument, 
 `dates`, in `forecastML::create_lagged_df()`.
 
