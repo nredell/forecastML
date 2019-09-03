@@ -43,5 +43,6 @@ Suggests:
     knitr (>= 1.22),
     rmarkdown (>= 1.12.6),
     xgboost (>= 0.82.1),
-    randomForest (>= 4.6.14)
+    randomForest (>= 4.6.14),
+    htmltools
 VignetteBuilder: knitr
