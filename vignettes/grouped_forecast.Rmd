@@ -277,22 +277,15 @@ could potentially be trained here.
 * We'll train the models in parallel with the `use_future = TRUE` argument.
 
 ```{r}
-future::plan(future::multiprocess)  # Multi-core or multi-session parallel training.
+#future::plan(future::multiprocess)  # Multi-core or multi-session parallel training.
 
 model_results_cv <- forecastML::train_model(lagged_df = data_train,
                                             windows = windows,
                                             model_function = model_function, 
                                             model_name = "xgboost",
-                                            use_future = TRUE)
+                                            use_future = FALSE)
 ```
 
-```{r, eval = FALSE, include = FALSE}
-save(model_results_cv, file = "model_results_cv.rda")
-```
-
-```{r, eval = FALSE, include = FALSE}
-load(file = "model_results_cv.rda")
-```
 
 ```{r}
 print(paste0("The class of `model_results_cv` is ", class(model_results_cv)))
@@ -440,22 +433,15 @@ p
 ***
 
 ```{r}
-future::plan(future::multiprocess)
+#future::plan(future::multiprocess)
 
 model_results_no_cv <- forecastML::train_model(lagged_df = data_train, 
                                                windows = windows,
                                                model_function = model_function, 
                                                model_name = "xgboost",
-                                               use_future = TRUE)
+                                               use_future = FALSE)
 ```
 
-```{r, eval = FALSE, include = FALSE}
-save(model_results_cv, file = "model_results_no_cv.rda")
-```
-
-```{r, eval = FALSE, include = FALSE}
-load(file = "model_results_no_cv.rda")
-```
 
 ```{r}
 print(paste0("The class of `model_results_no_cv` is ", class(model_results_no_cv)))

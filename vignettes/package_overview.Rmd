@@ -9,10 +9,14 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, echo=FALSE}
-htmltools::img(src = knitr::image_uri("forecastML_logo.png"), 
-               alt = 'logo', 
-               style = 'position:absolute; top:0; right:0; padding:5px; width: 150px; height: 160px;')
+
+![](forecastML_logo.png){width=150px, height=160px}
+
+```{r, eval = FALSE, echo = FALSE, out.extra = 'style = "position:absolute; top:0; right:0; padding:5px; width: 150px; height: 160px;"'}
+# htmltools::img(src = knitr::image_uri("forecastML_logo.png"), 
+#                alt = 'logo', 
+#                style = 'position:absolute; top:0; right:0; padding:5px; width: 150px; height: 160px;')
+#knitr::include_graphics("forecastML_logo.png")
 ```
 
 # Purpose
@@ -57,9 +61,11 @@ forecast model using lagged features. Though predictor lags greater than 12 step
 additional historical predictive information, a 12-step-horizon direct forecast model requires predictor lags >= 12. 
 This animation is roughly equivalent to how a 12-period seasonal ARIMA(0, 0, 0)(1, 0, 0) model uses historical data to produce forecasts.
 
-```{r echo = FALSE, out.width="600px", out.height="400px"}
+```{r, eval = FALSE, echo = FALSE, out.width="600px", out.height="400px"}
 knitr::include_graphics("direct_forecasting.gif")
 ```
+
+![](direct_forecasting.gif){width=600px, height=400px}
 
 <br>
 

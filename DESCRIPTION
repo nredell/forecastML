@@ -1,16 +1,10 @@
 Package: forecastML
 Type: Package
 Title: Time-Series Forecasting with Machine Learning Methods
-Version: 0.3.2
+Version: 0.3.3
 Author: Nickalus Redell
 Maintainer: Nickalus Redell <nickalusredell@gmail.com>
-Description: The purpose of forecastML is to simplify the process of multi-step-ahead direct 
-    forecasting with standard machine learning algorithms. It's aimed at helping the user 
-    quickly assess the (a) accuracy, (b) stability, 
-    and (c) generalizability of single-outcome forecasts and groups of single-outcome forecasts produced from potentially high-dimensional 
-    modeling datasets. This package is inspired by Bergmeir, Hyndman, and Koo's 2018 paper 
-    "A note on the validity of cross-validation for evaluating autoregressive time series prediction" 
-    <https://robjhyndman.com/papers/cv-wp.pdf>. 
+Description: The purpose of forecastML is to provide a series of functions and visualizations that simplify the process of multi-step-ahead direct forecasting with standard machine learning algorithms. It's a wrapper package aimed at providing maximum flexibility in model-building--choose any machine learning algorithm from any R package--while helping the user quickly assess the (a) accuracy, (b) stability, and (c) generalizability of grouped (i.e., multiple related time-series) and ungrouped single-outcome forecasts produced from potentially high-dimensional modeling datasets. This package is inspired by Bergmeir, Hyndman, and Koo's 2018 paper "A note on the validity of cross-validation for evaluating autoregressive time series prediction" <https://robjhyndman.com/papers/cv-wp.pdf>. 
 License: MIT + file LICENSE
 URL: https://github.com/nredell/forecastML/
 Encoding: UTF-8
@@ -44,5 +38,5 @@ Suggests:
     rmarkdown (>= 1.12.6),
     xgboost (>= 0.82.1),
     randomForest (>= 4.6.14),
-    htmltools
+    htmltools (>= 0.3.6)
 VignetteBuilder: knitr
