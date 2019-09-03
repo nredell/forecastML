@@ -42,5 +42,6 @@ Suggests:
     DT (>= 0.5),
     knitr (>= 1.22),
     rmarkdown (>= 1.12.6),
-    xgboost (>= 0.82.1)
+    xgboost (>= 0.82.1),
+    randomForest (>= 4.6.14)
 VignetteBuilder: knitr

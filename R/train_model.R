@@ -448,7 +448,7 @@ plot.training_results <- function(x,
     }
 
     p <- p + scale_color_viridis_d()
-    p <- p + facet_grid(.data$horizon ~ ., drop = TRUE)
+    p <- p + facet_grid(horizon ~ ., drop = TRUE)
     p <- p + theme_bw()
       if (type == "prediction") {
         p <- p + xlab("Dataset index/row") + ylab("Outcome") + labs(color = "Model") +

@@ -62,7 +62,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 
     data_test$forecast_period <- test_indices
 
-    data_test <- dplyr::select(data_test, .data$forecast_period, .data$outcome_names, !!groups)
+    data_test <- dplyr::select(data_test, .data$forecast_period, outcome_names, !!groups)
 
     data <- dplyr::inner_join(data, data_test, by = c("forecast_period", groups))
   }
@@ -172,8 +172,8 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
     if (is.null(data_test)) {  #  data_1 is an empty data.frame for forecast error results and dplyr::select throws an error.
       data_1 <- dplyr::select(data_1, -error_metrics_missing)
     }
-    data_2 <- dplyr::select(data_2, -.data$error_metrics_missing)
-    data_3 <- dplyr::select(data_3, -.data$error_metrics_missing)
+    data_2 <- dplyr::select(data_2, -error_metrics_missing)
+    data_3 <- dplyr::select(data_3, -error_metrics_missing)
   }
 
   data_out <- list("error_by_window" = data_1, "error_by_horizon" = data_2, "error_global" = data_3)
