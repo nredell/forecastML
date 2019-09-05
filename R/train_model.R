@@ -65,18 +65,33 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
   window_indices <- windows
 
   #----------------------------------------------------------------------------
-  # Setting the model training loops to parallel processing depending on user input.
+  # The default future behavior is to parallelize the model training over the longer dimension: (a) number of
+  # forecast horizons or (b) number of validation windows. This is due to a current limitation
+  # in the future package on changing object size limitations for nested futures where "options(globals.maxSize.default = Inf)" isn't recognized.
   if (isTRUE(use_future)) {
-    lapply_function <- future.apply::future_lapply
+
+    if (length(horizons) > nrow(windows)) {
+
+      lapply_across_horizons <- future.apply::future_lapply
+      lapply_across_val_windows <- base::lapply
+
+    } else {
+
+      lapply_across_horizons <- base::lapply
+      lapply_across_val_windows <- future.apply::future_lapply
+    }
+
   } else {
-    lapply_function <- lapply
+
+    lapply_across_horizons <- base::lapply
+    lapply_across_val_windows <- base::lapply
   }
   #----------------------------------------------------------------------------
 
   # Seq along model forecast horizon > cross-validation windows.
-  data_out <- lapply_function(data, function(data) {  # model forecast horizon.
+  data_out <- lapply_across_horizons(data, function(data) {  # model forecast horizon.
 
-    model_plus_valid_data <- lapply_function(1:nrow(window_indices), function(i) {  # validation windows within model forecast horizon.
+    model_plus_valid_data <- lapply_across_val_windows(1:nrow(window_indices), function(i) {  # validation windows within model forecast horizon.
 
       window_length <- window_indices[i, "window_length"]
 
