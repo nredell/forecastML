@@ -6,5 +6,4 @@ inst/doc
 .Ruserdata
 vignettes/*.html
 vignettes/*.R
-doc
 Meta
