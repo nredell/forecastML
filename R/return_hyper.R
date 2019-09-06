@@ -4,7 +4,7 @@
 #' the stability of hyperparameters in the nested cross-validation and across
 #' forecast horizons.
 #'
-#' @param forecast_model An object of class 'forecast_model' from \code{train_model()}.
+#' @param forecast_model An object of class 'forecast_model' from \code{\link{train_model}}.
 #' @param hyper_function A user-defined function for retrieving model hyperparameters. See the
 #' example below for details.
 #' @return An S3 object of class 'forecast_model_hyper': A data.frame of model-specific hyperparameters.

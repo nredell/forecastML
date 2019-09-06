@@ -5,8 +5,8 @@
 #' performs any inner-loop cross-validation. These models can, however, be trained in parallel
 #' with the \code{future} package.
 #'
-#' @param lagged_df An object of class 'lagged_df' from \code{create_lagged_df}.
-#' @param windows An object of class 'windows' from \code{create_windows}.
+#' @param lagged_df An object of class 'lagged_df' from \code{\link{create_lagged_df}}.
+#' @param windows An object of class 'windows' from \code{\link{create_windows}}.
 #' @param model_function A user-defined wrapper function for model training that takes 2
 #' positional arguments--(1) a data.frame made with \code{create_lagged_df} and
 #' (2) the column index of the modeled outcome--and returns a model which is used
@@ -312,9 +312,9 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
 #' Several diagnostic plots can be returned to assess the quality of the forecats
 #' based on predictions on the outer-loop validation datasets.
 #'
-#' @param x An object of class 'training_results' from \code{predict.forecast_model}.
+#' @param x An object of class 'training_results' from \code{predict.forecast_mode()l}.
 #' @param type Plot type, default is "prediction" for hold-out sample predictions.
-#' @param models Optional. Filter results by user-defined model name from \code{train_model}.
+#' @param models Optional. Filter results by user-defined model name from \code{train_model()}.
 #' @param horizons Optional. Filter results by horizon.
 #' @param windows Optional. Filter results by validation window number.
 #' @param valid_indices Optional. Filter results by validation row indices or dates.

@@ -4,7 +4,7 @@
 #' of trained models in at various times in the past. These validation datasets are similar to
 #' the outer loop of a nested cross-validation model training setup.
 #'
-#' @param lagged_df An object of class 'lagged_df' or'grouped_lagged_df' from \code{\link{create_lagged_df}}.
+#' @param lagged_df An object of class 'lagged_df' or 'grouped_lagged_df' from \code{\link{create_lagged_df}}.
 #' @param window_length An integer that defines the length of the contiguous validation dataset in dataset rows/dates.
 #' If dates were given in \code{create_lagged_df}, the validation window is 'window_length' * 'date frequency' in calendar time.
 #' Setting \code{window_length = 0} trains the model on the entire dataset--used for re-training after examining
