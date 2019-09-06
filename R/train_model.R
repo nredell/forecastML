@@ -9,7 +9,7 @@
 #' @param windows An object of class 'windows' from \code{\link{create_windows}}.
 #' @param model_function A user-defined wrapper function for model training that takes 2
 #' positional arguments--(1) a data.frame made with \code{create_lagged_df} and
-#' (2) the column index of the modeled outcome--and returns a model which is used
+#' (2) the column index of the modeled outcome--and returns a model object which is used
 #' as input in the user-defined prediction function (see example).
 #' @param model_name A name for the model. Required.
 #' @param use_future Boolean. If \code{TRUE}, the \code{future} package is used for training models in parallel.
@@ -162,7 +162,13 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
 #' predictions are returned for the horizons specified in \code{create_lagged_df()}.
 #'
 #' @param ... One or more trained models from \code{train_model()}.
-#' @param prediction_function A list of user-defined prediction functions. See the example below for details.
+#' @param prediction_function A list of user-defined prediction functions with length equal to
+#' the number of models supplied in \code{...}. The prediction functions
+#' take 2 required positional arguments--(1) a 'forecast_model' object from \code{train_model()} and (2) a
+#' data.frame of model features from \code{create_lagged_df()}--and return a 1- or 3-column data.frame
+#' of model predictions. If the prediction function returns a 1-column data.frame, point forecasts are assumed.
+#' If the prediction function returns a 3-column data.frame, lower and upper forecast bounds are assumed (the
+#' order of the 3 columns does not matter). See the example below for details.
 #' @param data_forecast If \code{NULL}, predictions are returned for the validation datasets in each 'forecast_model' in .... If
 #' an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")}, forecasts from 1:h.
 #' @return If \code{data_forecast = NULL}, an S3 object of class 'training_results' object. If
@@ -235,7 +241,24 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
           }
         }
 
-        names(data_pred) <- paste0(outcome_names, "_pred")  # 'data_pred' is a 1-column data.frame.
+        if (!ncol(data_pred) %in% c(1, 3)) {
+          stop("The user-defined prediction function needs to return 1- or 3-column data.frame of model predictions.")
+        }
+
+        if (ncol(data_pred) == 1) {
+
+          names(data_pred) <- paste0(outcome_names, "_pred")
+
+        } else {
+
+          # Find the lower, point, and upper forecasts and order the columns accordingly.
+          data_pred <- data_pred[order(unlist(lapply(data_pred, mean, na.rm = TRUE)))]
+
+          names(data_pred) <- c(paste0(outcome_names, "_pred_lower"), paste0(outcome_names, "_pred"), paste0(outcome_names, "_pred_upper"))
+
+          # Re-order so that the point forecast is first.
+          data_pred <- data_pred[, c(2, 1, 3)]
+        }
 
         model_name <- attributes(model_list[[i]])$model_name
 
@@ -281,9 +304,9 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
         data_temp
       })  # End cross-validation window predictions.
       data_win_num <- dplyr::bind_rows(data_win_num)
-    })  # End horizon-level predictions
+    })  # End horizon-level predictions.
     data_horizon <- dplyr::bind_rows(data_horizon)
-  })
+  })  # End model-level predictions.
   data_out <- dplyr::bind_rows(data_model)
 
   data_out <- as.data.frame(data_out)
@@ -443,7 +466,17 @@ plot.training_results <- function(x,
       p <- ggplot(data_plot[data_plot$outcome != outcome_names, ],
                   aes(x = .data$index, y = .data$value,
                       group = .data$ggplot_color_group, color = .data$ggplot_color_group))
+
       p <- p + geom_line(size = 1.05, linetype = 1)
+
+      # If the plotting data.frame has bother lower and upper forecasts plot these bounds.
+      if (c(all(any(grepl("_pred_lower", names(data_plot))), any(grepl("_pred_upper", names(data_plot)))))) {
+
+        p <- p + geom_ribbon(data = data_plot[data_plot$outcome == outcome_names, ],
+                             aes(x = .data$index, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
+                                 ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
+                                 fill = .data$ggplot_color_group, color = NULL), alpha = .25, show.legend = FALSE)
+      }
 
       if (is.null(groups)) {
 
@@ -455,7 +488,7 @@ plot.training_results <- function(x,
         p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
                            aes(x = .data$index, y = .data$value,
                                group = .data$ggplot_color_group,
-                               color = .data$ggplot_color_group), linetype = 2)
+                               color = NULL), linetype = 2)
       }
 
     } else if (type == "residual") {
@@ -583,11 +616,12 @@ plot.training_results <- function(x,
 #' @param data_actual A data.frame containing the target/outcome name and any grouping columns.
 #' @param actual_indices Required if 'data_actual' is given. A vector or 1-column data.frame of numeric row indices or dates (class'Date') with length nrow(data_actual).
 #' The data can be historical and/or holdout/test data, forecasts and actuals are matched by row.names().
-#' @param models Filter results by user-defined model name from \code{train_model} (optional).
-#' @param horizons Filter results by horizon (optional).
-#' @param windows Filter results by validation window number (optional).
-#' @param facet_plot Adjust the plot display through ggplot2::facet_grid(). facet_plot = NULL plots results in one facet.
-#' @param group_filter A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").
+#' @param models Optional. Filter results by user-defined model name from \code{train_model()}.
+#' @param horizons Optional. Filter results by horizon.
+#' @param windows Optional. Filter results by validation window number.
+#' @param facet_plot Adjust the plot display through \code{ggplot2::facet_grid()}.
+#' \code{facet_plot = NULL} plots results in one facet.
+#' @param group_filter Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
 #' @param ... Arguments passed to \code{base::plot}
 #' @return Forecast plot of class 'ggplot'.
 #' @export
@@ -676,11 +710,21 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
                               color = .data$plot_group, group = .data$plot_group), show.legend = FALSE)
       }
 
-    if (!all(1 == horizons)) {  # Plot forecasts for model forecast horizons > 1.
+    if (!all(horizons == 1)) {  # Plot forecasts for model forecast horizons > 1.
 
       p <- p + geom_line(data = data_forecast[data_forecast$model_forecast_horizon != 1, ],
                          aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
                              color = .data$plot_group, group = .data$plot_group))
+
+      # If the plotting data.frame has bother lower and upper forecasts plot these bounds.
+      if (c(all(any(grepl("_pred_lower", names(data_plot))), any(grepl("_pred_upper", names(data_plot)))))) {
+
+        p <- p + geom_ribbon(data = data_forecast[data_forecast$model_forecast_horizon != 1, ],
+                             aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
+                                 ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
+                                 fill = .data$plot_group, color = NULL), alpha = .25, show.legend = FALSE)
+      }
+
       }
 
     p <- p + geom_vline(xintercept = attributes(data_forecast)$data_stop, color = "red")

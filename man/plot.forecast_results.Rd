@@ -17,15 +17,16 @@
 \item{actual_indices}{Required if 'data_actual' is given. A vector or 1-column data.frame of numeric row indices or dates (class'Date') with length nrow(data_actual).
 The data can be historical and/or holdout/test data, forecasts and actuals are matched by row.names().}
 
-\item{models}{Filter results by user-defined model name from \code{train_model} (optional).}
+\item{models}{Optional. Filter results by user-defined model name from \code{train_model()}.}
 
-\item{horizons}{Filter results by horizon (optional).}
+\item{horizons}{Optional. Filter results by horizon.}
 
-\item{windows}{Filter results by validation window number (optional).}
+\item{windows}{Optional. Filter results by validation window number.}
 
-\item{facet_plot}{Adjust the plot display through ggplot2::facet_grid(). facet_plot = NULL plots results in one facet.}
+\item{facet_plot}{Adjust the plot display through \code{ggplot2::facet_grid()}.
+\code{facet_plot = NULL} plots results in one facet.}
 
-\item{group_filter}{A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").}
+\item{group_filter}{Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).}
 
 \item{...}{Arguments passed to \code{base::plot}}
 }

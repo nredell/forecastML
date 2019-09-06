@@ -34,7 +34,8 @@ model_results <- train_model(data_train, windows,
 # The predict() wrapper takes two positional arguments. First,
 # the returned model from the user-defined modeling function (model_function() above).
 # Second, a data.frame of predictors--lagged predictors will be created automatically
-# using create_lagged_df().
+# using create_lagged_df() internally. The function can return a 1- or 3-column data.frame with either (a) point
+# forecasts or (b) point forecasts plus lower and upper forecast bounds (column order or names do not matter).
 prediction_function <- function(model, data_features) {
 
   x <- as.matrix(data_features, ncol = ncol(data_features))
