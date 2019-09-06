@@ -717,7 +717,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
                              color = .data$plot_group, group = .data$plot_group))
 
       # If the plotting data.frame has bother lower and upper forecasts plot these bounds.
-      if (c(all(any(grepl("_pred_lower", names(data_plot))), any(grepl("_pred_upper", names(data_plot)))))) {
+      if (c(all(any(grepl("_pred_lower", names(data_forecast))), any(grepl("_pred_upper", names(data_forecast)))))) {
 
         p <- p + geom_ribbon(data = data_forecast[data_forecast$model_forecast_horizon != 1, ],
                              aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
