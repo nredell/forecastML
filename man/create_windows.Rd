@@ -15,17 +15,17 @@ If dates were given in \code{create_lagged_df}, the validation window is 'window
 Setting \code{window_length = 0} trains the model on the entire dataset--used for re-training after examining
 the cross-validation results.}
 
-\item{window_start}{An optional index or date identifying the row/date to start creating contiguous validation datasets.}
+\item{window_start}{Optional. An index or date identifying the row/date to start creating contiguous validation datasets.}
 
-\item{window_stop}{An optional index or date identifying the row to stop creating contiguous validation datasets.}
+\item{window_stop}{Optional. An index or date identifying the row to stop creating contiguous validation datasets.}
 
-\item{skip}{An integer giving a fixed number of dataset rows/time to skip between validation datasets. If dates were given
+\item{skip}{Optional. An integer giving a fixed number of dataset rows/time to skip between validation datasets. If dates were given
 in \code{create_lagged_df}, the time between validation windows is \code{skip} * 'date frequency'.}
 
-\item{include_partial_window}{Keep validation datasets that are shorter than \code{window_length}.}
+\item{include_partial_window}{Boolean. If \code{TRUE}, keep validation datasets that are shorter than \code{window_length}.}
 }
 \value{
-A'windows' S3 object: A list of data.frame(s), one per horizon, giving the indices for the validation datasets.
+An S3 object if class 'windows': A data.frame giving the indices for the validation datasets.
 }
 \description{
 Flexibly ceate blocks of time-contiguous validation datasets to assess the likely forecast accuracy
@@ -35,7 +35,7 @@ the outer loop of a nested cross-validation model training setup.
 \section{Methods and related functions}{
 
 
-The output of of \code{create_windows} is passed into
+The output of of \code{create_windows()} is passed into
 
 \itemize{
   \item \code{\link{train_model}}
@@ -44,7 +44,7 @@ The output of of \code{create_windows} is passed into
 and has the following generic S3 methods
 
 \itemize{
-  \item \code{\link{plot}}
+  \item \code{\link[=plot.windows]{plot}}
 }
 }
 

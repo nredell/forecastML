@@ -7,18 +7,28 @@
 return_hyper(forecast_model, hyper_function = NULL)
 }
 \arguments{
-\item{forecast_model}{An object of class 'forecast_model' from \code{train_model}.}
+\item{forecast_model}{An object of class 'forecast_model' from \code{train_model()}.}
 
-\item{hyper_function}{A user-defined function for retrieving model hyperparameters (requierd).}
+\item{hyper_function}{A user-defined function for retrieving model hyperparameters. See the
+example below for details.}
 }
 \value{
-An object of class 'forecast_model_hyper': A data.frame of model-specific hyperparameters.
+An S3 object of class 'forecast_model_hyper': A data.frame of model-specific hyperparameters.
 }
 \description{
-The purpose of this function and its plot() method is to investigate
+The purpose of this function is to support investigation into
 the stability of hyperparameters in the nested cross-validation and across
 forecast horizons.
 }
+\section{Methods and related functions}{
+
+The output of \code{return_hyper()} has the following generic S3 methods
+
+\itemize{
+  \item \code{\link[=plot.forecast_model_hyper]{plot}}
+}
+}
+
 \examples{
 \donttest{
 # Sampled Seatbelts data from the R package datasets.

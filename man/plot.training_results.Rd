@@ -14,17 +14,18 @@
 
 \item{type}{Plot type, default is "prediction" for hold-out sample predictions.}
 
-\item{models}{Filter results by user-defined model name from \code{train_model} (optional).}
+\item{models}{Optional. Filter results by user-defined model name from \code{train_model}.}
 
-\item{horizons}{Filter results by horizon (optional).}
+\item{horizons}{Optional. Filter results by horizon.}
 
-\item{windows}{Filter results by validation window number (optional).}
+\item{windows}{Optional. Filter results by validation window number.}
 
-\item{valid_indices}{Filter results by validation row indices or dates (optional).}
+\item{valid_indices}{Optional. Filter results by validation row indices or dates.}
 
-\item{group_filter}{A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").}
+\item{group_filter}{Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
+The results are passed to \code{dplyr::filter()} internally.}
 
-\item{...}{Arguments passed to \code{base::plot}}
+\item{...}{Arguments passed to \code{base::plot()}}
 }
 \value{
 Diagnostic plots of class 'ggplot'.

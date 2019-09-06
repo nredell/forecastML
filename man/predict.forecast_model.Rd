@@ -8,22 +8,22 @@
   data_forecast = NULL)
 }
 \arguments{
-\item{...}{One or more trained models from train_model().}
+\item{...}{One or more trained models from \code{train_model()}.}
 
-\item{prediction_function}{A list of user-defined prediction functions.}
+\item{prediction_function}{A list of user-defined prediction functions. See the example below for details.}
 
-\item{data_forecast}{If 'NULL', predictions are returned for the validation datasets in each 'forecast_model' in .... If
-an object of class 'lagged_df' from create_lagged_df(..., type = "forecast"), forecasts from 1:h.}
+\item{data_forecast}{If \code{NULL}, predictions are returned for the validation datasets in each 'forecast_model' in .... If
+an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")}, forecasts from 1:h.}
 }
 \value{
-If data_forecast = NULL, a 'training_results' object. If data_forecast = create_lagged_df(..., type = "forecast"),
-a 'forecast_results' object.
+If \code{data_forecast = NULL}, an S3 object of class 'training_results' object. If
+\code{data_forecast = create_lagged_df(..., type = "forecast")}, an S3 object of class 'forecast_results'.
 }
 \description{
-Predict with a 'forecast_model' object from train_model(). If data_forecast = NULL,
+Predict with a 'forecast_model' object from \code{train_model()}. If \code{data_forecast = NULL},
 predictions are returned for the outer-loop nested cross-validation datasets.
-If data_forecast is an object of class 'lagged_df' from create_lagged_df(..., type = "forecast"),
-predictions are returned for the horizons specified in create_lagged_df().
+If \code{data_forecast} is an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")},
+predictions are returned for the horizons specified in \code{create_lagged_df()}.
 }
 \examples{
 \donttest{

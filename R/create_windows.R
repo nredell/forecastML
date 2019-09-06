@@ -1,4 +1,3 @@
-
 #' Create time-contiguous validation datasets for model evaluation
 #'
 #' Flexibly ceate blocks of time-contiguous validation datasets to assess the likely forecast accuracy
@@ -10,16 +9,16 @@
 #' If dates were given in \code{create_lagged_df}, the validation window is 'window_length' * 'date frequency' in calendar time.
 #' Setting \code{window_length = 0} trains the model on the entire dataset--used for re-training after examining
 #' the cross-validation results.
-#' @param window_start An optional index or date identifying the row/date to start creating contiguous validation datasets.
-#' @param window_stop An optional index or date identifying the row to stop creating contiguous validation datasets.
-#' @param skip An integer giving a fixed number of dataset rows/time to skip between validation datasets. If dates were given
+#' @param window_start Optional. An index or date identifying the row/date to start creating contiguous validation datasets.
+#' @param window_stop Optional. An index or date identifying the row to stop creating contiguous validation datasets.
+#' @param skip Optional. An integer giving a fixed number of dataset rows/time to skip between validation datasets. If dates were given
 #' in \code{create_lagged_df}, the time between validation windows is \code{skip} * 'date frequency'.
-#' @param include_partial_window Keep validation datasets that are shorter than \code{window_length}.
-#' @return A'windows' S3 object: A list of data.frame(s), one per horizon, giving the indices for the validation datasets.
+#' @param include_partial_window Boolean. If \code{TRUE}, keep validation datasets that are shorter than \code{window_length}.
+#' @return An S3 object if class 'windows': A data.frame giving the indices for the validation datasets.
 #'
 #' @section Methods and related functions:
 #'
-#' The output of of \code{create_windows} is passed into
+#' The output of of \code{create_windows()} is passed into
 #'
 #' \itemize{
 #'   \item \code{\link{train_model}}
@@ -28,7 +27,7 @@
 #' and has the following generic S3 methods
 #'
 #' \itemize{
-#'   \item \code{\link{plot}}
+#'   \item \code{\link[=plot.windows]{plot}}
 #' }
 #' @example /R/examples/example_create_windows.R
 #' @importFrom rlang !!
@@ -154,13 +153,13 @@ create_windows <- function(lagged_df, window_length = 12,
 #'
 #' Plot validation datasets across time.
 #'
-#' @param x An object of class 'windows' from \code{create_windows}.
-#' @param lagged_df An object of class 'lagged_df' from \code{create_lagged_df}.
+#' @param x An object of class 'windows' from \code{create_windows()}.
+#' @param lagged_df An object of class 'lagged_df' from \code{create_lagged_df()}.
 #' @param show_labels Boolean. Show validation dataset IDs on the plot.
-#' @param group_filter A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").
-#' The string is passed internally to \code{dplyr::filter}.
-#' @param ... Arguments passed to \code{base::plot}
-#' @return A plot of the outer-loop nested cross-validation windows.
+#' @param group_filter Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
+#' The results are passed to \code{dplyr::filter()} internally.
+#' @param ... Arguments passed to \code{base::plot()}
+#' @return A plot of the outer-loop nested cross-validation windows of class 'ggplot'.
 #' @example /R/examples/example_plot_windows.R
 #' @export
 plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, ...) {

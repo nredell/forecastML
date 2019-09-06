@@ -1,13 +1,20 @@
-
 #' Return model hyperparameters across validation datasets
 #'
-#' The purpose of this function and its plot() method is to investigate
+#' The purpose of this function is to support investigation into
 #' the stability of hyperparameters in the nested cross-validation and across
 #' forecast horizons.
 #'
-#' @param forecast_model An object of class 'forecast_model' from \code{train_model}.
-#' @param hyper_function A user-defined function for retrieving model hyperparameters (requierd).
-#' @return An object of class 'forecast_model_hyper': A data.frame of model-specific hyperparameters.
+#' @param forecast_model An object of class 'forecast_model' from \code{train_model()}.
+#' @param hyper_function A user-defined function for retrieving model hyperparameters. See the
+#' example below for details.
+#' @return An S3 object of class 'forecast_model_hyper': A data.frame of model-specific hyperparameters.
+#'
+#' @section Methods and related functions:
+#' The output of \code{return_hyper()} has the following generic S3 methods
+#'
+#' \itemize{
+#'   \item \code{\link[=plot.forecast_model_hyper]{plot}}
+#' }
 #' @example /R/examples/example_return_hyper.R
 #' @export
 return_hyper <- function(forecast_model, hyper_function = NULL) {
@@ -68,13 +75,13 @@ return_hyper <- function(forecast_model, hyper_function = NULL) {
 #'
 #' Plot hyperparameter stability and relationship with error metrics across validation datasets.
 #'
-#' @param x An object of class 'forecast_model_hyper' from \code{return_hyper}.
+#' @param x An object of class 'forecast_model_hyper' from \code{return_hyper()}.
 #' @param data_results An object of class 'training_results' from \code{predict.forecast_model(..., data_forecast = NULL)}.
 #' @param data_error An object of class 'validation_error' from \code{return_error(..., data_test = NULL)}.
 #' @param type Select plot type; 'stability' is the default plot.
-#' @param horizons Filter results by horizon (optional).
-#' @param windows Filter results by validation window number (optional).
-#' @param ... Arguments passed to \code{base::plot}
+#' @param horizons Optional. Filter results by horizon.
+#' @param windows Optional. Filter results by validation window number.
+#' @param ... Arguments passed to \code{base::plot()}
 #' @return Hyperparameter plots of class 'ggplot'.
 #' @example /R/examples/example_return_hyper.R
 #' @export

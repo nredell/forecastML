@@ -9,41 +9,63 @@ return_error(data_results, data_test = NULL, test_indices = NULL,
   horizons = NULL, windows = NULL, group_filter = NULL)
 }
 \arguments{
-\item{data_results}{An object of class 'training_results' or 'forecast_results'.}
+\item{data_results}{An object of class 'training_results' or 'forecast_results' from running
+\code{\link[=predict.forecast_model]{predict}} on a trained model.}
 
-\item{data_test}{If 'data_results' is an object of class 'forecast_results', a data.frame used to
-assess the accuracy of a 'forecast_results' object. 'data_test' should have the outcome/target columns and any grouping columns.}
+\item{data_test}{Optional. If \code{data_results} is an object of class 'forecast_results', a data.frame used to
+assess the accuracy of a 'forecast_results' object. \code{data_test} should have the outcome/target columns
+and any grouping columns.}
 
-\item{test_indices}{Required if 'data_test' is given. A vector or 1-column data.frame of numeric row indices or dates (class'Date') with length nrow(data_test).}
+\item{test_indices}{Required if \code{data_test} is given. A vector or 1-column data.frame of numeric
+row indices or dates (class 'Date') with length nrow(data_test).}
 
-\item{metrics}{Common forecast error metrics. See the Error Metrics section below for details.}
+\item{metrics}{Common forecast error metrics. See the Error Metrics section below for details. The
+default behavior is to return all metrics.}
 
-\item{models}{Filter results by user-defined model name from train_model() (optional).}
+\item{models}{Optional. Filter results by user-defined model name supplied to \code{train_model()}.}
 
-\item{horizons}{Filter results by horizon (optional).}
+\item{horizons}{Optional. Filter results by horizon.}
 
-\item{windows}{Filter results by validation window number (optional).}
+\item{windows}{Optional. Filter results by validation window number.}
 
-\item{group_filter}{A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").}
+\item{group_filter}{Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
+The results are passed to \code{dplyr::filter()} internally.}
 }
 \value{
-A 'validation_error' or 'forecast_error' object: A list of data.frames
+An S3 object of class 'validation_error' or 'forecast_error': A list of data.frames
 of error metrics for the validation datasets or forecast dataset depending
-on the data_test argument. \cr
+on the \code{data_test} argument. \cr
+
 A list containing: \cr
-Error metrics by horizon + validation window \cr
-Error metrics by horizon, collapsed across validation windows \cr
-Global error metrics collapsed across horizons and validation windows
+
+\itemize{
+  \item Error metrics by horizon + validation window
+  \item Error metrics by horizon, collapsed across validation windows
+  \item Global error metrics collapsed across horizons and validation windows
+}
 }
 \description{
-Compute forecast error metrics on the validation datasets or a test dataset
+Compute forecast error metrics on the validation datasets or a test dataset.
 }
 \section{Error Metrics}{
 
-mae = Means absolute error \cr
-mape = Mean absolute percentage error \cr
-mdape = Median absolute percentage error \cr
-smape = Symmetrical mean absolute percentage error
+
+\itemize{
+  \item \code{mae}: Means absolute error
+  \item \code{mape}: Mean absolute percentage error
+  \item \code{mdape}: Median absolute percentage error
+  \item \code{smape}: Symmetrical absolute percentage error
+}
+}
+
+\section{Methods and related functions}{
+
+
+The output of \code{return_error()} has the following generic S3 methods
+
+\itemize{
+  \item \code{\link[=plot.validation_error]{plot}} from \code{return_error(data_test = NULL)}
+}
 }
 
 \examples{

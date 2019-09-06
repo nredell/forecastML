@@ -9,7 +9,7 @@
   ...)
 }
 \arguments{
-\item{x}{An object of class 'forecast_model_hyper' from \code{return_hyper}.}
+\item{x}{An object of class 'forecast_model_hyper' from \code{return_hyper()}.}
 
 \item{data_results}{An object of class 'training_results' from \code{predict.forecast_model(..., data_forecast = NULL)}.}
 
@@ -17,11 +17,11 @@
 
 \item{type}{Select plot type; 'stability' is the default plot.}
 
-\item{horizons}{Filter results by horizon (optional).}
+\item{horizons}{Optional. Filter results by horizon.}
 
-\item{windows}{Filter results by validation window number (optional).}
+\item{windows}{Optional. Filter results by validation window number.}
 
-\item{...}{Arguments passed to \code{base::plot}}
+\item{...}{Arguments passed to \code{base::plot()}}
 }
 \value{
 Hyperparameter plots of class 'ggplot'.

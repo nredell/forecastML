@@ -13,25 +13,29 @@
 #' as input in the user-defined prediction function (see example).
 #' @param model_name A name for the model. Required.
 #' @param use_future Boolean. If \code{TRUE}, the \code{future} package is used for training models in parallel.
-#' There are two options for parallelization: parallel across either (1) model forecast horizons or (b) validation windows.
-#' If forecasting with many horizon-specific models, consider running
-#' \code{future::plan(list(future::multiprocess, future::sequential))} prior to this function to train these models
-#' in parallel. If forecasting across many validation windows, consider running
-#' \code{future::plan(list(future::sequential, future::multiprocess))} prior to this function to train these models
+#' The model will train in parallel across either (1) model forecast horizons or (b) validation windows,
+#' whichever is longer (i.e., \code{length(create_lagged_df())} or \code{nrow(create_windows())}). The user
+#' should run \code{future::plan(future::multiprocess)} or similar prior to this function to train these models
 #' in parallel.
-#' @return A 'forecast_model' S3 object: A nested list of trained models. Models can be accessed with
-#' \code{my_trained_model$horizon_h$window_w} where 'h' gives the forecast horizon and 'w' gives
-#' the validation dataset window numbwer from \code{create_windows}.
+#' @return An S3 object of class 'forecast_model': A nested list of trained models. Models can be accessed with
+#' \code{my_trained_model$horizon_h$window_w$model} where 'h' gives the forecast horizon and 'w' gives
+#' the validation dataset window number from \code{create_windows}.
 #'
 #' @section Methods and related functions:
 #'
-#' The output of of \code{train_model} is passed into
-#'
-#' has the following generic S3 methods
+#' The output of of \code{train_model} can be passed into
 #'
 #' \itemize{
-#'   \item \code{\link{predict}}
-#'   \item \code{\link{plot}}
+#'   \item \code{\link{return_error}}
+#'   \item \code{\link{return_hyper}}
+#' }
+#'
+#' and has the following generic S3 methods
+#'
+#' \itemize{
+#'   \item \code{\link[=predict.forecast_model]{predict}}
+#'   \item \code{\link[=plot.training_results]{plot}} (from \code{predict.forecast_model(data_forecast = NULL)})
+#'   \item \code{\link[=plot.forecast_results]{plot}} (from \code{predict.forecast_model(data_forecast = ...)})
 #' }
 #' @example /R/examples/example_train_model.R
 #' @export
@@ -152,17 +156,17 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
 
 #' Predict on validation datasets or forecast
 #'
-#' Predict with a 'forecast_model' object from train_model(). If data_forecast = NULL,
+#' Predict with a 'forecast_model' object from \code{train_model()}. If \code{data_forecast = NULL},
 #' predictions are returned for the outer-loop nested cross-validation datasets.
-#' If data_forecast is an object of class 'lagged_df' from create_lagged_df(..., type = "forecast"),
-#' predictions are returned for the horizons specified in create_lagged_df().
+#' If \code{data_forecast} is an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")},
+#' predictions are returned for the horizons specified in \code{create_lagged_df()}.
 #'
-#' @param ... One or more trained models from train_model().
-#' @param prediction_function A list of user-defined prediction functions.
-#' @param data_forecast If 'NULL', predictions are returned for the validation datasets in each 'forecast_model' in .... If
-#' an object of class 'lagged_df' from create_lagged_df(..., type = "forecast"), forecasts from 1:h.
-#' @return If data_forecast = NULL, a 'training_results' object. If data_forecast = create_lagged_df(..., type = "forecast"),
-#' a 'forecast_results' object.
+#' @param ... One or more trained models from \code{train_model()}.
+#' @param prediction_function A list of user-defined prediction functions. See the example below for details.
+#' @param data_forecast If \code{NULL}, predictions are returned for the validation datasets in each 'forecast_model' in .... If
+#' an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")}, forecasts from 1:h.
+#' @return If \code{data_forecast = NULL}, an S3 object of class 'training_results' object. If
+#' \code{data_forecast = create_lagged_df(..., type = "forecast")}, an S3 object of class 'forecast_results'.
 #' @example /R/examples/example_predict_train_model.R
 #' @export
 predict.forecast_model <- function(..., prediction_function = list(NULL), data_forecast = NULL) {
@@ -310,12 +314,13 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
 #'
 #' @param x An object of class 'training_results' from \code{predict.forecast_model}.
 #' @param type Plot type, default is "prediction" for hold-out sample predictions.
-#' @param models Filter results by user-defined model name from \code{train_model} (optional).
-#' @param horizons Filter results by horizon (optional).
-#' @param windows Filter results by validation window number (optional).
-#' @param valid_indices Filter results by validation row indices or dates (optional).
-#' @param group_filter A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").
-#' @param ... Arguments passed to \code{base::plot}
+#' @param models Optional. Filter results by user-defined model name from \code{train_model}.
+#' @param horizons Optional. Filter results by horizon.
+#' @param windows Optional. Filter results by validation window number.
+#' @param valid_indices Optional. Filter results by validation row indices or dates.
+#' @param group_filter Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
+#' The results are passed to \code{dplyr::filter()} internally.
+#' @param ... Arguments passed to \code{base::plot()}
 #' @return Diagnostic plots of class 'ggplot'.
 #' @export
 plot.training_results <- function(x,

@@ -20,17 +20,15 @@ as input in the user-defined prediction function (see example).}
 \item{model_name}{A name for the model. Required.}
 
 \item{use_future}{Boolean. If \code{TRUE}, the \code{future} package is used for training models in parallel.
-There are two options for parallelization: parallel across either (1) model forecast horizons or (b) validation windows.
-If forecasting with many horizon-specific models, consider running
-\code{future::plan(list(future::multiprocess, future::sequential))} prior to this function to train these models
-in parallel. If forecasting across many validation windows, consider running
-\code{future::plan(list(future::sequential, future::multiprocess))} prior to this function to train these models
+The model will train in parallel across either (1) model forecast horizons or (b) validation windows,
+whichever is longer (i.e., \code{length(create_lagged_df())} or \code{nrow(create_windows())}). The user
+should run \code{future::plan(future::multiprocess)} or similar prior to this function to train these models
 in parallel.}
 }
 \value{
-A 'forecast_model' S3 object: A nested list of trained models. Models can be accessed with
-\code{my_trained_model$horizon_h$window_w} where 'h' gives the forecast horizon and 'w' gives
-the validation dataset window numbwer from \code{create_windows}.
+An S3 object of class 'forecast_model': A nested list of trained models. Models can be accessed with
+\code{my_trained_model$horizon_h$window_w$model} where 'h' gives the forecast horizon and 'w' gives
+the validation dataset window number from \code{create_windows}.
 }
 \description{
 Train a user-defined forecast model for each horizon, h, and across the validation
@@ -41,13 +39,19 @@ with the \code{future} package.
 \section{Methods and related functions}{
 
 
-The output of of \code{train_model} is passed into
-
-has the following generic S3 methods
+The output of of \code{train_model} can be passed into
 
 \itemize{
-  \item \code{\link{predict}}
-  \item \code{\link{plot}}
+  \item \code{\link{return_error}}
+  \item \code{\link{return_hyper}}
+}
+
+and has the following generic S3 methods
+
+\itemize{
+  \item \code{\link[=predict.forecast_model]{predict}}
+  \item \code{\link[=plot.training_results]{plot}} (from \code{predict.forecast_model(data_forecast = NULL)})
+  \item \code{\link[=plot.forecast_results]{plot}} (from \code{predict.forecast_model(data_forecast = ...)})
 }
 }
 

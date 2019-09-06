@@ -8,19 +8,19 @@
   group_filter = NULL, ...)
 }
 \arguments{
-\item{x}{An object of class 'windows' from \code{create_windows}.}
+\item{x}{An object of class 'windows' from \code{create_windows()}.}
 
-\item{lagged_df}{An object of class 'lagged_df' from \code{create_lagged_df}.}
+\item{lagged_df}{An object of class 'lagged_df' from \code{create_lagged_df()}.}
 
 \item{show_labels}{Boolean. Show validation dataset IDs on the plot.}
 
-\item{group_filter}{A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").
-The string is passed internally to \code{dplyr::filter}.}
+\item{group_filter}{Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
+The results are passed to \code{dplyr::filter()} internally.}
 
-\item{...}{Arguments passed to \code{base::plot}}
+\item{...}{Arguments passed to \code{base::plot()}}
 }
 \value{
-A plot of the outer-loop nested cross-validation windows.
+A plot of the outer-loop nested cross-validation windows of class 'ggplot'.
 }
 \description{
 Plot validation datasets across time.

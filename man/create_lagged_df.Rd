@@ -52,7 +52,7 @@ Note that combining feature lags with grouped time-series will result in NA valu
 (b) high-dimensional data sets with many lags per feature.}
 }
 \value{
-A 'lagged_df' or 'grouped_lagged_df' S3 object: A list of data.frames with new columns for the lagged/non-lagged features.
+An S3 object of class 'lagged_df' or 'grouped_lagged_df': A list of data.frames with new columns for the lagged/non-lagged features.
 The length of the returned list is equal to the number of forecast horizons and is in the order of
 horizons supplied to the \code{horizons} argument. Horizon-specific datasets can be accessed with
 \code{my_lagged_df$horizon_h} where 'h' gives the forecast horizon.
@@ -79,7 +79,7 @@ specified forecast horizons and (b) forecast into the future with a trained ML m
 \section{Methods and related functions}{
 
 
-The output of of \code{create_lagged_df} is passed into
+The output of \code{create_lagged_df()} is passed into
 
 \itemize{
   \item \code{\link{create_windows}}
@@ -88,8 +88,8 @@ The output of of \code{create_lagged_df} is passed into
 and has the following generic S3 methods
 
 \itemize{
-  \item \code{\link{summary}}
-  \item \code{\link{plot}}
+  \item \code{\link[=summary.lagged_df]{summary}}
+  \item \code{\link[=plot.lagged_df]{plot}}
 }
 }
 
