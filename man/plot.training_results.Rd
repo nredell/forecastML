@@ -10,11 +10,11 @@
   group_filter = NULL, ...)
 }
 \arguments{
-\item{x}{An object of class 'training_results' from \code{predict.forecast_model}.}
+\item{x}{An object of class 'training_results' from \code{predict.forecast_mode()l}.}
 
 \item{type}{Plot type, default is "prediction" for hold-out sample predictions.}
 
-\item{models}{Optional. Filter results by user-defined model name from \code{train_model}.}
+\item{models}{Optional. Filter results by user-defined model name from \code{train_model()}.}
 
 \item{horizons}{Optional. Filter results by horizon.}
 

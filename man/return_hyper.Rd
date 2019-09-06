@@ -7,7 +7,7 @@
 return_hyper(forecast_model, hyper_function = NULL)
 }
 \arguments{
-\item{forecast_model}{An object of class 'forecast_model' from \code{train_model()}.}
+\item{forecast_model}{An object of class 'forecast_model' from \code{\link{train_model}}.}
 
 \item{hyper_function}{A user-defined function for retrieving model hyperparameters. See the
 example below for details.}

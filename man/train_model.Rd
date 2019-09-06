@@ -8,9 +8,9 @@ train_model(lagged_df, windows, model_function, model_name,
   use_future = FALSE)
 }
 \arguments{
-\item{lagged_df}{An object of class 'lagged_df' from \code{create_lagged_df}.}
+\item{lagged_df}{An object of class 'lagged_df' from \code{\link{create_lagged_df}}.}
 
-\item{windows}{An object of class 'windows' from \code{create_windows}.}
+\item{windows}{An object of class 'windows' from \code{\link{create_windows}}.}
 
 \item{model_function}{A user-defined wrapper function for model training that takes 2
 positional arguments--(1) a data.frame made with \code{create_lagged_df} and
