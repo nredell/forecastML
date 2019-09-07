@@ -33,6 +33,13 @@ The following quote from Bergmeir et al.'s article nicely sums up the aim of thi
 devtools::install_github("nredell/forecastML")
 library(forecastML)
 ```
+
+* Setting the following `R` environment parameter may be needed to compile the vignettes.
+
+``` r
+base::Sys.setenv(LC_ALL="en_US.UTF-8")
+```
+
 ## Vignettes
 
 * Detailed **[forecastML overview vignette](https://nredell.github.io/data_science_blog/forecastML/)**.
@@ -40,9 +47,6 @@ library(forecastML)
 * **[Creating custom feature lags for model training](https://nredell.github.io/data_science_blog/forecastML/lagged_features.nb.html)**.
 
 * **[Forecasting with multiple or grouped time-series](https://nredell.github.io/data_science_blog/forecastML/grouped_forecast.nb.html)**.
-
-* Coming soon:
-    + Examples of parallel processing with the `future` package.
 
 ## Example
 
@@ -52,6 +56,9 @@ these are from the slightly different LASSO models trained in the nested cross-v
 hyperparameters and retraining to create a single forecast model can be found in the overview vignette.
 
 ``` r
+library(glmnet)
+library(forecastML)
+
 # Sampled Seatbelts data from the R package datasets.
 data("data_seatbelts", package = "forecastML")
 
@@ -70,11 +77,12 @@ data_train <- forecastML::create_lagged_df(data_seatbelts, type = "train",
 windows <- forecastML::create_windows(data_train, window_length = 12)
 
 #------------------------------------------------------------------------------
-# User-define model function - LASSO
-# The model takes in a data.frame with a target and predictors with exactly the same format as
-# in create_lagged_df(). 'outcome_cols' is the column index of the target. The
+# User-defined model function - LASSO
+# The model_function() wrapper function takes 2 positional arguments. First, a data.frame 
+# with a target and predictors with exactly the same format as
+# used in create_lagged_df(). Second, a column index of the target. The
 # function returns a model object suitable for the user-defined predict function.
-library(glmnet)
+
 model_function <- function(data, outcome_cols = 1) {
 
   x <- data[, -(outcome_cols), drop = FALSE]
@@ -83,7 +91,7 @@ model_function <- function(data, outcome_cols = 1) {
   y <- as.matrix(y, ncol = ncol(y))
 
   model <- glmnet::cv.glmnet(x, y)
-  return(model)
+  return(model)  # This model is the first argument in the user-defined predict() function below.
 }
 
 #------------------------------------------------------------------------------
@@ -93,15 +101,19 @@ model_results <- forecastML::train_model(data_train, windows,
 
 #------------------------------------------------------------------------------
 # User-defined prediction function - LASSO
-# The predict() wrapper takes two positional arguments. First,
+# The predict() wrapper function takes 2 positional arguments. First,
 # the returned model from the user-defined modeling function (model_function() above).
-# Second, a data.frame of predictors identical to the input dataset in forecastML::create_lagged_df();
-# predictor lags are created automatically.
+# Second, a data.frame of predictors--lagged predictors will be created automatically
+# using create_lagged_df() internally. The function can return a 1- or 3-column data.frame with either (a) point
+# forecasts or (b) point forecasts plus lower and upper forecast bounds (column order or names do not matter).
+
 prediction_function <- function(model, data_features) {
 
   x <- as.matrix(data_features, ncol = ncol(data_features))
 
-  data_pred <- data.frame("y_pred" = predict(model, x, s = "lambda.min"))
+  data_pred <- data.frame("y_pred" = predict(model, x, s = "lambda.min"),  # 1 column is required.
+                          "y_pred_lower" = predict(model, x, s = "lambda.min") - 50,  # optional.
+                          "y_pred_upper" = predict(model, x, s = "lambda.min") + 50)  # optional.
   return(data_pred)
 }
 
@@ -136,14 +148,6 @@ plot(data_forecasts, data_seatbelts[-(1:150), ], as.numeric(row.names(data_seatb
 The following steps outline the functionality that I'd like to add leading up to an eventual 
 CRAN release.
 
-1. A `forecastML::create_future_df()` function that allows the user to easily modify the 
-future values of select features. For example, in retail demand forecasting, if the user knows that 
-a promotion is occurring in 3 months, they could incorporate this information into their forecasts 
-and see the impact of the planned promotion 4 to h months into the future.
+1. Thorough documentation including an `R` `pkgdown` site and cheat sheets.
 
-2. Support for probabalistic forecasting by allowing the user to return more than 1 column in the 
-user-defined `predict()` function.
-
-3. Thorough documentation including an `R` `pkgdown` site and cheat sheets.
-
-4. Thorough testing with `R` package `testthat`.
+2. Thorough testing with `R` package `testthat`.

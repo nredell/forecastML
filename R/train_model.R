@@ -724,7 +724,6 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
                                  ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
                                  fill = .data$plot_group, color = NULL), alpha = .25, show.legend = FALSE)
       }
-
       }
 
     p <- p + geom_vline(xintercept = attributes(data_forecast)$data_stop, color = "red")
