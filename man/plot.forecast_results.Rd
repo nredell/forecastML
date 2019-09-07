@@ -14,7 +14,8 @@
 
 \item{data_actual}{A data.frame containing the target/outcome name and any grouping columns.}
 
-\item{actual_indices}{Required if 'data_actual' is given. A vector or 1-column data.frame of numeric row indices or dates (class'Date') with length nrow(data_actual).
+\item{actual_indices}{Required if 'data_actual' is given. A vector or 1-column data.frame
+of numeric row indices or dates (class 'Date') with length \code{nrow(data_actual)}.
 The data can be historical and/or holdout/test data, forecasts and actuals are matched by row.names().}
 
 \item{models}{Optional. Filter results by user-defined model name from \code{train_model()}.}

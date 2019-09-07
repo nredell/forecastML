@@ -22,8 +22,8 @@
 
 \item{valid_indices}{Optional. Filter results by validation row indices or dates.}
 
-\item{group_filter}{Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
-The results are passed to \code{dplyr::filter()} internally.}
+\item{group_filter}{Optional. A string for filtering plot results for grouped time-series
+(e.g., \code{"group_col_1 == 'A'"}). The results are passed to \code{dplyr::filter()} internally.}
 
 \item{...}{Arguments passed to \code{base::plot()}}
 }

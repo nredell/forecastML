@@ -14,8 +14,8 @@
 #' @param models Optional. Filter results by user-defined model name supplied to \code{train_model()}.
 #' @param horizons Optional. Filter results by horizon.
 #' @param windows Optional. Filter results by validation window number.
-#' @param group_filter Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
-#' The results are passed to \code{dplyr::filter()} internally.
+#' @param group_filter Optional. A string for filtering plot results for grouped time-series
+#' (e.g., \code{"group_col_1 == 'A'"}). The results are passed to \code{dplyr::filter()} internally.
 #'
 #' @return An S3 object of class 'validation_error' or 'forecast_error': A list of data.frames
 #' of error metrics for the validation datasets or forecast dataset depending

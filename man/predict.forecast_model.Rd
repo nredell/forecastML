@@ -18,8 +18,8 @@ of model predictions. If the prediction function returns a 1-column data.frame, 
 If the prediction function returns a 3-column data.frame, lower and upper forecast bounds are assumed (the
 order of the 3 columns does not matter). See the example below for details.}
 
-\item{data_forecast}{If \code{NULL}, predictions are returned for the validation datasets in each 'forecast_model' in .... If
-an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")}, forecasts from 1:h.}
+\item{data_forecast}{If \code{NULL}, predictions are returned for the validation datasets in each 'forecast_model'
+in .... If an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")}, forecasts from 1:h.}
 }
 \value{
 If \code{data_forecast = NULL}, an S3 object of class 'training_results' object. If
@@ -67,9 +67,10 @@ model_results <- train_model(data_train, windows,
 # User-defined prediction function - LASSO
 # The predict() wrapper takes two positional arguments. First,
 # the returned model from the user-defined modeling function (model_function() above).
-# Second, a data.frame of predictors--lagged predictors will be created automatically
-# using create_lagged_df() internally. The function can return a 1- or 3-column data.frame with either (a) point
-# forecasts or (b) point forecasts plus lower and upper forecast bounds (column order or names do not matter).
+# Second, a data.frame of predictors--identical to the datasets returned from
+# create_lagged_df(..., type = "train"). The function can return a 1- or 3-column data.frame
+# with either (a) point forecasts or (b) point forecasts plus lower and upper forecast
+# bounds (column order and column names do not matter).
 prediction_function <- function(model, data_features) {
 
   x <- as.matrix(data_features, ncol = ncol(data_features))

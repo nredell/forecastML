@@ -71,7 +71,8 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
   #----------------------------------------------------------------------------
   # The default future behavior is to parallelize the model training over the longer dimension: (a) number of
   # forecast horizons or (b) number of validation windows. This is due to a current limitation
-  # in the future package on changing object size limitations for nested futures where "options(globals.maxSize.default = Inf)" isn't recognized.
+  # in the future package on changing object size limitations for nested futures where
+  # "options(globals.maxSize.default = Inf)" isn't recognized.
   if (isTRUE(use_future)) {
 
     if (length(horizons) > nrow(windows)) {
@@ -169,8 +170,8 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
 #' of model predictions. If the prediction function returns a 1-column data.frame, point forecasts are assumed.
 #' If the prediction function returns a 3-column data.frame, lower and upper forecast bounds are assumed (the
 #' order of the 3 columns does not matter). See the example below for details.
-#' @param data_forecast If \code{NULL}, predictions are returned for the validation datasets in each 'forecast_model' in .... If
-#' an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")}, forecasts from 1:h.
+#' @param data_forecast If \code{NULL}, predictions are returned for the validation datasets in each 'forecast_model'
+#' in .... If an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")}, forecasts from 1:h.
 #' @return If \code{data_forecast = NULL}, an S3 object of class 'training_results' object. If
 #' \code{data_forecast = create_lagged_df(..., type = "forecast")}, an S3 object of class 'forecast_results'.
 #' @example /R/examples/example_predict_train_model.R
@@ -341,8 +342,8 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
 #' @param horizons Optional. Filter results by horizon.
 #' @param windows Optional. Filter results by validation window number.
 #' @param valid_indices Optional. Filter results by validation row indices or dates.
-#' @param group_filter Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
-#' The results are passed to \code{dplyr::filter()} internally.
+#' @param group_filter Optional. A string for filtering plot results for grouped time-series
+#' (e.g., \code{"group_col_1 == 'A'"}). The results are passed to \code{dplyr::filter()} internally.
 #' @param ... Arguments passed to \code{base::plot()}
 #' @return Diagnostic plots of class 'ggplot'.
 #' @export
@@ -614,7 +615,8 @@ plot.training_results <- function(x,
 #'
 #' @param x An object of class 'forecast_results' from \code{predict.forecast_model}.
 #' @param data_actual A data.frame containing the target/outcome name and any grouping columns.
-#' @param actual_indices Required if 'data_actual' is given. A vector or 1-column data.frame of numeric row indices or dates (class'Date') with length nrow(data_actual).
+#' @param actual_indices Required if 'data_actual' is given. A vector or 1-column data.frame
+#' of numeric row indices or dates (class 'Date') with length \code{nrow(data_actual)}.
 #' The data can be historical and/or holdout/test data, forecasts and actuals are matched by row.names().
 #' @param models Optional. Filter results by user-defined model name from \code{train_model()}.
 #' @param horizons Optional. Filter results by horizon.

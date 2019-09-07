@@ -84,7 +84,7 @@ fill_gaps <- function(data, date_col = 1, frequency = NULL, groups = NULL,
     data_static <- data %>%
       dplyr::group_by_at(dplyr::vars(groups)) %>%
       dplyr::mutate("date_max" = max(eval(parse(text = date_name)), na.rm = TRUE)) %>%
-      dplyr::filter(eval(parse(text = date_name)) == date_max) %>%
+      dplyr::filter(eval(parse(text = date_name)) == .data$date_max) %>%
       dplyr::select_at(dplyr::vars(groups, static_features))
   }
 

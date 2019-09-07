@@ -19,4 +19,4 @@
 #'   \item{sea_surface_temperature}{water temperature in degrees Fahrenheit}
 #' }
 #' @source \url{http://www.ndbc.noaa.gov/}
-"data_buoy"
+"data_buoy_gaps"
