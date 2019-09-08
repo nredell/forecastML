@@ -48,6 +48,10 @@ base::Sys.setenv(LC_ALL="en_US.UTF-8")
 
 * **[Forecasting with multiple or grouped time-series](https://nredell.github.io/data_science_blog/forecastML/grouped_forecast.nb.html)**.
 
+## Cheat Sheet
+
+![](./tools/forecastML_cheat_sheet.png)
+
 ## Example
 
 Below is an example of how to create 12 horizon-specific ML models to forecast the number of `DriversKilled` 
