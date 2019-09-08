@@ -9,21 +9,21 @@
   windows = NULL, group_filter = NULL, ...)
 }
 \arguments{
-\item{x}{An object of class 'validation_error' from \code{return_error}.}
+\item{x}{An object of class 'validation_error' from \code{return_error()}.}
 
-\item{data_results}{An object of class 'training_results' from \code{predict.forecast_model}.}
+\item{data_results}{An object of class 'training_results' from \code{predict.forecast_model()}.}
 
-\item{type}{Select plot type; 'time' is the default plot.}
+\item{type}{Select plot type; \code{type = "time"} is the default plot.}
 
-\item{models}{Filter results by user-defined model name from \code{train_model} (optional).}
+\item{models}{Optional. A vector of user-defined model names from \code{train_model()} to filter results.}
 
-\item{horizons}{Filter results by horizon (optional).}
+\item{horizons}{Optional. A numeric vector to filter results by horizon.}
 
-\item{windows}{Filter results by validation window number (optional).}
+\item{windows}{Optional. A numeric vector to filter results by validation window number.}
 
-\item{group_filter}{A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").}
+\item{group_filter}{A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).}
 
-\item{...}{Arguments passed to \code{base::plot}}
+\item{...}{Arguments passed to \code{base::plot()}}
 }
 \value{
 Forecast error plots of class 'ggplot'.

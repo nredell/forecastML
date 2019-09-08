@@ -10,46 +10,50 @@ create_lagged_df(data, type = c("train", "forecast"), outcome_cols = 1,
   use_future = FALSE)
 }
 \arguments{
-\item{data}{A data.frame with the target to be forecasted and features/predictors. An optional date column can be given in the 'dates' argument
-(required for grouped time-series). Note that forecastML only works with regularly spaced time/date intervals and that missing
-rows--usually due to periods when no data was collected--will result in poorly trained models due to incorrect predictor lags.}
+\item{data}{A data.frame with the (a) target to be forecasted and (b) features/predictors. An optional date column can be given in the
+\code{dates} argument (required for grouped time-series). Note that forecastML only works with regularly spaced time/date intervals and that missing
+rows--usually due to periods when no data was collected--will result in poorly trained models due to incorrect feature lags.
+Use \code{\link{fill_gaps}} to fill in any missing rows/data prior to running this function.}
 
-\item{type}{The type of dataset to return--(a) model training or (b) forecast prediction. The default is 'train'.}
+\item{type}{The type of dataset to return--(a) model training or (b) forecast prediction. The default is \code{train}.}
 
 \item{outcome_cols}{The column index--an integer--of the target to be forecasted. Forecasting only one outcome column is allowed at present, however,
-groups of time-series can be forecasted if they are stacked vertically in a long dataset and the 'groups', 'dates', and 'frequency' arguments
-are specified.}
+groups of time-series can be forecasted if they are stacked vertically in a long dataset and the \code{groups}, \code{dates},
+and \code{frequency} arguments are specified.}
 
-\item{horizons}{A numeric vector of one or more forecast horizons, h, measured in dataset rows. For each horizon, 1:h
-forecasts are returned (e.g., 'horizon = 12' trains a model to minimize 1 to 12-step-ahead error and returns forecasts
+\item{horizons}{A numeric vector of one or more forecast horizons, h, measured in input dataset rows. For each horizon, 1:h
+forecasts are returned (e.g., \code{horizon = 12} trains a model to minimize 1 to 12-step-ahead error and returns forecasts
 for 1:12 steps into the future). If \code{dates} are given, a horizon of 1, for example, would equal 1 * \code{frequency} in calendar time.}
 
 \item{lookback}{A numeric vector giving the lags--in dataset rows--for creating the lagged features. All non-grouping and
-non-static features in the input dataset, 'data', are lagged by the same values which, for
+non-static features in the input dataset, \code{data}, are lagged by the same values which, for
 non-grouped time-series, will produce an input dataset with dimensions
-nrow(data) by (n_features * length(lookback)). Lags that don't support direct forecasting for a given horizon
-are dropped. Either \code{lookback} or \code{lookback_control} need to be specified.}
+nrow(\code{data}) by (n_features * \code{length(lookback))}. Lags that don't support direct forecasting for a given horizon
+are silently dropped. Either \code{lookback} or \code{lookback_control} need to be specified.}
 
 \item{lookback_control}{A list of numeric vectors, specifying potentially unique lags for each feature. The length
-of the list should equal ncol(data) and be ordered the same as the columns in 'data'. For grouped time-series, lags for the grouping column(s)
-and static feature columns should have a lookback_control value of 0. \code{list(NULL)} \code{lookback_control} values drop columns from the input dataset.
-Lags that don't support direct forecasting for a given horizon
-are dropped. Either \code{lookback} or \code{lookback_control} need to be specified.}
+of the list should equal \code{ncol(data)} and be ordered the same as the columns in \code{data}. For grouped time-series, lags for the grouping column(s)
+and static feature columns should have a \code{lookback_control} value of 0. \code{list(NULL)} \code{lookback_control} values drop columns
+from the input dataset. Lags that don't support direct forecasting for a given horizon
+are silently dropped. Either \code{lookback} or \code{lookback_control} need to be specified.}
 
-\item{groups}{Column name(s) that identify the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but are not lagged.
-Note that combining feature lags with grouped time-series will result in NA values throughout the data.}
+\item{groups}{Column name(s) that identify the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but
+are not lagged. Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.}
 
 \item{static_features}{For grouped time-series only. Column name(s) that identify features that do not change through time.
 These columns are used as model features but are not lagged.
-Note that combining feature lags with grouped time-series will result in NA values throughout the data.}
+Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.}
 
-\item{dates}{A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal nrow(data). Required if \code{groups} are given.}
+\item{dates}{A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal \code{nrow(data)}. Required if \code{groups}
+are given.}
 
-\item{frequency}{A string taking the same input as \code{base::seq(..., by = "frequency")} e.g., '1 month', '7 days', etc. Required if \code{dates} are given.}
+\item{frequency}{A string taking the same input as \code{base::seq(..., by = "frequency")} e.g., '1 month', '7 days', etc.
+Required if \code{dates} are given.}
 
 \item{use_future}{Boolean. If \code{TRUE}, the \code{future} package is used for creating lagged data.frames.
-\code{multisession} or \code{multiprocess} futures are especially useful for (a) grouped time series with many groups and
-(b) high-dimensional data sets with many lags per feature.}
+\code{multisession} or \code{multicore} futures are especially useful for (a) grouped time series with many groups and
+(b) high-dimensional datasets with many lags per feature. Run \code{future::plan(future::multiprocess)} prior to this
+function to set up multissession or multicore parallel dataset creating.}
 }
 \value{
 An S3 object of class 'lagged_df' or 'grouped_lagged_df': A list of data.frames with new columns for the lagged/non-lagged features.

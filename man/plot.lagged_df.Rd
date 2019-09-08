@@ -7,13 +7,13 @@
 \method{plot}{lagged_df}(x, ...)
 }
 \arguments{
-\item{x}{An object of class 'lagged_df' from \code{create_lagged_df}.}
+\item{x}{An object of class 'lagged_df' from \code{create_lagged_df()}.}
 
-\item{...}{Arguments passed to \code{base::plot}}
+\item{...}{Arguments passed to \code{base::plot()}}
 }
 \value{
-A single plot if 'lookback' was specified in \code{create_lagged_df};
-a list of plots, one per predictor, if 'lookback_control' was specified.
+A single plot of class 'ggplot' if \code{lookback} was specified in \code{create_lagged_df()};
+a list of plots, one per feature, of class 'ggplot' if \code{lookback_control} was specified.
 }
 \description{
 Plot datasets with lagged predictors to view your direct forecasting setup across horizons.

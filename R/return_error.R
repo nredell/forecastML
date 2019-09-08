@@ -11,9 +11,9 @@
 #' row indices or dates (class 'Date') with length nrow(data_test).
 #' @param metrics Common forecast error metrics. See the Error Metrics section below for details. The
 #' default behavior is to return all metrics.
-#' @param models Optional. Filter results by user-defined model name supplied to \code{train_model()}.
-#' @param horizons Optional. Filter results by horizon.
-#' @param windows Optional. Filter results by validation window number.
+#' @param models Optional. A vector of user-defined model name supplied to \code{train_model()}.
+#' @param horizons Optional. A numeric vector to filter results by horizon.
+#' @param windows Optional. A numeric vector to filter results by validation window number.
 #' @param group_filter Optional. A string for filtering plot results for grouped time-series
 #' (e.g., \code{"group_col_1 == 'A'"}). The results are passed to \code{dplyr::filter()} internally.
 #'
@@ -31,10 +31,10 @@
 #' @section Error Metrics:
 #'
 #' \itemize{
-#'   \item \code{mae}: Means absolute error
+#'   \item \code{mae}: Mean absolute error
 #'   \item \code{mape}: Mean absolute percentage error
 #'   \item \code{mdape}: Median absolute percentage error
-#'   \item \code{smape}: Symmetrical absolute percentage error
+#'   \item \code{smape}: Symmetrical mean absolute percentage error
 #'}
 #' @section Methods and related functions:
 #'
@@ -213,14 +213,14 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 #' Plot validation dataset forecast error
 #'
 #' Plot forecast error at various levels of aggregation across validation datasets.
-#' @param x An object of class 'validation_error' from \code{return_error}.
-#' @param data_results An object of class 'training_results' from \code{predict.forecast_model}.
-#' @param type Select plot type; 'time' is the default plot.
-#' @param models Filter results by user-defined model name from \code{train_model} (optional).
-#' @param horizons Filter results by horizon (optional).
-#' @param windows Filter results by validation window number (optional).
-#' @param group_filter A string for filtering plot results for grouped time-series (e.g., "group_col_1 == 'A'").
-#' @param ... Arguments passed to \code{base::plot}
+#' @param x An object of class 'validation_error' from \code{return_error()}.
+#' @param data_results An object of class 'training_results' from \code{predict.forecast_model()}.
+#' @param type Select plot type; \code{type = "time"} is the default plot.
+#' @param models Optional. A vector of user-defined model names from \code{train_model()} to filter results.
+#' @param horizons Optional. A numeric vector to filter results by horizon.
+#' @param windows Optional. A numeric vector to filter results by validation window number.
+#' @param group_filter A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
+#' @param ... Arguments passed to \code{base::plot()}
 #' @return Forecast error plots of class 'ggplot'.
 #' @export
 plot.validation_error <- function(x, data_results, type = c("time", "horizon", "global"),

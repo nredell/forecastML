@@ -337,11 +337,11 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
 #' based on predictions on the outer-loop validation datasets.
 #'
 #' @param x An object of class 'training_results' from \code{predict.forecast_mode()l}.
-#' @param type Plot type, default is "prediction" for hold-out sample predictions.
+#' @param type Plot type, default is "prediction", for hold-out sample predictions.
 #' @param models Optional. Filter results by user-defined model name from \code{train_model()}.
-#' @param horizons Optional. Filter results by horizon.
-#' @param windows Optional. Filter results by validation window number.
-#' @param valid_indices Optional. Filter results by validation row indices or dates.
+#' @param horizons Optional. A numeric vector of horizons to filter results by horizon.
+#' @param windows Optional. A numeric vector of windows to filter results by validation window number.
+#' @param valid_indices Optional. A numeric or date vector to filter results by validation row indices or dates.
 #' @param group_filter Optional. A string for filtering plot results for grouped time-series
 #' (e.g., \code{"group_col_1 == 'A'"}). The results are passed to \code{dplyr::filter()} internally.
 #' @param ... Arguments passed to \code{base::plot()}

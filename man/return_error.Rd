@@ -22,11 +22,11 @@ row indices or dates (class 'Date') with length nrow(data_test).}
 \item{metrics}{Common forecast error metrics. See the Error Metrics section below for details. The
 default behavior is to return all metrics.}
 
-\item{models}{Optional. Filter results by user-defined model name supplied to \code{train_model()}.}
+\item{models}{Optional. A vector of user-defined model name supplied to \code{train_model()}.}
 
-\item{horizons}{Optional. Filter results by horizon.}
+\item{horizons}{Optional. A numeric vector to filter results by horizon.}
 
-\item{windows}{Optional. Filter results by validation window number.}
+\item{windows}{Optional. A numeric vector to filter results by validation window number.}
 
 \item{group_filter}{Optional. A string for filtering plot results for grouped time-series
 (e.g., \code{"group_col_1 == 'A'"}). The results are passed to \code{dplyr::filter()} internally.}
@@ -51,10 +51,10 @@ Compute forecast error metrics on the validation datasets or a test dataset.
 
 
 \itemize{
-  \item \code{mae}: Means absolute error
+  \item \code{mae}: Mean absolute error
   \item \code{mape}: Mean absolute percentage error
   \item \code{mdape}: Median absolute percentage error
-  \item \code{smape}: Symmetrical absolute percentage error
+  \item \code{smape}: Symmetrical mean absolute percentage error
 }
 }
 

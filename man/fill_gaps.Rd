@@ -15,17 +15,17 @@ fill_gaps(data, date_col = 1, frequency = NULL, groups = NULL,
 \item{frequency}{A string taking the same input as \code{base::seq(..., by = "frequency")} e.g., '1 month', '7 days', etc.}
 
 \item{groups}{Column name(s) that identify the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but are not lagged.
-Note that combining feature lags with grouped time-series will result in NA values throughout the data.}
+Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.}
 
 \item{static_features}{For grouped time-series only. Column name(s) that identify features that do not change through time.
 These columns are used as model features but are not lagged.
-Note that combining feature lags with grouped time-series will result in NA values throughout the data.}
+Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.}
 }
 \value{
 An object of class 'data.frame': The returned data.frame has the same number of columns and column order but
 with additional rows to account for gaps in data collection. If the user-supplied
 forecasting algorithm(s) cannot handle missing outcome values or missing dynamic features, these should either be
-imputed prior to \code{create_lagged_df} or filtered out in the user-supplied modeling function for \code{\link{train_model}}.
+imputed prior to \code{create_lagged_df()} or filtered out in the user-supplied modeling function for \code{\link{train_model}}.
 }
 \description{
 In order to create a modeling dataset with feature lags that are temporally correct, the entry
@@ -33,7 +33,7 @@ function in \code{forecastML}, \code{\link{create_lagged_df}}, needs evenly-spac
 gaps in data collection. \code{fill_gaps()} can help here.
 This function takes a \code{data.frame} with (a) dates, (b) the outcome being forecasted, and, optionally,
 (c) dynamic features that change through time, (d) group columns for multiple time-series modeling,
-and (d) static or non-dynamic features for multiple time-series modeling and returns a \code{data.frame}
+and (e) static or non-dynamic features for multiple time-series modeling and returns a \code{data.frame}
 with rows evenly spaced in time. Specifically, this function adds rows to the input dataset
 while filling in (a) dates, (b) grouping information, and (c) static features. The (a) outcome and (b)
 dynamic features will be \code{NA} for any missing time periods; these \code{NA} values can be left

@@ -17,9 +17,9 @@
 
 \item{type}{Select plot type; 'stability' is the default plot.}
 
-\item{horizons}{Optional. Filter results by horizon.}
+\item{horizons}{Optional. A numeric vector to filter results by horizon.}
 
-\item{windows}{Optional. Filter results by validation window number.}
+\item{windows}{Optional. A numeric vector to filter results by validation window number.}
 
 \item{...}{Arguments passed to \code{base::plot()}}
 }

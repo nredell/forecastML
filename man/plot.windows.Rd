@@ -15,7 +15,7 @@
 \item{show_labels}{Boolean. Show validation dataset IDs on the plot.}
 
 \item{group_filter}{Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
-The results are passed to \code{dplyr::filter()} internally.}
+This string is passed to \code{dplyr::filter()} internally.}
 
 \item{...}{Arguments passed to \code{base::plot()}}
 }

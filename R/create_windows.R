@@ -6,7 +6,7 @@
 #'
 #' @param lagged_df An object of class 'lagged_df' or 'grouped_lagged_df' from \code{\link{create_lagged_df}}.
 #' @param window_length An integer that defines the length of the contiguous validation dataset in dataset rows/dates.
-#' If dates were given in \code{create_lagged_df}, the validation window is 'window_length' * 'date frequency' in calendar time.
+#' If dates were given in \code{create_lagged_df()}, the validation window is 'window_length' * 'date frequency' in calendar time.
 #' Setting \code{window_length = 0} trains the model on the entire dataset--used for re-training after examining
 #' the cross-validation results.
 #' @param window_start Optional. An index or date identifying the row/date to start creating contiguous validation datasets.
@@ -157,7 +157,7 @@ create_windows <- function(lagged_df, window_length = 12,
 #' @param lagged_df An object of class 'lagged_df' from \code{create_lagged_df()}.
 #' @param show_labels Boolean. Show validation dataset IDs on the plot.
 #' @param group_filter Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
-#' The results are passed to \code{dplyr::filter()} internally.
+#' This string is passed to \code{dplyr::filter()} internally.
 #' @param ... Arguments passed to \code{base::plot()}
 #' @return A plot of the outer-loop nested cross-validation windows of class 'ggplot'.
 #' @example /R/examples/example_plot_windows.R

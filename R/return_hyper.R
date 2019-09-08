@@ -79,8 +79,8 @@ return_hyper <- function(forecast_model, hyper_function = NULL) {
 #' @param data_results An object of class 'training_results' from \code{predict.forecast_model(..., data_forecast = NULL)}.
 #' @param data_error An object of class 'validation_error' from \code{return_error(..., data_test = NULL)}.
 #' @param type Select plot type; 'stability' is the default plot.
-#' @param horizons Optional. Filter results by horizon.
-#' @param windows Optional. Filter results by validation window number.
+#' @param horizons Optional. A numeric vector to filter results by horizon.
+#' @param windows Optional. A numeric vector to filter results by validation window number.
 #' @param ... Arguments passed to \code{base::plot()}
 #' @return Hyperparameter plots of class 'ggplot'.
 #' @example /R/examples/example_return_hyper.R
