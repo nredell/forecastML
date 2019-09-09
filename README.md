@@ -1,4 +1,4 @@
-[![lifecycle](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#experimental)
+[![lifecycle](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://www.tidyverse.org/lifecycle/#maturing)
 [![Travis Build
 Status](https://travis-ci.org/nredell/forecastML.svg?branch=master)](https://travis-ci.org/nredell/forecastML)
 
@@ -44,9 +44,9 @@ base::Sys.setenv(LC_ALL="en_US.UTF-8")
 
 * Detailed **[forecastML overview vignette](https://nredell.github.io/forecastML/vignettes/package_overview.html)**.
 
-* **[Creating custom feature lags for model training](https://nredell.github.io/data_science_blog/forecastML/lagged_features.nb.html)**.
+* **[Creating custom feature lags for model training](https://nredell.github.io/forecastML/vignettes/lagged_features.html)**.
 
-* **[Forecasting with multiple or grouped time-series](https://nredell.github.io/data_science_blog/forecastML/grouped_forecast.nb.html)**.
+* **[Forecasting with multiple or grouped time-series](https://nredell.github.io/forecastML/vignettes/grouped_forecast.html)**.
 
 ## Cheat Sheet
 
