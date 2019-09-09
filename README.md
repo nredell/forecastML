@@ -42,7 +42,7 @@ base::Sys.setenv(LC_ALL="en_US.UTF-8")
 
 ## Vignettes
 
-* Detailed **[forecastML overview vignette](https://nredell.github.io/data_science_blog/forecastML/)**.
+* Detailed **[forecastML overview vignette](https://nredell.github.io/forecastML/vignettes/package_overview.html)**.
 
 * **[Creating custom feature lags for model training](https://nredell.github.io/data_science_blog/forecastML/lagged_features.nb.html)**.
 
