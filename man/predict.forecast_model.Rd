@@ -5,7 +5,7 @@
 \title{Predict on validation datasets or forecast}
 \usage{
 \method{predict}{forecast_model}(..., prediction_function = list(NULL),
-  data_forecast = NULL)
+  data = NULL)
 }
 \arguments{
 \item{...}{One or more trained models from \code{train_model()}.}
@@ -18,17 +18,63 @@ of model predictions. If the prediction function returns a 1-column data.frame, 
 If the prediction function returns a 3-column data.frame, lower and upper forecast bounds are assumed (the
 order of the 3 columns does not matter). See the example below for details.}
 
-\item{data_forecast}{If \code{NULL}, predictions are returned for the validation datasets in each 'forecast_model'
-in .... If an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")}, forecasts from 1:h.}
+\item{data}{If \code{data} is a training dataset from \code{create_lagged_df(..., type = "train")}, validation dataset
+predictions are returned; else, if \code{data} is a forecasting dataset from \code{create_lagged_df(..., type = "forecast")},
+forecasts from horizons 1:h are returned.}
 }
 \value{
-If \code{data_forecast = NULL}, an S3 object of class 'training_results' object. If
-\code{data_forecast = create_lagged_df(..., type = "forecast")}, an S3 object of class 'forecast_results'.
+If \code{data = create_lagged_df(..., type = "forecast")}, an S3 object of class 'training_results'. If
+\code{data = create_lagged_df(..., type = "forecast")}, an S3 object of class 'forecast_results'.
+
+\describe{
+  \item \strong{Columns in returned 'training_results' data.frame:}{
+    \itemize{
+      \item \code{model}: User-supplied model name in \code{train_model()}.
+      \item \code{horizon}: Forecast horizons, 1:h, measured in dataset rows.
+      \item \code{window_length}: Validation window length measured in dataset rows.
+      \item \code{valid_indices}: Validation dataset row names from
+      \code{attributes(create_lagged_df())$row_indices}.
+      \item \code{date_indices}: If given, validation dataset date indices from
+      \code{attributes(create_lagged_df())$date_indices}.
+      \item \code{"groups"}: If given, the user_supplied groups in \code{create_lagged_df()}.
+      \item \code{"outcome_name"}: The target being forecasted.
+      \item \code{"outcome_name"_pred}: The model predictions.
+      \item \code{"outcome_name"_pred_lower}: If given, the lower prediction bounds returned by
+      the user-supplied prediction function.
+      \item \code{"outcome_name"_pred_upper}: If given, the upper prediction bounds returned by
+      the user-supplied prediction function.
+      }
+    }
+ }
+
+ \describe{
+  \item \strong{Columns in returned 'forecast_results' data.frame:}{
+    \itemize{
+      \item \code{model}: User-supplied model name in \code{train_model()}.
+      \item \code{model_forecast_horizon}: The direct-forecasting time horizon that the model
+      was trained on.
+      \item \code{horizon}: Forecast horizons, 1:h, measured in dataset rows.
+      \item \code{window_length}: Validation window length measured in dataset rows.
+      \item \code{window_number}: Validation dataset number.
+      \item \code{forecast_period}: The forecast period in row indices or dates. The forecast
+      period starts at either
+      \code{attributes(create_lagged_df())$data_stop + 1} for row indices or
+      \code{attributes(create_lagged_df())$data_stop + 1 * frequency} for date indices.
+      \item \code{"groups"}: If given, the user_supplied groups in \code{create_lagged_df()}.
+      \item \code{"outcome_name"}: The target being forecasted.
+      \item \code{"outcome_name"_pred}: The model forecasts.
+      \item \code{"outcome_name"_pred_lower}: If given, the lower forecast bounds returned by
+      the user-supplied prediction function.
+      \item \code{"outcome_name"_pred_upper}: If given, the upper forecast bounds returned by
+      the user-supplied prediction function.
+      }
+    }
+  }
 }
 \description{
-Predict with a 'forecast_model' object from \code{train_model()}. If \code{data_forecast = NULL},
+Predict with a 'forecast_model' object from \code{train_model()}. If \code{data = create_lagged_df(..., type = "train")},
 predictions are returned for the outer-loop nested cross-validation datasets.
-If \code{data_forecast} is an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")},
+If \code{data} is an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")},
 predictions are returned for the horizons specified in \code{create_lagged_df()}.
 }
 \examples{
@@ -80,12 +126,13 @@ prediction_function <- function(model, data_features) {
 }
 
 # Predict on the validation datasets.
-data_valid <- predict(model_results, prediction_function = list(prediction_function))
+data_valid <- predict(model_results, prediction_function = list(prediction_function),
+                      data = data_train)
 
 # Forecast.
 data_forecast <- create_lagged_df(data_seatbelts, type = "forecast", outcome_cols = 1,
                                   lookback = lookback, horizon = horizons)
 data_forecasts <- predict(model_results, prediction_function = list(prediction_function),
-                          data_forecast = data_forecast)
+                          data = data_forecast)
 }
 }

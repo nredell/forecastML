@@ -46,7 +46,8 @@ prediction_function <- function(model, data_features) {
 }
 
 # Predict on the validation datasets.
-data_valid <- predict(model_results, prediction_function = list(prediction_function))
+data_valid <- predict(model_results, prediction_function = list(prediction_function),
+                      data = data_train)
 
 # User-defined hyperparameter function - LASSO
 # The hyperparameter function should take one positional argument--the returned model

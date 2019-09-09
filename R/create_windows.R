@@ -14,11 +14,11 @@
 #' @param skip Optional. An integer giving a fixed number of dataset rows/time to skip between validation datasets. If dates were given
 #' in \code{create_lagged_df}, the time between validation windows is \code{skip} * 'date frequency'.
 #' @param include_partial_window Boolean. If \code{TRUE}, keep validation datasets that are shorter than \code{window_length}.
-#' @return An S3 object if class 'windows': A data.frame giving the indices for the validation datasets.
+#' @return An S3 object of class 'windows': A data.frame giving the indices for the validation datasets.
 #'
 #' @section Methods and related functions:
 #'
-#' The output of of \code{create_windows()} is passed into
+#' The output of \code{create_windows()} is passed into
 #'
 #' \itemize{
 #'   \item \code{\link{train_model}}

@@ -10,13 +10,13 @@
   group_filter = NULL, ...)
 }
 \arguments{
-\item{x}{An object of class 'forecast_results' from \code{predict.forecast_model}.}
+\item{x}{An object of class 'forecast_results' from \code{predict.forecast_model()}.}
 
 \item{data_actual}{A data.frame containing the target/outcome name and any grouping columns.}
 
 \item{actual_indices}{Required if 'data_actual' is given. A vector or 1-column data.frame
 of numeric row indices or dates (class 'Date') with length \code{nrow(data_actual)}.
-The data can be historical and/or holdout/test data, forecasts and actuals are matched by row.names().}
+The data can be historical and/or holdout/test data, forecasts and actuals are matched by \code{row.names()}.}
 
 \item{models}{Optional. Filter results by user-defined model name from \code{train_model()}.}
 
@@ -27,13 +27,14 @@ The data can be historical and/or holdout/test data, forecasts and actuals are m
 \item{facet_plot}{Adjust the plot display through \code{ggplot2::facet_grid()}.
 \code{facet_plot = NULL} plots results in one facet.}
 
-\item{group_filter}{Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).}
+\item{group_filter}{Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"});
+passed to \code{dplyr::filter()} internally.}
 
-\item{...}{Arguments passed to \code{base::plot}}
+\item{...}{Arguments passed to \code{base::plot()}}
 }
 \value{
 Forecast plot of class 'ggplot'.
 }
 \description{
-A forecast plot for each horizon for each model in predict.forecast_model().
+A forecast plot for each horizon for each model in \code{predict.forecast_model()}.
 }

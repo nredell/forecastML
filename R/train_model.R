@@ -8,7 +8,7 @@
 #' @param lagged_df An object of class 'lagged_df' from \code{\link{create_lagged_df}}.
 #' @param windows An object of class 'windows' from \code{\link{create_windows}}.
 #' @param model_function A user-defined wrapper function for model training that takes 2
-#' positional arguments--(1) a data.frame made with \code{create_lagged_df} and
+#' positional arguments--(1) a data.frame made with \code{create_lagged_df()} and
 #' (2) the column index of the modeled outcome--and returns a model object which is used
 #' as input in the user-defined prediction function (see example).
 #' @param model_name A name for the model. Required.
@@ -34,8 +34,8 @@
 #'
 #' \itemize{
 #'   \item \code{\link[=predict.forecast_model]{predict}}
-#'   \item \code{\link[=plot.training_results]{plot}} (from \code{predict.forecast_model(data_forecast = NULL)})
-#'   \item \code{\link[=plot.forecast_results]{plot}} (from \code{predict.forecast_model(data_forecast = ...)})
+#'   \item \code{\link[=plot.training_results]{plot}} (from \code{predict.forecast_model(data = create_lagged_df(..., type = "train"))})
+#'   \item \code{\link[=plot.forecast_results]{plot}} (from \code{predict.forecast_model(data = create_lagged_df(..., type = "forecast"))})
 #' }
 #' @example /R/examples/example_train_model.R
 #' @export
@@ -123,11 +123,7 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
       # Model training.
       model <- model_function(data_train, outcome_cols)
 
-      x_valid <- data[row_indices %in% valid_indices, -(1:n_outcomes), drop = FALSE]
-      y_valid <- data[row_indices %in% valid_indices, 1:n_outcomes, drop = FALSE]
-
-      model_plus_valid_data  <- list("model" = model, "x_valid" = x_valid,
-                                     "y_valid" = y_valid, "window" = window_length,
+      model_plus_valid_data  <- list("model" = model, "window" = window_length,
                                      "valid_indices" = valid_indices, "date_indices" = valid_indices_date)
 
       model_plus_valid_data
@@ -157,9 +153,9 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
 
 #' Predict on validation datasets or forecast
 #'
-#' Predict with a 'forecast_model' object from \code{train_model()}. If \code{data_forecast = NULL},
+#' Predict with a 'forecast_model' object from \code{train_model()}. If \code{data = create_lagged_df(..., type = "train")},
 #' predictions are returned for the outer-loop nested cross-validation datasets.
-#' If \code{data_forecast} is an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")},
+#' If \code{data} is an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")},
 #' predictions are returned for the horizons specified in \code{create_lagged_df()}.
 #'
 #' @param ... One or more trained models from \code{train_model()}.
@@ -170,15 +166,64 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
 #' of model predictions. If the prediction function returns a 1-column data.frame, point forecasts are assumed.
 #' If the prediction function returns a 3-column data.frame, lower and upper forecast bounds are assumed (the
 #' order of the 3 columns does not matter). See the example below for details.
-#' @param data_forecast If \code{NULL}, predictions are returned for the validation datasets in each 'forecast_model'
-#' in .... If an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")}, forecasts from 1:h.
-#' @return If \code{data_forecast = NULL}, an S3 object of class 'training_results' object. If
-#' \code{data_forecast = create_lagged_df(..., type = "forecast")}, an S3 object of class 'forecast_results'.
+#' @param data If \code{data} is a training dataset from \code{create_lagged_df(..., type = "train")}, validation dataset
+#' predictions are returned; else, if \code{data} is a forecasting dataset from \code{create_lagged_df(..., type = "forecast")},
+#' forecasts from horizons 1:h are returned.
+#' @return If \code{data = create_lagged_df(..., type = "forecast")}, an S3 object of class 'training_results'. If
+#' \code{data = create_lagged_df(..., type = "forecast")}, an S3 object of class 'forecast_results'.
+#'
+#' \describe{
+#'   \item \strong{Columns in returned 'training_results' data.frame:}{
+#'     \itemize{
+#'       \item \code{model}: User-supplied model name in \code{train_model()}.
+#'       \item \code{horizon}: Forecast horizons, 1:h, measured in dataset rows.
+#'       \item \code{window_length}: Validation window length measured in dataset rows.
+#'       \item \code{valid_indices}: Validation dataset row names from
+#'       \code{attributes(create_lagged_df())$row_indices}.
+#'       \item \code{date_indices}: If given, validation dataset date indices from
+#'       \code{attributes(create_lagged_df())$date_indices}.
+#'       \item \code{"groups"}: If given, the user_supplied groups in \code{create_lagged_df()}.
+#'       \item \code{"outcome_name"}: The target being forecasted.
+#'       \item \code{"outcome_name"_pred}: The model predictions.
+#'       \item \code{"outcome_name"_pred_lower}: If given, the lower prediction bounds returned by
+#'       the user-supplied prediction function.
+#'       \item \code{"outcome_name"_pred_upper}: If given, the upper prediction bounds returned by
+#'       the user-supplied prediction function.
+#'       }
+#'     }
+#'  }
+#'
+#'  \describe{
+#'   \item \strong{Columns in returned 'forecast_results' data.frame:}{
+#'     \itemize{
+#'       \item \code{model}: User-supplied model name in \code{train_model()}.
+#'       \item \code{model_forecast_horizon}: The direct-forecasting time horizon that the model
+#'       was trained on.
+#'       \item \code{horizon}: Forecast horizons, 1:h, measured in dataset rows.
+#'       \item \code{window_length}: Validation window length measured in dataset rows.
+#'       \item \code{window_number}: Validation dataset number.
+#'       \item \code{forecast_period}: The forecast period in row indices or dates. The forecast
+#'       period starts at either
+#'       \code{attributes(create_lagged_df())$data_stop + 1} for row indices or
+#'       \code{attributes(create_lagged_df())$data_stop + 1 * frequency} for date indices.
+#'       \item \code{"groups"}: If given, the user_supplied groups in \code{create_lagged_df()}.
+#'       \item \code{"outcome_name"}: The target being forecasted.
+#'       \item \code{"outcome_name"_pred}: The model forecasts.
+#'       \item \code{"outcome_name"_pred_lower}: If given, the lower forecast bounds returned by
+#'       the user-supplied prediction function.
+#'       \item \code{"outcome_name"_pred_upper}: If given, the upper forecast bounds returned by
+#'       the user-supplied prediction function.
+#'       }
+#'     }
+#'   }
+#'
 #' @example /R/examples/example_predict_train_model.R
 #' @export
-predict.forecast_model <- function(..., prediction_function = list(NULL), data_forecast = NULL) {
+predict.forecast_model <- function(..., prediction_function = list(NULL), data = NULL) {
 
   model_list <- list(...)
+
+  type <- attributes(data)$type
 
   if(!all(unlist(lapply(model_list, function(x) {class(x)[1]})) %in% "forecast_model")) {
     stop("The 'model_results' argument takes a list of objects of class 'forecast_model' as input. Run train_model() first.")
@@ -188,19 +233,23 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
     stop("The number of prediction functions does not equal the number of forecast models.")
   }
 
+  if(!type %in% c("train", "forecast")) {
+    stop("The 'data' argument takes an object of class 'lagged_df' from create_lagged_df().")
+  }
+
   outcome_cols <- attributes(model_list[[1]])$outcome_cols
   outcome_names <- attributes(model_list[[1]])$outcome_names
   row_indices <- attributes(model_list[[1]])$row_indices
   date_indices <- attributes(model_list[[1]])$date_indices
   frequency <- attributes(model_list[[1]])$frequency
 
-  if (is.null(data_forecast)) {
+  if (type == "train") {
 
     data_stop <- attributes(model_list[[1]])$data_stop
 
   } else {
 
-    data_stop <- attributes(data_forecast)$data_stop
+    data_stop <- attributes(data)$data_stop
   }
 
   horizons <- attributes(model_list[[1]])$horizons
@@ -218,21 +267,24 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
         data_results <- model_list[[i]][[j]][[k]]
 
         # Predict on training data or the forecast dataset?
-        if (is.null(data_forecast)) {  # Nested cross-validation.
+        if (type == "train") {  # Nested cross-validation.
 
-          data_pred <- prediction_fun(data_results$model, data_results$x_valid)  # Nested cross-validation.
+          x_valid <- data[[j]][row_indices %in% data_results$valid_indices, -(outcome_cols), drop = FALSE]
+          y_valid <- data[[j]][row_indices %in% data_results$valid_indices, outcome_cols, drop = FALSE]  # Actuals in function return.
+
+          data_pred <- prediction_fun(data_results$model, x_valid)  # Nested cross-validation.
 
           if (!is.null(groups)) {
 
-            data_groups <- data_results$x_valid[, groups, drop = FALSE]  # save out group identifiers.
+            data_groups <- x_valid[, groups, drop = FALSE]  # save out group identifiers.
           }
 
         } else {  # Forecast.
 
-          forecast_period <- data_forecast[[j]][, "index", drop = FALSE]
+          forecast_period <- data[[j]][, "index", drop = FALSE]
           names(forecast_period) <- "forecast_period"
-          forecast_horizons <- data_forecast[[j]][, "horizon", drop = FALSE]
-          data_for_forecast <- data_forecast[[j]][, !names(data_forecast[[j]]) %in% c("index", "horizon"), drop = FALSE]  # Remove ID columns for predict().
+          forecast_horizons <- data[[j]][, "horizon", drop = FALSE]
+          data_for_forecast <- data[[j]][, !names(data[[j]]) %in% c("index", "horizon"), drop = FALSE]  # Remove ID columns for predict().
 
           data_pred <- prediction_fun(data_results$model, data_for_forecast)  # User-defined prediction function.
 
@@ -263,7 +315,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
 
         model_name <- attributes(model_list[[i]])$model_name
 
-        if (is.null(data_forecast)) {  # Nested cross-validation.
+        if (type == "train") {  # Nested cross-validation.
 
           data_temp <- data.frame("model" = model_name,
                                   "horizon" = attributes(model_list[[i]][[j]])$horizon,
@@ -275,11 +327,11 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
 
           if (is.null(groups)) {
 
-            data_temp <- cbind(data_temp, data_results$y_valid, data_pred)
+            data_temp <- cbind(data_temp, y_valid, data_pred)
 
           } else {
 
-            data_temp <- cbind(data_temp, data_groups, data_results$y_valid, data_pred)
+            data_temp <- cbind(data_temp, data_groups, y_valid, data_pred)
           }
 
         } else {  # Forecast.
@@ -317,10 +369,10 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
   attr(data_out, "row_indices") <- row_indices
   attr(data_out, "date_indices") <- date_indices
   attr(data_out, "frequency") <- frequency
-  attr(data_out, "data_stop") <- data_stop  # To-do: this may only be relevant for class "forecast_results".
+  attr(data_out, "data_stop") <- data_stop
   attr(data_out, "groups") <- groups
 
-  if (is.null(data_forecast)) {
+  if (type == "train") {
     class(data_out) <- c("training_results", "forecast_model", class(data_out))
   } else {
     class(data_out) <- c("forecast_results", "forecast_model", class(data_out))
@@ -333,8 +385,8 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data_f
 
 #' Plot an object of class training_results
 #'
-#' Several diagnostic plots can be returned to assess the quality of the forecats
-#' based on predictions on the outer-loop validation datasets.
+#' Several diagnostic plots can be returned to assess the quality of the forecasts
+#' based on predictions on the validation datasets.
 #'
 #' @param x An object of class 'training_results' from \code{predict.forecast_mode()l}.
 #' @param type Plot type, default is "prediction", for hold-out sample predictions.
@@ -611,20 +663,21 @@ plot.training_results <- function(x,
 
 #' Plot an object of class forecast_results
 #'
-#' A forecast plot for each horizon for each model in predict.forecast_model().
+#' A forecast plot for each horizon for each model in \code{predict.forecast_model()}.
 #'
-#' @param x An object of class 'forecast_results' from \code{predict.forecast_model}.
+#' @param x An object of class 'forecast_results' from \code{predict.forecast_model()}.
 #' @param data_actual A data.frame containing the target/outcome name and any grouping columns.
 #' @param actual_indices Required if 'data_actual' is given. A vector or 1-column data.frame
 #' of numeric row indices or dates (class 'Date') with length \code{nrow(data_actual)}.
-#' The data can be historical and/or holdout/test data, forecasts and actuals are matched by row.names().
+#' The data can be historical and/or holdout/test data, forecasts and actuals are matched by \code{row.names()}.
 #' @param models Optional. Filter results by user-defined model name from \code{train_model()}.
 #' @param horizons Optional. Filter results by horizon.
 #' @param windows Optional. Filter results by validation window number.
 #' @param facet_plot Adjust the plot display through \code{ggplot2::facet_grid()}.
 #' \code{facet_plot = NULL} plots results in one facet.
-#' @param group_filter Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
-#' @param ... Arguments passed to \code{base::plot}
+#' @param group_filter Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"});
+#' passed to \code{dplyr::filter()} internally.
+#' @param ... Arguments passed to \code{base::plot()}
 #' @return Forecast plot of class 'ggplot'.
 #' @export
 plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,

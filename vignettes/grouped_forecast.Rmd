@@ -309,10 +309,13 @@ summary(model_results_cv$horizon_1$window_1$model)
 * Then we'll forecast with each of our 21 models to get a sense of the stability of the forecasts 
 produced from models trained on different subsets of our historical data.
 
-#### User-defined predict function
+#### User-defined prediction function
 
-* The function takes **2 positional arguments** and returns a 1-column data.frame. Future 
-versions of `forecastML` will support returning lower and upper forecast bounds.
+* A wrapper function that takes the following **positional arguments**:
+    * **1:** The model returned from the user-defined modeling function.
+    * **2:** A `data.frame()` of the model predictors from `forecastML::create_lagged_df(type = "train")`.
+* and **returns** a `data.frame()` of predictions with 1 or 3 columns. A 1-column data.frame will produce point forecasts, 
+and a 3-column data.frame can be used to return point, lower, and upper forecasts (column names and order do not matter).
 
 ```{r}
 prediction_function <- function(model, data_features) {
@@ -328,11 +331,10 @@ prediction_function <- list(prediction_function)
 
 #### Historical model fit
 
-* We're predicting on our validation datasets because we haven't specified the `data_forecast` argument 
-in `predict()`
+* We're predicting on our validation datasets.
 
 ```{r}
-data_pred_cv <- predict(model_results_cv, prediction_function = prediction_function)
+data_pred_cv <- predict(model_results_cv, prediction_function = prediction_function, data = data_train)
 
 print(paste0("The class of `data_pred_cv` is ", class(data_pred_cv)))
 ```
@@ -390,7 +392,7 @@ DT::datatable(head(data_forecast$horizon_1), options = list(scrollX = TRUE))
 
 ```{r}
 data_forecasts <- predict(model_results_cv, prediction_function = prediction_function, 
-                          data_forecast = data_forecast)
+                          data = data_forecast)
 
 print(paste0("The class of `data_forecasts` is ", class(data_forecasts)))
 ```
@@ -433,6 +435,7 @@ p
 ***
 
 ```{r}
+# Un-comment the code below and set 'use_future' to TRUE.
 #future::plan(future::multiprocess)
 
 model_results_no_cv <- forecastML::train_model(lagged_df = data_train, 
@@ -451,7 +454,7 @@ print(paste0("The class of `model_results_no_cv` is ", class(model_results_no_cv
 
 ```{r}
 data_forecasts <- predict(model_results_no_cv, prediction_function = prediction_function, 
-                          data_forecast = data_forecast)
+                          data = data_forecast)
 
 print(paste0("The class of `data_forecasts` is ", class(data_forecasts)))
 ```

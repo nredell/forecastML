@@ -11,9 +11,11 @@
 \arguments{
 \item{x}{An object of class 'forecast_model_hyper' from \code{return_hyper()}.}
 
-\item{data_results}{An object of class 'training_results' from \code{predict.forecast_model(..., data_forecast = NULL)}.}
+\item{data_results}{An object of class 'training_results' from
+\code{predict.forecast_model(..., data_forecast = NULL)}.}
 
-\item{data_error}{An object of class 'validation_error' from \code{return_error(..., data_test = NULL)}.}
+\item{data_error}{An object of class 'validation_error' from
+\code{return_error(..., data_test = NULL)}.}
 
 \item{type}{Select plot type; 'stability' is the default plot.}
 
@@ -78,7 +80,8 @@ prediction_function <- function(model, data_features) {
 }
 
 # Predict on the validation datasets.
-data_valid <- predict(model_results, prediction_function = list(prediction_function))
+data_valid <- predict(model_results, prediction_function = list(prediction_function),
+                      data = data_train)
 
 # User-defined hyperparameter function - LASSO
 # The hyperparameter function should take one positional argument--the returned model

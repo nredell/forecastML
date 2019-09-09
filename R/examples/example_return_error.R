@@ -46,7 +46,8 @@ prediction_function <- function(model, data_features) {
 }
 
 # Predict on the validation datasets.
-data_valid <- predict(model_results, prediction_function = list(prediction_function))
+data_valid <- predict(model_results, prediction_function = list(prediction_function),
+                      data = data_train)
 
 # Forecast error metrics for validation datasets.
 data_error <- return_error(data_valid)

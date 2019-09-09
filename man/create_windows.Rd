@@ -25,7 +25,7 @@ in \code{create_lagged_df}, the time between validation windows is \code{skip} *
 \item{include_partial_window}{Boolean. If \code{TRUE}, keep validation datasets that are shorter than \code{window_length}.}
 }
 \value{
-An S3 object if class 'windows': A data.frame giving the indices for the validation datasets.
+An S3 object of class 'windows': A data.frame giving the indices for the validation datasets.
 }
 \description{
 Flexibly ceate blocks of time-contiguous validation datasets to assess the likely forecast accuracy
@@ -35,7 +35,7 @@ the outer loop of a nested cross-validation model training setup.
 \section{Methods and related functions}{
 
 
-The output of of \code{create_windows()} is passed into
+The output of \code{create_windows()} is passed into
 
 \itemize{
   \item \code{\link{train_model}}
