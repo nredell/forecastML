@@ -489,7 +489,7 @@ plot.training_results <- function(x,
         p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
                            aes(x = .data$index, y = .data$value,
                                group = .data$ggplot_color_group,
-                               color = NULL), linetype = 2)
+                               color = .data$ggplot_color_group), linetype = 2)
       }
 
     } else if (type == "residual") {
