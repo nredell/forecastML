@@ -5,8 +5,8 @@
 \title{Create model training and forecasting datasets with lagged, grouped, and static features}
 \usage{
 create_lagged_df(data, type = c("train", "forecast"), outcome_cols = 1,
-  horizons, lookback = NULL, lookback_control = NULL, groups = NULL,
-  static_features = NULL, dates = NULL, frequency = NULL,
+  horizons, lookback = NULL, lookback_control = NULL, dates = NULL,
+  frequency = NULL, groups = NULL, static_features = NULL,
   use_future = FALSE)
 }
 \arguments{
@@ -37,6 +37,12 @@ and static feature columns should have a \code{lookback_control} value of 0. \co
 from the input dataset. Lags that don't support direct forecasting for a given horizon
 are silently dropped. Either \code{lookback} or \code{lookback_control} need to be specified.}
 
+\item{dates}{A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal \code{nrow(data)}. Required if \code{groups}
+are given.}
+
+\item{frequency}{Date frequency. A string taking the same input as \code{base::seq(..., by = "frequency")} e.g., '1 month', '7 days', etc.
+Required if \code{dates} are given.}
+
 \item{groups}{Column name(s) that identify the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but
 are not lagged. Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.}
 
@@ -44,16 +50,10 @@ are not lagged. Note that combining feature lags with grouped time-series will r
 These columns are used as model features but are not lagged.
 Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.}
 
-\item{dates}{A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal \code{nrow(data)}. Required if \code{groups}
-are given.}
-
-\item{frequency}{A string taking the same input as \code{base::seq(..., by = "frequency")} e.g., '1 month', '7 days', etc.
-Required if \code{dates} are given.}
-
 \item{use_future}{Boolean. If \code{TRUE}, the \code{future} package is used for creating lagged data.frames.
 \code{multisession} or \code{multicore} futures are especially useful for (a) grouped time series with many groups and
 (b) high-dimensional datasets with many lags per feature. Run \code{future::plan(future::multiprocess)} prior to this
-function to set up multissession or multicore parallel dataset creating.}
+function to set up multissession or multicore parallel dataset creation.}
 }
 \value{
 An S3 object of class 'lagged_df' or 'grouped_lagged_df': A list of data.frames with new columns for the lagged/non-lagged features.
@@ -80,6 +80,28 @@ The contents of the returned data.frame(s) are as follows:
 Create a list of datasets with lagged, grouped, and static features to (a) train forecasting models for
 specified forecast horizons and (b) forecast into the future with a trained ML model.
 }
+\section{Attributes}{
+
+
+\itemize{
+  \item \code{names}: The horizon-specific datasets that can be accessed by \code{my_lagged_df$horizon_h} where 'h' gives
+  the forecast horizon.
+  \item \code{type}: Training, \code{train}, or forecasting, \code{forecast}, dataset(s).
+  \item \code{horizons}: Forecast horizons measured in dataset rows.
+  \item \code{outcome_cols}: The column index of the target being forecasted.
+  \item \code{outcome_names}: The name of the target being forecasted.
+  \item \code{predictor_names}: The predictor or feature names from the input dataset.
+  \item \code{row_indices}: The \code{row.names()} of the output dataset. For non-grouped datasets, the first
+  \code{lookback} + 1 rows are removed from the beginning of the dataset to remove \code{NA} values in the lagged features.
+  \item \code{date_indices}: If \code{dates} are given, the vector of \code{dates}.
+  \item \code{frequency}: If \code{dates} are given, the date/time frequency.
+  \item \code{data_start}: \code{min(row_indices)} or \code{min(date_indices)}.
+  \item \code{data_stop}: \code{max(row_indices)} or \code{max(date_indices)}.
+  \item \code{groups}: If \code{groups} are given, a vector of group names.
+  \item \code{class}: grouped_lagged_df, lagged_df, list
+}
+}
+
 \section{Methods and related functions}{
 
 

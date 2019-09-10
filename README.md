@@ -122,7 +122,7 @@ prediction_function <- function(model, data_features) {
 }
 
 # Predict on the validation datasets.
-data_valid <- predict(model_results, prediction_function = list(prediction_function))
+data_valid <- predict(model_results, prediction_function = list(prediction_function), data = data_train)
 
 #------------------------------------------------------------------------------
 # Plot forecasts for each validation dataset.
@@ -138,7 +138,7 @@ data_forecast <- forecastML::create_lagged_df(data_seatbelts, type = "forecast",
 
 # Forecasts.
 data_forecasts <- predict(model_results, prediction_function = list(prediction_function),
-                          data_forecast = data_forecast)
+                          data = data_forecast)
 
 plot(data_forecasts, data_seatbelts[-(1:150), ], as.numeric(row.names(data_seatbelts[-(1:150), ])), horizons = c(1, 6, 12))
 ```

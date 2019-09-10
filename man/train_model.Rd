@@ -13,7 +13,7 @@ train_model(lagged_df, windows, model_function, model_name,
 \item{windows}{An object of class 'windows' from \code{\link{create_windows}}.}
 
 \item{model_function}{A user-defined wrapper function for model training that takes 2
-positional arguments--(1) a data.frame made with \code{create_lagged_df} and
+positional arguments--(1) a data.frame made with \code{create_lagged_df()} and
 (2) the column index of the modeled outcome--and returns a model object which is used
 as input in the user-defined prediction function (see example).}
 
@@ -50,8 +50,8 @@ and has the following generic S3 methods
 
 \itemize{
   \item \code{\link[=predict.forecast_model]{predict}}
-  \item \code{\link[=plot.training_results]{plot}} (from \code{predict.forecast_model(data_forecast = NULL)})
-  \item \code{\link[=plot.forecast_results]{plot}} (from \code{predict.forecast_model(data_forecast = ...)})
+  \item \code{\link[=plot.training_results]{plot}} (from \code{predict.forecast_model(data = create_lagged_df(..., type = "train"))})
+  \item \code{\link[=plot.forecast_results]{plot}} (from \code{predict.forecast_model(data = create_lagged_df(..., type = "forecast"))})
 }
 }
 

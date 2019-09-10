@@ -46,11 +46,12 @@ prediction_function <- function(model, data_features) {
 }
 
 # Predict on the validation datasets.
-data_valid <- predict(model_results, prediction_function = list(prediction_function))
+data_valid <- predict(model_results, prediction_function = list(prediction_function),
+                      data = data_train)
 
 # Forecast.
 data_forecast <- create_lagged_df(data_seatbelts, type = "forecast", outcome_cols = 1,
                                   lookback = lookback, horizon = horizons)
 data_forecasts <- predict(model_results, prediction_function = list(prediction_function),
-                          data_forecast = data_forecast)
+                          data = data_forecast)
 }

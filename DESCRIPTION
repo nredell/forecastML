@@ -1,7 +1,7 @@
 Package: forecastML
 Type: Package
 Title: Time-Series Forecasting with Machine Learning Methods
-Version: 0.4.0
+Version: 0.4.1
 Author: Nickalus Redell
 Maintainer: Nickalus Redell <nickalusredell@gmail.com>
 Description: The purpose of forecastML is to provide a series of functions and visualizations that simplify the process of multi-step-ahead direct forecasting with standard machine learning algorithms. It's a wrapper package aimed at providing maximum flexibility in model-building--choose any machine learning algorithm from any R package--while helping the user quickly assess the (a) accuracy, (b) stability, and (c) generalizability of grouped (i.e., multiple related time-series) and ungrouped single-outcome forecasts produced from potentially high-dimensional modeling datasets. This package is inspired by Bergmeir, Hyndman, and Koo's 2018 paper "A note on the validity of cross-validation for evaluating autoregressive time series prediction" <https://robjhyndman.com/papers/cv-wp.pdf>. 

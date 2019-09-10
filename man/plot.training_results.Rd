@@ -31,6 +31,6 @@
 Diagnostic plots of class 'ggplot'.
 }
 \description{
-Several diagnostic plots can be returned to assess the quality of the forecats
-based on predictions on the outer-loop validation datasets.
+Several diagnostic plots can be returned to assess the quality of the forecasts
+based on predictions on the validation datasets.
 }

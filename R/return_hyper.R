@@ -76,8 +76,10 @@ return_hyper <- function(forecast_model, hyper_function = NULL) {
 #' Plot hyperparameter stability and relationship with error metrics across validation datasets.
 #'
 #' @param x An object of class 'forecast_model_hyper' from \code{return_hyper()}.
-#' @param data_results An object of class 'training_results' from \code{predict.forecast_model(..., data_forecast = NULL)}.
-#' @param data_error An object of class 'validation_error' from \code{return_error(..., data_test = NULL)}.
+#' @param data_results An object of class 'training_results' from
+#' \code{predict.forecast_model(..., data_forecast = NULL)}.
+#' @param data_error An object of class 'validation_error' from
+#' \code{return_error(..., data_test = NULL)}.
 #' @param type Select plot type; 'stability' is the default plot.
 #' @param horizons Optional. A numeric vector to filter results by horizon.
 #' @param windows Optional. A numeric vector to filter results by validation window number.
@@ -219,7 +221,7 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
     p <- p + facet_grid(error_metric ~ hyper, scales = "free")
     p <- p + theme_bw()
     p <- p + xlab("Hyperparameter value") + ylab("Error metric") +
-      labs(color = "Horizon") + ggtitle("Forecast Error and Hyperparameter Values - Faceted by horizon")
+      labs(color = "Horizon") + ggtitle("Forecast Error and Hyperparameter Values")
     return(p)
   }
 }

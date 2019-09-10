@@ -12,13 +12,6 @@ vignette: >
 
 ![](forecastML_logo.png){width=150px, height=160px}
 
-```{r, eval = FALSE, echo = FALSE, out.extra = 'style = "position:absolute; top:0; right:0; padding:5px; width: 150px; height: 160px;"'}
-# htmltools::img(src = knitr::image_uri("forecastML_logo.png"), 
-#                alt = 'logo', 
-#                style = 'position:absolute; top:0; right:0; padding:5px; width: 150px; height: 160px;')
-#knitr::include_graphics("forecastML_logo.png")
-```
-
 # Purpose
 
 The purpose of `forecastML` is to provide a series of functions and visualizations that simplify the process of 
@@ -85,7 +78,6 @@ forecast horizons with `forecastML::create_lagged_df`
 6. Create datasets of lagged predictors for **direct forecasting**.
 
 
-
 ```{r, include = FALSE}
 knitr::opts_chunk$set(fig.width = 6, fig.height = 4)
 ```
@@ -93,7 +85,7 @@ knitr::opts_chunk$set(fig.width = 6, fig.height = 4)
 # Example
 
 In this walkthrough of `forecastML` we'll compare the forecast performance of two machine learning 
-methods, LASSO and Random Forest, across forecast horizons using the Seatbelts dataset from the `dataset` package.
+methods, LASSO and Random Forest, across forecast horizons using the Seatbelts dataset from the `datasets` package.
 
 Here's a summary of the problem at hand:
 
@@ -149,7 +141,6 @@ p
 ```
 
 
-
 <br>
 
 # Data Preparation
@@ -166,17 +157,13 @@ data_list <- forecastML::create_lagged_df(data_train, type = "train",
                                           horizons = horizons)
 ```
 
-
-
 <br>
 
 Let's view the modeling dataset for a forecast horion of 6.
 
 ```{r}
-DT::datatable(head(data_list[[6]], 10), options = list(scrollX = TRUE))
+DT::datatable(head(data_list$horizon_6, 10), options = list(scrollX = TRUE))
 ```
-
-
 
 <br>
 
@@ -188,8 +175,6 @@ for direct forecasting at a given forecast horizon are removed from the modeling
 ```{r}
 plot(data_list)
 ```
-
-
 
 <br>
 
@@ -208,8 +193,6 @@ windows <- forecastML::create_windows(lagged_df = data_list, window_length = 12,
 windows
 ```
 
-
-
 <br>
 
 Below is a plot of the nested cross-validation outer loop datasets or windows. In our example, 
@@ -224,25 +207,23 @@ the inner validation loop.
 plot(windows, data_list, show_labels = TRUE)
 ```
 
-
-
 <br>
 
 # Model Training
 
-## User-defined forecast function
+## User-defined prediction function
 
 We'll compare the forecasting performance of two models: (a) a cross-validated LASSO and (b) a non-tuned Random Forest. 
 The following user-defined functions are needed for each model:
 
-* A wrapper function that takes the following positional **arguments**:
-    * **1:** The input dataset with both target and model predictors. The predictor lags will be created according to the 
-    `forecastML::create_lagged_df()` function.
-    * **2:** The column index of the outcome to be forecasted. *Only 1 outcome can be modeled at present*.
-* and **returns** a fitted model suitable for a `predict()`-type function.
+* A wrapper function that takes the following **positional arguments**:
+    * **1:** The model returned from the user-defined modeling function.
+    * **2:** A `data.frame()` of the model predictors from `forecastML::create_lagged_df(type = "train")`.
+* and **returns** a `data.frame()` of predictions with 1 or 3 columns. A 1-column data.frame will produce point forecasts, 
+and a 3-column data.frame can be used to return point, lower, and upper forecasts (column names and order do not matter).
 
-Any inner loop cross-validation procedure should take place within this function, with the limitation that 
-the inner cross-validation needs to ultimately `return()` one model.
+Any data transformations, hyperparameter tuning, or inner loop cross-validation procedures should take place within this 
+function, with the limitation that it ultimately needs to `return()` one model.
 
 ```{r}
 # Example 1 - LASSO
@@ -270,7 +251,7 @@ model_function_2 <- function(data, outcome_cols = 1) {
 
 <br>
 
-## forecastML::train_model
+## `forecastML::train_model`
 
 For each modeling approach, LASSO and Random Forest, a total of `N forecast horizons` * `N validation windows` 
 models are trained. In this example, that means training **`r length(data_list) * nrow(windows[[1]])` models** 
@@ -289,10 +270,11 @@ model_results_2 <- forecastML::train_model(lagged_df = data_list, windows,
 
 The following user-defined prediction function is needed for each model:
 
-* A wrapper function that takes the following positional **arguments**:
+* A wrapper function that takes the following **positional arguments**:
     * **1:** The model returned from the user-defined modeling function.
-    * **2:** A `data.frame()` of the model predictors. Do not manually create the lagged predictors.
-* and **returns** a `data.frame()` of predictions with 1 column for each forecast target (limit 1 at present).
+    * **2:** A `data.frame()` of the model predictors from `forecastML::create_lagged_df(type = "train")`.
+* and **returns** a `data.frame()` of predictions with 1 or 3 columns. A 1-column data.frame will produce point forecasts, 
+and a 3-column data.frame can be used to return point, lower, and upper forecasts (column names and order do not matter).
 
 ```{r}
 # Example 1 - LASSO
@@ -314,7 +296,7 @@ prediction_function_2 <- function(model, data_features) {
 
 <br>
 
-## forecastML::predict
+## `forecastML::predict`
 
 The `predict.forecast_model()` method takes any number of trained models from `forecastML::train_model()` and a 
 list of user-defined prediction functions. The list of prediction functions should appear in the same order 
@@ -325,8 +307,7 @@ validation window.
 
 ```{r}
 data_results <- predict(model_results, model_results_2,
-                        prediction_function = list(prediction_function, prediction_function_2))
-
+                        prediction_function = list(prediction_function, prediction_function_2), data = data_list)
 ```
 
 <br>
@@ -344,8 +325,6 @@ Let's view the models' predictions. The data.frame with S3 class `training_resul
 DT::datatable(head(data_results, 10), options = list(scrollX = TRUE))
 ```
 
-
-
 <br>
 
 Below is a plot of the forecasts for each validation window at select forecast horizons.
@@ -354,8 +333,6 @@ Below is a plot of the forecasts for each validation window at select forecast h
 plot(data_results, type = "prediction", horizons = c(1, 6, 12))
 ```
 
-
-
 <br>
 
 Below is a plot of the forecast error for select validation windows at select forecast horizons.
@@ -363,8 +340,6 @@ Below is a plot of the forecast error for select validation windows at select fo
 ```{r}
 plot(data_results, type = "residual", horizons = c(1, 6, 12), windows = 10:14)
 ```
-
-
 
 <br>
 
@@ -380,8 +355,6 @@ plot(data_results, type = "forecast_stability", windows = max(data_results$windo
 plot(data_results, type = "forecast_stability", valid_indices = attributes(data_list)$row_indices[1:3])
 ```
 
-
-
 <br>
 
 The `forecast_variability` plot below is a summary of the `forecast_stability` plot. It's a plot 
@@ -393,18 +366,17 @@ provided the forecasts are increasingly accruate at shorter and shorter forecast
 plot(data_results, type = "forecast_variability", valid_indices = 30:80)
 ```
 
-
-
 <br>
 
 # Model Performance
 
-## forecastML::return_error
+## `forecastML::return_error`
 
 Let's calcuate several common forecast error metrics.
 
 * **mae:** Mean absolute error
 * **mape:** Mean absolute percentage error
+* **mdape:** Median absolute percentage error
 * **smape:** Symmetrical mean absolute percentage error from (Chen and Yang's 2004 formula with a 100% multiplier as 
 discussed at [https://robjhyndman.com/hyndsight/smape/](https://robjhyndman.com/hyndsight/smape/))
 
@@ -420,9 +392,7 @@ data_error <- forecastML::return_error(data_results, metrics = c("mae", "mape", 
 
 DT::datatable(data_error$error_global, options = list(scrollX = TRUE))
 ```
- 
- 
- 
+
 <br>
  
 Below is a plot of error metrics across time for select validation windows and forecast horizons.
@@ -430,8 +400,6 @@ Below is a plot of error metrics across time for select validation windows and f
 ```{r}
 plot(data_error, data_results, type = "time", horizons = c(1, 6, 12), windows = 10:14)
 ```
-
-
 
 <br>
 
@@ -442,8 +410,6 @@ validation windows (dark).
 plot(data_error, data_results, type = "horizon", horizons = c(1, 6, 12))
 ```
 
-
-
 <br>
 
 Below is a plot of error metrics collapsed across validation windows and forecast horizons.
@@ -451,8 +417,6 @@ Below is a plot of error metrics collapsed across validation windows and forecas
 ```{r}
 plot(data_error, data_results, type = "global")
 ```
-
-
 
 <br>
 
@@ -469,9 +433,9 @@ strategies to forecast well under various conditions or time-series dynamics.
 
 The following user-defined hyperparameter function is needed for each model:
 
-* A wrapper function that takes the following positional **arguments**
+* A wrapper function that takes the following **positional arguments**
     * **1:** The model returned from the user-defined modeling function.
-* and **returns** a `data.frame()` of predictions with 1 column for each forecast outcome.
+* and **returns** a 1-row `data.frame()`.
 
 ```{r}
 hyper_function <- function(model) {
@@ -486,7 +450,7 @@ hyper_function <- function(model) {
 
 <br>
 
-## forecastML::return_hyper
+## `forecastML::return_hyper`
 
 Below are two plots which show (a) univariate hyperparameter variability across the training data 
 and (b) the relationship between each error metric and hyperparameter values.
@@ -498,13 +462,11 @@ plot(data_hyper, data_results, data_error, type = "stability", horizons = c(1, 6
 plot(data_hyper, data_results, data_error, type = "error", c(1, 6, 12))
 ```
 
-
-
 <br>
 
 # Forecast
 
-## forecastML::create_lagged_df
+## `forecastML::create_lagged_df`
 
 To forecast with the direct forecasting method, we need to create another dataset of lagged predictors. 
 We can do this by running `create_lagged_df()` and setting `type = "forecast"`.
@@ -522,14 +484,12 @@ data_forecast_list <- forecastML::create_lagged_df(data_train, type = "forecast"
 DT::datatable(head(data_forecast_list$horizon_6), options = list(scrollX = TRUE))
 ```
 
-
-
 <br>
 
 ## Forecast results
 
 Running the predict method, `predict.forecast_model()`, on the lagged predictor dataset created 
-above--with `type = "forecast"`--and placing it in the `data_forecast` argument in `predict.forecast_model()` below, returns 
+above--with `type = "forecast"`--and placing it in the `data` argument in `predict.forecast_model()` below, returns 
 a data.frame of forecasts with the following columns:
 
 * **model:** User-defined model name.
@@ -546,12 +506,10 @@ the `training_results` class from earlier.
 ```{r}
 data_forecast <- predict(model_results, model_results_2,
                          prediction_function = list(prediction_function, prediction_function_2), 
-                         data_forecast = data_forecast_list)
+                         data = data_forecast_list)
 
 DT::datatable(head(data_forecast, 10), options = list(scrollX = TRUE))
 ```
-
-
 
 <br>
 
@@ -569,8 +527,6 @@ plot(data_forecast, data_actual = data_test,
      actual_indices = as.numeric(row.names(data_test)),
      facet_plot = "model", horizons = c(1, 6, 12))
 ```
-
-
 
 <br>
 
@@ -595,8 +551,6 @@ data_error <- forecastML::return_error(data_forecast, data_test = data_test,
 DT::datatable(head(data_error$error_by_horizon, 10), options = list(scrollX = TRUE))
 ```
 
-
-
 <br>
 
 # Model Selection and Re-training
@@ -607,7 +561,7 @@ Note that for a real-world forecasting problem this is when we would do addition
 to imrpove forecast accuracy across validation windows as well as narrow the hyperparameter search 
 in the user-specified modeling functions.
 
-## forecastML::create_lagged_df
+## `forecastML::create_lagged_df`
 
 ```{r}
 data_list <- forecastML::create_lagged_df(data_train, type = "train", 
@@ -617,9 +571,9 @@ data_list <- forecastML::create_lagged_df(data_train, type = "train",
 
 <br>
 
-## forecastML::create_windows
+## `forecastML::create_windows`
 
-To create a dataset *without nested cross-validation*, set `window_length = 0` in `forecastML::create_windows()`.
+To create a dataset *without nested cross-validation*, set **`window_length = 0`** in `forecastML::create_windows()`.
 
 ```{r}
 windows <- forecastML::create_windows(data_list, window_length = 0)
@@ -627,18 +581,16 @@ windows <- forecastML::create_windows(data_list, window_length = 0)
 plot(windows, data_list, show_labels = TRUE)
 ```
 
-
-
 <br>
 
-## forecastML::train_model
+## `forecastML::train_model`
 
 Without nested cross-validation and holdout windows, the prediction plot is essnetially a plot of model fit.
 
 ```{r}
 model_results <- forecastML::train_model(data_list, windows, model_function, model_name = "LASSO")
 
-data_results <- predict(model_results, prediction_function = list(prediction_function))
+data_results <- predict(model_results, prediction_function = list(prediction_function), data = data_list)
 
 DT::datatable(head(data_results, 10), options = list(scrollX = TRUE))
 plot(data_results, type = "prediction", horizons = c(1, 6, 12))
@@ -646,11 +598,9 @@ plot(data_results, type = "residual", horizons = c(1, 6, 12))
 plot(data_results, type = "forecast_stability", valid_indices = 109:120)
 ```
 
-
-
 <br>
 
-## forecastML::return_error
+## `forecastML::return_error`
 
 ```{r}
 data_error <- forecastML::return_error(data_results, metrics = c("mae", "mape", "mdape", "smape"),
@@ -662,7 +612,7 @@ plot(data_error, data_results, type = "horizon")
 
 
 
-## forecastML::return_hyper
+## `forecastML::return_hyper`
 
 ```{r}
 data_hyper <- forecastML::return_hyper(model_results, hyper_function)
@@ -670,8 +620,6 @@ data_hyper <- forecastML::return_hyper(model_results, hyper_function)
 plot(data_hyper, data_results, data_error, type = "stability", horizons = c(1, 6, 12))
 plot(data_hyper, data_results, data_error, type = "error", c(1, 6, 12))
 ```
-
-
 
 <br>
 
@@ -682,7 +630,7 @@ data_forecast_list <- forecastML::create_lagged_df(data_train, type = "forecast"
                                                   lookback = lookback,  horizon = horizons)
 
 data_forecast <- predict(model_results, prediction_function = list(prediction_function), 
-                         data_forecast = data_forecast_list)
+                         data = data_forecast_list)
 
 plot(data_forecast, data_actual = data[-(1:150), ],
      actual_indices = as.numeric(row.names(data[-(1:150), ])),
@@ -692,8 +640,6 @@ plot(data_forecast, data_actual = data[-(1:150), ],
 plot(data_forecast, data_actual = data_test, actual_indices = as.numeric(row.names(data_test)),
      facet_plot = NULL, horizons = c(1, 6, 12))
 ```
-
-
 
 <br>
 
