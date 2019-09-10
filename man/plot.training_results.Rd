@@ -16,7 +16,7 @@
 
 \item{models}{Optional. Filter results by user-defined model name from \code{train_model()}.}
 
-\item{horizons}{Optional. A numeric vector of horizons to filter results by horizon.}
+\item{horizons}{Optional. A numeric vector of model forecast horizons to filter results by horizon-specific model results.}
 
 \item{windows}{Optional. A numeric vector of windows to filter results by validation window number.}
 

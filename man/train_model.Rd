@@ -13,8 +13,8 @@ train_model(lagged_df, windows, model_function, model_name,
 \item{windows}{An object of class 'windows' from \code{\link{create_windows}}.}
 
 \item{model_function}{A user-defined wrapper function for model training that takes 2
-positional arguments--(1) a data.frame made with \code{create_lagged_df()} and
-(2) the column index of the modeled outcome--and returns a model object which is used
+positional arguments--(1) a horizon-specific data.frame made with \code{create_lagged_df(..., type = "train")} and
+(2) the column index of the modeled outcome in the input data--and returns a model object which is used
 as input in the user-defined prediction function (see example).}
 
 \item{model_name}{A name for the model. Required.}
