@@ -50,6 +50,8 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
                          models = NULL, horizons = NULL, windows = NULL, group_filter = NULL) {
 
   data <- data_results
+  data$horizon <- data$model_forecast_horizon
+  data$model_forecast_horizon <- NULL
 
   if (!(methods::is(data, "training_results") || methods::is(data, "forecast_results"))) {
     stop("The 'data' argument takes an object of class 'training_results' or 'forecast_results' as input. Run predict() on a 'forecast_model' object first.")
@@ -254,6 +256,9 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
   # Filter the datasets based on user input.
   data_plot <- data_plot[data_plot$horizon %in% horizons &
                          data_plot$model %in% models & data_plot$window_number %in% windows, ]
+
+  data_results$horizon <- data_results$model_forecast_horizon
+  data_results$model_forecast_horizon <- NULL
 
   data_results <- data_results[data_results$horizon %in% horizons &
                                data_results$model %in% models & data_results$window_number %in% windows, ]

@@ -108,6 +108,9 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
 
   type <- type[1]
 
+  data_results$horizon <- data_results$model_forecast_horizon
+  data_results$model_forecast_horizon <- NULL
+
   data_results <- dplyr::distinct(data_results, .data$valid_indices, .keep_all = TRUE)
 
   outcome_cols <- attributes(data_hyper)$outcome_cols
