@@ -108,6 +108,7 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
 
   type <- type[1]
 
+  # Change the name of "horizon", which, although it makes sense from a naming perspective, will reduce the amount of code below.
   data_results$horizon <- data_results$model_forecast_horizon
   data_results$model_forecast_horizon <- NULL
 

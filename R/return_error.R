@@ -50,8 +50,6 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
                          models = NULL, horizons = NULL, windows = NULL, group_filter = NULL) {
 
   data <- data_results
-  data$horizon <- data$model_forecast_horizon
-  data$model_forecast_horizon <- NULL
 
   if (!(methods::is(data, "training_results") || methods::is(data, "forecast_results"))) {
     stop("The 'data' argument takes an object of class 'training_results' or 'forecast_results' as input. Run predict() on a 'forecast_model' object first.")
@@ -85,6 +83,12 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
     data_test <- dplyr::select(data_test, .data$forecast_period, outcome_names, !!groups)
 
     data <- dplyr::inner_join(data, data_test, by = c("forecast_period", groups))
+  }
+
+  if (methods::is(data, "training_results")) {
+    # Change the name of "horizon", which, although it makes sense from a naming perspective, will reduce the amount of code below.
+    data$horizon <- data$model_forecast_horizon
+    data$model_forecast_horizon <- NULL
   }
 
   supported_error_metrics <- c("mae", "mape", "mdape", "smape")
