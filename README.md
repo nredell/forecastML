@@ -11,7 +11,7 @@ the user quickly assess the (a) accuracy, (b) stability, and (c) generalizabilit
 multiple related time-series) and ungrouped single-outcome forecasts produced from potentially high-dimensional modeling datasets.
 
 This package is inspired by Bergmeir, Hyndman, and Koo's 2018 paper 
-[A note on the validity of cross-validation for evaluating autoregressive time series prediction](https://robjhyndman.com/papers/cv-wp.pdf). 
+[A note on the validity of cross-validation for evaluating autoregressive time series prediction](https://doi.org/10.1016/j.csda.2017.11.003). 
 In particular, `forecastML` makes use of 
 
 * **lagged predictors**,
@@ -42,11 +42,11 @@ base::Sys.setenv(LC_ALL="en_US.UTF-8")
 
 ## Vignettes
 
-* Detailed **[forecastML overview vignette](https://nredell.github.io/forecastML/vignettes/package_overview.html)**.
+* Detailed **[forecastML overview vignette](https://nredell.github.io/forecastML/doc/package_overview.html)**.
 
-* **[Creating custom feature lags for model training](https://nredell.github.io/forecastML/vignettes/lagged_features.html)**.
+* **[Creating custom feature lags for model training](https://nredell.github.io/forecastML/doc/lagged_features.html)**.
 
-* **[Forecasting with multiple or grouped time-series](https://nredell.github.io/forecastML/vignettes/grouped_forecast.html)**.
+* **[Forecasting with multiple or grouped time-series](https://nredell.github.io/forecastML/doc/grouped_forecast.html)**.
 
 ## Cheat Sheet
 
