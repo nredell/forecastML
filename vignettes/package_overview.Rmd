@@ -21,7 +21,7 @@ the user quickly assess the (a) accuracy, (b) stability, and (c) generalizabilit
 multiple related time-series) and ungrouped single-outcome forecasts produced from potentially high-dimensional modeling datasets.
 
 This package is inspired by Bergmeir, Hyndman, and Koo's 2018 paper 
-[A note on the validity of cross-validation for evaluating autoregressive time series prediction](https://robjhyndman.com/papers/cv-wp.pdf). 
+[A note on the validity of cross-validation for evaluating autoregressive time series prediction](https://www.sciencedirect.com/science/article/pii/S0167947317302384). 
 In particular, `forecastML` makes use of 
 
 * **lagged predictors**,
@@ -159,7 +159,8 @@ data_list <- forecastML::create_lagged_df(data_train, type = "train",
 
 <br>
 
-Let's view the modeling dataset for a forecast horion of 6.
+Let's view the modeling dataset for a forecast horizon of 6. Notice that "_lag_lookback" has been appended to all model features. Grouped and 
+static features, covered in the "grouped_forecast" vignette, keep their original names.
 
 ```{r}
 DT::datatable(head(data_list$horizon_6, 10), options = list(scrollX = TRUE))
@@ -251,7 +252,7 @@ model_function_2 <- function(data, outcome_cols = 1) {
 
 <br>
 
-## `forecastML::train_model`
+## forecastML::train_model
 
 For each modeling approach, LASSO and Random Forest, a total of `N forecast horizons` * `N validation windows` 
 models are trained. In this example, that means training **`r length(data_list) * nrow(windows[[1]])` models** 
@@ -296,7 +297,7 @@ prediction_function_2 <- function(model, data_features) {
 
 <br>
 
-## `forecastML::predict`
+## forecastML::predict
 
 The `predict.forecast_model()` method takes any number of trained models from `forecastML::train_model()` and a 
 list of user-defined prediction functions. The list of prediction functions should appear in the same order 
@@ -370,7 +371,7 @@ plot(data_results, type = "forecast_variability", valid_indices = 30:80)
 
 # Model Performance
 
-## `forecastML::return_error`
+## forecastML::return_error
 
 Let's calcuate several common forecast error metrics.
 
@@ -403,8 +404,7 @@ plot(data_error, data_results, type = "time", horizons = c(1, 6, 12), windows = 
 
 <br>
 
-Below is a plot of forecast error metrics for each validation window (light) and the average across 
-validation windows (dark).
+Below is a plot of forecast error metrics for collapsed across validation windows.
 
 ```{r}
 plot(data_error, data_results, type = "horizon", horizons = c(1, 6, 12))
@@ -450,7 +450,7 @@ hyper_function <- function(model) {
 
 <br>
 
-## `forecastML::return_hyper`
+## forecastML::return_hyper
 
 Below are two plots which show (a) univariate hyperparameter variability across the training data 
 and (b) the relationship between each error metric and hyperparameter values.
@@ -466,16 +466,16 @@ plot(data_hyper, data_results, data_error, type = "error", c(1, 6, 12))
 
 # Forecast
 
-## `forecastML::create_lagged_df`
+## forecastML::create_lagged_df
 
 To forecast with the direct forecasting method, we need to create another dataset of lagged predictors. 
 We can do this by running `create_lagged_df()` and setting `type = "forecast"`.
 
 For non-grouped time-series, this function takes the last rows of data_train and creates lagged predictors that allow forecasting from 
-1-step-ahead to *N* horizons for each horizon-specific model. Below is the forecast dataset for a 6-step-ahead forecast.
+1-step-ahead to *h* horizons for each horizon-specific model. Below is the forecast dataset for a 6-step-ahead forecast.
 
-The `row_number` column gives the row index for the most recent period of actuals. In the example below, the `row_number` 180 
-represents the last row in our model-building dataset `data_train`.
+The `index` column gives the row index for the most recent period of actuals. In the example below, the `index` of 180 
+represents the last row in our model-building dataset `data_train`, and the `index` of 181 is the first forecast period in our hold-out test dataset.
 
 ```{r}
 data_forecast_list <- forecastML::create_lagged_df(data_train, type = "forecast", 
@@ -561,7 +561,7 @@ Note that for a real-world forecasting problem this is when we would do addition
 to imrpove forecast accuracy across validation windows as well as narrow the hyperparameter search 
 in the user-specified modeling functions.
 
-## `forecastML::create_lagged_df`
+## forecastML::create_lagged_df
 
 ```{r}
 data_list <- forecastML::create_lagged_df(data_train, type = "train", 
@@ -571,7 +571,7 @@ data_list <- forecastML::create_lagged_df(data_train, type = "train",
 
 <br>
 
-## `forecastML::create_windows`
+## forecastML::create_windows
 
 To create a dataset *without nested cross-validation*, set **`window_length = 0`** in `forecastML::create_windows()`.
 
@@ -583,7 +583,7 @@ plot(windows, data_list, show_labels = TRUE)
 
 <br>
 
-## `forecastML::train_model`
+## forecastML::train_model
 
 Without nested cross-validation and holdout windows, the prediction plot is essnetially a plot of model fit.
 
@@ -600,7 +600,7 @@ plot(data_results, type = "forecast_stability", valid_indices = 109:120)
 
 <br>
 
-## `forecastML::return_error`
+## forecastML::return_error
 
 ```{r}
 data_error <- forecastML::return_error(data_results, metrics = c("mae", "mape", "mdape", "smape"),
@@ -612,7 +612,7 @@ plot(data_error, data_results, type = "horizon")
 
 
 
-## `forecastML::return_hyper`
+## forecastML::return_hyper
 
 ```{r}
 data_hyper <- forecastML::return_hyper(model_results, hyper_function)
