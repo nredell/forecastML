@@ -8,8 +8,8 @@
 #' @param lagged_df An object of class 'lagged_df' from \code{\link{create_lagged_df}}.
 #' @param windows An object of class 'windows' from \code{\link{create_windows}}.
 #' @param model_function A user-defined wrapper function for model training that takes 2
-#' positional arguments--(1) a data.frame made with \code{create_lagged_df()} and
-#' (2) the column index of the modeled outcome--and returns a model object which is used
+#' positional arguments--(1) a horizon-specific data.frame made with \code{create_lagged_df(..., type = "train")} and
+#' (2) the column index of the modeled outcome in the input data--and returns a model object which is used
 #' as input in the user-defined prediction function (see example).
 #' @param model_name A name for the model. Required.
 #' @param use_future Boolean. If \code{TRUE}, the \code{future} package is used for training models in parallel.
@@ -175,11 +175,12 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
 #'   \strong{Columns in returned 'training_results' data.frame:}
 #'     \itemize{
 #'       \item \code{model}: User-supplied model name in \code{train_model()}.
-#'       \item \code{horizon}: Forecast horizons, 1:h, measured in dataset rows.
+#'       \item \code{model_forecast_horizon}: The direct-forecasting time horizon that the model was trained on.
 #'       \item \code{window_length}: Validation window length measured in dataset rows.
+#'       \item \code{window_number}: Validation dataset number.
 #'       \item \code{valid_indices}: Validation dataset row names from \code{attributes(create_lagged_df())$row_indices}.
 #'       \item \code{date_indices}: If given, validation dataset date indices from \code{attributes(create_lagged_df())$date_indices}.
-#'       \item \code{"groups"}: If given, the user_supplied groups in \code{create_lagged_df()}.
+#'       \item \code{"groups"}: If given, the user-supplied groups in \code{create_lagged_df()}.
 #'       \item \code{"outcome_name"}: The target being forecasted.
 #'       \item \code{"outcome_name"_pred}: The model predictions.
 #'       \item \code{"outcome_name"_pred_lower}: If given, the lower prediction bounds returned by the user-supplied prediction function.
@@ -192,9 +193,8 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
 #'       \item \code{model_forecast_horizon}: The direct-forecasting time horizon that the model was trained on.
 #'       \item \code{horizon}: Forecast horizons, 1:h, measured in dataset rows.
 #'       \item \code{window_length}: Validation window length measured in dataset rows.
-#'       \item \code{window_number}: Validation dataset number.
 #'       \item \code{forecast_period}: The forecast period in row indices or dates. The forecast period starts at either \code{attributes(create_lagged_df())$data_stop + 1} for row indices or \code{attributes(create_lagged_df())$data_stop + 1 * frequency} for date indices.
-#'       \item \code{"groups"}: If given, the user_supplied groups in \code{create_lagged_df()}.
+#'       \item \code{"groups"}: If given, the user-supplied groups in \code{create_lagged_df()}.
 #'       \item \code{"outcome_name"}: The target being forecasted.
 #'       \item \code{"outcome_name"_pred}: The model forecasts.
 #'       \item \code{"outcome_name"_pred_lower}: If given, the lower forecast bounds returned by the user-supplied prediction function.
@@ -303,7 +303,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data =
         if (type == "train") {  # Nested cross-validation.
 
           data_temp <- data.frame("model" = model_name,
-                                  "horizon" = attributes(model_list[[i]][[j]])$horizon,
+                                  "model_forecast_horizon" = attributes(model_list[[i]][[j]])$horizon,
                                   "window_length" = data_results$window,
                                   "window_number" = k,
                                   "valid_indices" = data_results$valid_indices)
@@ -376,7 +376,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data =
 #' @param x An object of class 'training_results' from \code{predict.forecast_mode()l}.
 #' @param type Plot type, default is "prediction", for hold-out sample predictions.
 #' @param models Optional. Filter results by user-defined model name from \code{train_model()}.
-#' @param horizons Optional. A numeric vector of horizons to filter results by horizon.
+#' @param horizons Optional. A numeric vector of model forecast horizons to filter results by horizon-specific model results.
 #' @param windows Optional. A numeric vector of windows to filter results by validation window number.
 #' @param valid_indices Optional. A numeric or date vector to filter results by validation row indices or dates.
 #' @param group_filter Optional. A string for filtering plot results for grouped time-series
@@ -420,14 +420,16 @@ plot.training_results <- function(x,
 
   data$residual <- data[, outcome_names] - data[, paste0(outcome_names, "_pred")]
 
-  forecast_horizons <- sort(unique(data$horizon))
-
   models <- if (is.null(models)) {unique(data$model)} else {models}
-  horizons <- if (is.null(horizons)) {unique(data$horizon)} else {horizons}
+  horizons <- if (is.null(horizons)) {unique(data$model_forecast_horizon)} else {horizons}
   windows <- if (is.null(windows)) {unique(data$window_number)} else {windows}
   valid_indices <- if (is.null(valid_indices)) {unique(data$valid_indices)} else {valid_indices}
 
   data_plot <- data
+
+  # Rename for consistency with plotting code.
+  data_plot$horizon <- data_plot$model_forecast_horizon
+  data_plot$model_forecast_horizon <- NULL
 
   data_plot <- data_plot[data_plot$model %in% models & data_plot$horizon %in% horizons &
                          data_plot$window_number %in% windows, ]
@@ -546,8 +548,7 @@ plot.training_results <- function(x,
         ggtitle("Forecasts vs. Actuals Through Time - Faceted by horizon")
       } else if (type == "residual") {
         p <- p + xlab("Dataset index/row") + ylab("Residual") + labs(color = "Model") +
-        ggtitle("Forecast Error Through Time - Faceted by forecast horizon",
-                subtitle = "Dashed lines and empty points are actuals")
+        ggtitle("Forecast Error Through Time - Faceted by forecast horizon")
       }
     return(p)
   }

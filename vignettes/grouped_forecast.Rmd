@@ -41,11 +41,12 @@ in a data.frame.
 * There **may be 1 or more static features** that are constant through time but differ between time-series--e.g., 
 a fixed location, store square footage, species of animal etc.
 
-* The **time-series are regularly spaced** and have no missing rows or gaps in time. Irregular or sparse time 
-series with many `NA`s *can* be modeled in this framework, but missing rows will result in incorrect feature 
-lags when using `forecastML::create_lagged_df()` which is the first step in the `forecastML` workflow. 
-At present, there is no helper function in `forecastML` to fill in missing temporal gaps, but this functionality 
-will be added in a future release.
+* The **time-series are regularly spaced** and have no missing rows or gaps in time. Irregular or sparse time-series 
+with many `NA`s *can* be modeled in this framework, but missing rows will result in incorrect feature 
+lags when using `forecastML::create_lagged_df()` which is the first step in the `forecastML` workflow. To fix any 
+gaps in data collection, use the `forecastML::fill_gaps()` function; handling the resulting missing values in the 
+target being forecasted and the dynamic features can be done (a) prior to `forecastML::create_lagged_df()` or (b) 
+in the user-defined model training function.
 
 ***
 
