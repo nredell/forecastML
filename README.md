@@ -56,6 +56,14 @@ The main functions covered in each vignette are shown below as `function()`.
 
 ![](./tools/forecastML_cheat_sheet.png)
 
+## FAQ
+
+* **Q:** Where does `forecastML` fit in with respect to popular `R` machine learning packages like [mlr3](https://mlr3.mlr-org.com/) and [caret](https://github.com/topepo/caret)?
+* **A:** The idea is that `forecastML` takes care of the tedious parts of forecasting with ML methods: creating training and forecasting datasets with different 
+types of features--grouped, static, and dynamic--as well as simplifying validation dataset creation to assess model performance at specific points in time. 
+That said, the workflow for packages like `mlr3` and `caret` word occur inside of the `forecastML::train_model()` function. Examples of this type of 
+modular workflow, including how to pass objects seemlessly between `forecastML` functions, are in the works.
+
 ## Example
 
 Below is an example of how to create 12 horizon-specific ML models to forecast the number of `DriversKilled` 
