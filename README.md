@@ -167,4 +167,4 @@ CRAN release.
 
 1. Thorough documentation including an `R` `pkgdown` site.
 
-2. Thorough testing with `R` package `testthat`.
+2. Thorough testing with `R` package `testthat`. 
