@@ -21,7 +21,7 @@ models include (a) modeling simplicity, (b) potentially more robust results from
 and (c) solving the cold-start problem when few data points are available for a given time-series.
 
 We won't concern ourselves with error metrics or hyperparameter evaluation which can be assessed with the 
-`forecastML::return_error()` and `forecastML::return_hyper()` functions. This functionality is covered 
+`return_error()` and `return_hyper()` functions. This functionality is covered 
 in the package overview vignette.
 
 ***
@@ -43,9 +43,9 @@ a fixed location, store square footage, species of animal etc.
 
 * The **time-series are regularly spaced** and have no missing rows or gaps in time. Irregular or sparse time-series 
 with many `NA`s *can* be modeled in this framework, but missing rows will result in incorrect feature 
-lags when using `forecastML::create_lagged_df()` which is the first step in the `forecastML` workflow. To fix any 
-gaps in data collection, use the `forecastML::fill_gaps()` function; handling the resulting missing values in the 
-target being forecasted and the dynamic features can be done (a) prior to `forecastML::create_lagged_df()` or (b) 
+lags when using `create_lagged_df()` which is the first step in the `forecastML` workflow. To fix any 
+gaps in data collection, use the `fill_gaps()` function; handling the resulting missing values in the 
+target being forecasted and the dynamic features can be done (a) prior to `create_lagged_df()` or (b) 
 in the user-defined model training function.
 
 ***
@@ -67,7 +67,7 @@ from NOAA's National Buoy Data Center available at https://www.ndbc.noaa.gov/ us
 
 ### Load packages and data
 
-`data_buoy` consists of:
+`data_buoy_gaps` consists of:
 
 * `date`: A date column which will be removed for modeling.
 
@@ -87,26 +87,44 @@ library(ggplot2)
 library(forecastML)
 library(xgboost)
 
-data("data_buoy", package = "forecastML")
+data("data_buoy_gaps", package = "forecastML")
 
-data <- data_buoy
-
-DT::datatable(head(data), options = list(scrollX = TRUE))
+DT::datatable(head(data_buoy_gaps), options = list(scrollX = TRUE))
 ```
 
 ***
 
-### Plot wind speed outcome
+### forecastML::fill_gaps
 
 * The wind speed data has some gaps in it: Some buoys collected data throughout the year, others only 
-during the summer months.
+during the summer months. These gaps in data collection would result in incorrect feature lags in 
+`create_lagged_df()` as the previous row in the dataset for a given buoy--a lag of 1--may be several 
+months in the past.
 
-* Gaps in data collection are fine provided your forecast model can handle `NA` values in the 
-outcome and in the features (or, more precisely, your user-defined model wrapper function addresses any 
-difficulties that an algorithm may have with `NA` values), but the input dataset needs to 
-have contiguous dates for the feature lags from `forecastML::create_lagged_df()` to be correct. 
-`data_buoy` comes ready for modeling with days that had missing sensor readings already 
-filled in with data for columns `date`, `buoy_id`, `lat`, and `lon`.
+* To fix this problem, we'll run `fill_gaps()` to fill in the rows for the missing dates. The added rows will appear 
+between `min(date)` and `max(date)` for each buoy. For example, buoy 45186 that only started data collection in 2018 won't 
+have additional rows with `NA`s for 2012 through 2017; only gaps since the start of data collection in 2018 will be filled.
+
+* After running `fill_gaps()`, **the following columns have been filled in and have no `NA`s**: `date`, `buoy_id`, `lat`, and `lon`.
+
+* After running `fill_gaps()`, **the following columns now have additional `NA`s**: our `wind_spd` target and the dynamic features.
+
+* Notice that the input dataset and the returned dataset have the same columns in the same order with the same data types.
+
+```{r}
+data <- forecastML::fill_gaps(data_buoy_gaps, date_col = 1, frequency = '1 day', 
+                              groups = 'buoy_id', static_features = c('lat', 'lon'))
+
+print(paste0("The original dataset with gaps in data collection is ", nrow(data_buoy_gaps), " rows."))
+print(paste0("The modified dataset with no gaps in data collection from fill_gaps() is ", nrow(data), " rows."))
+```
+
+
+```{r}
+DT::datatable(head(data), options = list(scrollX = TRUE))
+```
+
+### Plot wind speed outcome
 
 * Notice that buoy 45186 has only recently come online and would be difficult to forecast on its own.
 
@@ -138,7 +156,7 @@ data$buoy_id <- as.numeric(factor(data$buoy_id))
 
 <br>
 
-* Inputs for dataset creation with `forecastML::create_lagged_df()`.
+* Inputs for dataset creation with `create_lagged_df()`.
 
 ```{r}
 dates <- data$date  # Grouped time-series forecasting requires dates.
@@ -221,9 +239,15 @@ p
 
 ***
 
-#### User-defined model function
+#### User-defined modeling function
 
-* This function takes the **2 positional arguments** `data` (a data.frame object) and `outcome_col`.
+* A user-defined wrapper function for model training that takes **2 positional arguments**:
+    * **1:** A data.frame with the target to be forecasted and model features from `create_lagged_df(..., type = "train")`.
+    * **2:** The column index of the modeled outcome.
+* and **returns** A model object that will be passed into the user-defined `predict()` function.
+
+* Any data transformations, hyperparameter tuning, or inner loop cross-validation procedures should take place within this 
+function, with the limitation that it ultimately needs to `return()` one model.
 
 * Notice that the `xgboost`-specific input datasets are created within this wrapper function.
 
@@ -269,13 +293,14 @@ model_function <- function(data, outcome_col) {
 
 #### Model training
 
-* This should take ~2 to 3 minutes to train our '3 forecast horizons' * 
-'7 validation datasets' = *21 models*.
+* This should take ~2 to 3 minutes to train our '3 forecast horizons' * '7 validation datasets' = *21 models*.
 
 * The user-defined modeling wrapper function could be much more elaborate, in which case many more models 
 could potentially be trained here.
 
-* We'll train the models in parallel with the `use_future = TRUE` argument.
+* These models could be trained in parallel on any OS with the very flexible `future` package by uncommenting the code below and 
+setting `use_future = TRUE`. To avoid nested parallelization, models are either trained in parallel across forecast horizons or 
+validation windows, whichever is longer (when equal, the default is parallel across forecast horizons).
 
 ```{r}
 #future::plan(future::multiprocess)  # Multi-core or multi-session parallel training.
@@ -312,10 +337,12 @@ produced from models trained on different subsets of our historical data.
 
 #### User-defined prediction function
 
-* A wrapper function that takes the following **positional arguments**:
+The following user-defined prediction function is needed for each model:
+
+* A wrapper function that takes the following **2 positional arguments**:
     * **1:** The model returned from the user-defined modeling function.
-    * **2:** A `data.frame()` of the model predictors from `forecastML::create_lagged_df(type = "train")`.
-* and **returns** a `data.frame()` of predictions with 1 or 3 columns. A 1-column data.frame will produce point forecasts, 
+    * **2:** A `data.frame` of the model features from `forecastML::create_lagged_df(..., type = "train")`.
+* and **returns** a `data.frame` of predictions with 1 or 3 columns. A 1-column data.frame will produce point forecasts, 
 and a 3-column data.frame can be used to return point, lower, and upper forecasts (column names and order do not matter).
 
 ```{r}
@@ -332,7 +359,7 @@ prediction_function <- list(prediction_function)
 
 #### Historical model fit
 
-* We're predicting on our validation datasets.
+* Herer, we're predicting on our validation datasets.
 
 ```{r}
 data_pred_cv <- predict(model_results_cv, prediction_function = prediction_function, data = data_train)
@@ -353,7 +380,7 @@ plot(data_pred_cv) + theme(legend.position = "none")
 ***
 
 * It's somewhat difficult to see how we've done here, so we'll use the `group_filter` argument again 
-to focus on specific results. Note that the `plot()` function returns a ``ggplot` object so that we 
+to focus on specific results. Note that the `plot()` function returns a `ggplot` object so that we 
 can easily modify our plot.
 
 ```{r, message = FALSE, warning = FALSE}
@@ -386,7 +413,7 @@ DT::datatable(head(data_forecast$horizon_1), options = list(scrollX = TRUE))
 
 ***
 
-* Now we'll forecast 1, 7, and 30 days into the future with `predict(..., data_forecast = data_forecast)`.
+* Now we'll forecast 1, 1:7, and 1:30 days into the future with `predict(..., data = data_forecast)`.
 
 * The first time step into the future is `max(dates) + 1 * frequency`. Here, this is 
 12-31-2018 + 1 * '1 day' or 1-1-2019.
@@ -423,6 +450,10 @@ plot(data_forecasts, group_filter = "buoy_id == 1")
 
 * The modeling steps are more or less the same as in the nested cross-validation modeling described 
 above so we'll skip the explanations from here on out.
+
+* Notice that by this point in the modeling process, the optimal hyperparameters that gave the best performance on 
+the outer-loop validation datasets have already been identified (see the package overview vignette). Incorporating the 
+optimal hyperparameters in a final model would occur in a new user-defined modeling wrapper function.
 
 * Train across all data by setting `window_length = 0`.
 

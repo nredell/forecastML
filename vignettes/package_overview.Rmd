@@ -284,10 +284,10 @@ model_results_2 <- forecastML::train_model(lagged_df = data_list, windows,
 
 The following user-defined prediction function is needed for each model:
 
-* A wrapper function that takes the following **positional arguments**:
+* A wrapper function that takes the following **2 positional arguments**:
     * **1:** The model returned from the user-defined modeling function.
     * **2:** A `data.frame` of the model features from `forecastML::create_lagged_df(..., type = "train")`.
-* and **returns** a `data.frame()` of predictions with 1 or 3 columns. A 1-column data.frame will produce point forecasts, 
+* and **returns** a `data.frame` of predictions with 1 or 3 columns. A 1-column data.frame will produce point forecasts, 
 and a 3-column data.frame can be used to return point, lower, and upper forecasts (column names and order do not matter).
 
 ```{r}
@@ -312,7 +312,7 @@ prediction_function_2 <- function(model, data_features) {
 
 ## forecastML::predict
 
-The `predict.forecast_model()` S3 method takes any number of trained models from `forecastML::train_model()` and a 
+The `predict.forecast_model()` S3 method takes any number of trained models from `train_model()` and a 
 list of user-defined prediction functions. The list of prediction functions should appear in the same order 
 as the models.
 
@@ -336,9 +336,9 @@ Let's view the models' predictions. The data.frame with S3 class `training_resul
 * **date_indices:** If given, validation dataset date indices from `attributes(create_lagged_df())$date_indices`.
 * **"groups":** If given, the user-supplied groups in `create_lagged_df()`.
 * **"outcome_name":** The target being forecasted.
-* **"outcome_name"_pred:** The model predictions.
-* **"outcome_name"_pred_lower:** If given, the lower prediction bounds returned by the user-supplied prediction function.
-* **"outcome_name"_pred_upper:** If given, the upper prediction bounds returned by the user-supplied prediction function.
+* **"outcome_name" _pred:** The model predictions.
+* **"outcome_name" _pred_lower:** If given, the lower prediction bounds returned by the user-supplied prediction function.
+* **"outcome_name" _pred_upper:** If given, the upper prediction bounds returned by the user-supplied prediction function.
 
 ```{r}
 DT::datatable(head(data_results, 100), options = list(scrollX = TRUE))
@@ -522,9 +522,9 @@ a data.frame of forecasts with the following columns:
 * **window_number:** Validation dataset number.
 * **forecast_period:** The dataset row/date for the forecast.
 * **"groups":** If given, the user-supplied groups in `create_lagged_df()`.
-* **"outcome_name"_pred:** The model forecasts.
-* **"outcome_name"_pred_lower:** If given, the lower forecast bounds returned by the user-supplied prediction function.
-* **"outcome_name"_pred_upper:** If given, the upper forecast bounds returned by the user-supplied prediction function.
+* **"outcome_name" _pred:** The model forecasts.
+* **"outcome_name" _pred_lower:** If given, the lower forecast bounds returned by the user-supplied prediction function.
+* **"outcome_name" _pred_upper:** If given, the upper forecast bounds returned by the user-supplied prediction function.
 
 
 An S3 object of class, `forecast_results`, is returned. This object will have different plotting and error methods than 
