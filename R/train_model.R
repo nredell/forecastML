@@ -509,7 +509,7 @@ plot.training_results <- function(x,
 
       p <- p + geom_line(size = 1.05, linetype = 1)
 
-      # If the plotting data.frame has bother lower and upper forecasts plot these bounds.
+      # If the plotting data.frame has both lower and upper forecasts plot these bounds.
       if (c(all(any(grepl("_pred_lower", names(data_plot))), any(grepl("_pred_upper", names(data_plot)))))) {
 
         p <- p + geom_ribbon(data = data_plot[data_plot$outcome == outcome_names, ],
@@ -746,16 +746,18 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
 
     if (1 %in% horizons) {  # Use geom_point instead of geom_line to plot a 1-step-ahead forecast.
 
+      # geom_ribbon() does not work with a single data point when forecast bounds are plotted.
+      p <- p + geom_linerange(data = data_forecast[data_forecast$model_forecast_horizon == 1, ],
+                              aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
+                                  ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
+                                  color = .data$plot_group), alpha = .25, size = 3, show.legend = FALSE)
+
       p <- p + geom_point(data = data_forecast[data_forecast$model_forecast_horizon == 1, ],
                           aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
                               color = .data$plot_group, group = .data$plot_group), show.legend = FALSE)
       }
 
     if (!all(horizons == 1)) {  # Plot forecasts for model forecast horizons > 1.
-
-      p <- p + geom_line(data = data_forecast[data_forecast$model_forecast_horizon != 1, ],
-                         aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
-                             color = .data$plot_group, group = .data$plot_group))
 
       # If the plotting data.frame has bother lower and upper forecasts plot these bounds.
       if (c(all(any(grepl("_pred_lower", names(data_forecast))), any(grepl("_pred_upper", names(data_forecast)))))) {
@@ -765,6 +767,10 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
                                  ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
                                  fill = .data$plot_group, color = NULL), alpha = .25, show.legend = FALSE)
       }
+
+      p <- p + geom_line(data = data_forecast[data_forecast$model_forecast_horizon != 1, ],
+                         aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                             color = .data$plot_group, group = .data$plot_group))
       }
 
     p <- p + geom_vline(xintercept = attributes(data_forecast)$data_stop, color = "red")
