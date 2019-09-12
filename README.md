@@ -157,6 +157,6 @@ plot(data_forecasts, data_seatbelts[-(1:150), ], as.numeric(row.names(data_seatb
 The following steps outline the functionality that I'd like to add leading up to an eventual 
 CRAN release.
 
-1. Thorough documentation including an `R` `pkgdown` site and cheat sheets.
+1. Thorough documentation including an `R` `pkgdown` site.
 
 2. Thorough testing with `R` package `testthat`.
