@@ -42,11 +42,15 @@ base::Sys.setenv(LC_ALL="en_US.UTF-8")
 
 ## Vignettes
 
-* Detailed **[forecastML overview vignette](https://nredell.github.io/forecastML/doc/package_overview.html)**.
+The main functions covered in each vignette are shown below as `function()`.
 
-* **[Creating custom feature lags for model training](https://nredell.github.io/forecastML/doc/lagged_features.html)**.
+* Detailed **[forecastML overview vignette](https://nredell.github.io/forecastML/doc/package_overview.html)**. 
+`create_lagged_df()`, `create_windows()`, `train_model()`, `return_error()`, `return_hyper()`
 
-* **[Forecasting with multiple or grouped time-series](https://nredell.github.io/forecastML/doc/grouped_forecast.html)**.
+* **[Creating custom feature lags for model training](https://nredell.github.io/forecastML/doc/lagged_features.html)**. `create_lagged_df(lookback_control = ...)`
+
+* **[Forecasting with multiple or grouped time-series](https://nredell.github.io/forecastML/doc/grouped_forecast.html)**. 
+`fill_gaps()`, `create_lagged_df(dates = ..., groups = ..., static_features = ...)`, `create_windows()`, `train_model()`
 
 ## Cheat Sheet
 
