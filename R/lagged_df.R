@@ -690,7 +690,7 @@ plot.lagged_df <- function(x, ...) {
 
           lookback_predictor <- lookback[[i]][[j]]
 
-          if (all(!is.na(lookback_predictor) && length(lookback_predictor) > 0)) {
+          if (all(!is.na(lookback_predictor), length(lookback_predictor) > 0)) {
             data_predictor <- expand.grid("horizon" = horizon[i], "time" = lookback_predictor)
             data_predictor$predictor_number <- j
 
