@@ -3,8 +3,9 @@ cache: packages
 
 warnings_are_errors: true
 
-r_packages:
-  - covr
+r_github_packages:
+  - r-lib/covr
 
 after_success:
-  - Rscript -e 'library(covr); codecov()'
+  - Rscript -e 'covr::codecov()'
+
