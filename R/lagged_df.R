@@ -276,7 +276,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
         # If there are no feature-level lags suitable for the forecast horizon, return NULL for this feature-level lagged data.frame.
         # However, grouping and static features will pass through and be added to the output dataset without lags.
-        if ((!is.na(lookback_over_horizon) && length(lookback_over_horizon) > 0) || var_names[j] %in% c(groups, static_features)) {
+        if (all(!is.na(lookback_over_horizon), length(lookback_over_horizon) > 0) || var_names[j] %in% c(groups, static_features)) {
 
           #--------------------------------------------------------------------
           # Create a list of lag functions for dplyr::mutate_at(). This approach is approximately 30% faster than the
@@ -400,7 +400,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
         # If there are no feature-level lags suitable for the forecast horizon, return NULL for this feature-level lagged data.frame.
         # However, grouping features will pass through and be added to the output dataset without lags.
-        if ((!is.na(lookback_over_horizon) && length(lookback_over_horizon) > 0) || var_names[j] %in% c(groups, static_features)) {
+        if (all(!is.na(lookback_over_horizon), length(lookback_over_horizon) > 0) || var_names[j] %in% c(groups, static_features)) {
 
           # Create a list of lag functions for dplyr::mutate_at(). This approach is approximately 30% faster than the
           # previous sapply approach of mutating and adding one lagged feature column at a time.
