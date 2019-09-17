@@ -20,7 +20,8 @@
 #' These columns are used as model features but are not lagged.
 #' Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.
 #' @return An object of class 'data.frame': The returned data.frame has the same number of columns and column order but
-#' with additional rows to account for gaps in data collection. If the user-supplied
+#' with additional rows to account for gaps in data collection. For grouped data, any new rows added to the returned data.frame will appear
+#' between the minimum--or oldest--date for that group and the maximum--or most recent--date across all groups. If the user-supplied
 #' forecasting algorithm(s) cannot handle missing outcome values or missing dynamic features, these should either be
 #' imputed prior to \code{create_lagged_df()} or filtered out in the user-supplied modeling function for \code{\link{train_model}}.
 #'
@@ -39,6 +40,7 @@ fill_gaps <- function(data, date_col = 1, frequency = NULL, groups = NULL,
                       static_features = NULL) {
 
   data <- as.data.frame(data)
+  #data <- data_buoy_gaps
 
   if (!methods::is(data, "data.frame")) {
     stop("The 'data' argument should be an object of class 'data.frame'.")
@@ -71,9 +73,10 @@ fill_gaps <- function(data, date_col = 1, frequency = NULL, groups = NULL,
   # Create a merge template giving the date bounds for non-grouped or grouped data.
   data_template <- data %>%
     dplyr::group_by_at(dplyr::vars(groups)) %>%
-    dplyr::summarize("date_min" = min(eval(parse(text = date_name)), na.rm = TRUE),
-                     "date_max" = max(eval(parse(text = date_name)), na.rm = TRUE)) %>%
+    dplyr::summarize("date_min" = min(eval(parse(text = date_name)), na.rm = TRUE)) %>%
     dplyr::ungroup()
+
+  data_template$date_max <- max(data[, date_name], na.rm = TRUE)
 
   if (!is.null(static_features)) {
 

@@ -23,7 +23,8 @@ Note that combining feature lags with grouped time-series will result in \code{N
 }
 \value{
 An object of class 'data.frame': The returned data.frame has the same number of columns and column order but
-with additional rows to account for gaps in data collection. If the user-supplied
+with additional rows to account for gaps in data collection. For grouped data, any new rows added to the returned data.frame will appear
+between the minimum--or oldest--date for that group and the maximum--or most recent--date across all groups. If the user-supplied
 forecasting algorithm(s) cannot handle missing outcome values or missing dynamic features, these should either be
 imputed prior to \code{create_lagged_df()} or filtered out in the user-supplied modeling function for \code{\link{train_model}}.
 }

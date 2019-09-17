@@ -102,8 +102,8 @@ during the summer months. These gaps in data collection would result in incorrec
 months in the past.
 
 * To fix this problem, we'll run `fill_gaps()` to fill in the rows for the missing dates. The added rows will appear 
-between `min(date)` and `max(date)` for each buoy. For example, buoy 45186 that only started data collection in 2018 won't 
-have additional rows with `NA`s for 2012 through 2017; only gaps since the start of data collection in 2018 will be filled.
+between `min(date)` for each buoy and and `max(date)` across all buoys. For example, buoy 45186 that only started data collection in 2018 won't 
+have additional rows with `NA`s for 2012 through 2017; only gaps since the start of data collection in 2018 to the most recent date will be filled.
 
 * After running `fill_gaps()`, **the following columns have been filled in and have no `NA`s**: `date`, `buoy_id`, `lat`, and `lon`.
 
