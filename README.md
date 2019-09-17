@@ -61,8 +61,9 @@ The main functions covered in each vignette are shown below as `function()`.
 
 1. **`fill_gaps`:** Optional if no temporal gaps/missing rows in data collection. Fill gaps in data collection and 
 prepare a dataset of evenly-spaced time-series for modeling with lagged features. Returns a 'data.frame' with 
-missing rows added in so that you can either (a) impute or remove `NA`s prior to the `forecastML` pipeline 
-or (b) impute or remove them in the user-defined modeling function.
+missing rows added in so that you can either (a) impute, remove, or ignore `NA`s prior to the `forecastML` pipeline 
+or (b) impute, remove, or ignore them in the user-defined modeling function--depending on the `NA` handling 
+capabilities of the user-specified model.
 
 2. **`create_lagged_df`:** Create model training and forecasting datasets with lagged, grouped, and static features.
 
