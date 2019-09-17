@@ -40,8 +40,8 @@ are silently dropped. Either \code{lookback} or \code{lookback_control} need to 
 \item{dates}{A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal \code{nrow(data)}. Required if \code{groups}
 are given.}
 
-\item{frequency}{Date frequency. A string taking the same input as \code{base::seq(..., by = "frequency")} e.g., '1 month', '7 days', etc.
-Required if \code{dates} are given.}
+\item{frequency}{Date frequency. A string taking the same input as \code{base::seq.Date(..., by = "frequency")} e.g., '1 month', '7 days', '10 years' etc.
+The highest frequency supported at present is '1 day'. Required if \code{dates} are given.}
 
 \item{groups}{Column name(s) that identify the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but
 are not lagged. Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.}

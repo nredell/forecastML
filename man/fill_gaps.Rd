@@ -12,7 +12,8 @@ fill_gaps(data, date_col = 1, frequency = NULL, groups = NULL,
 
 \item{date_col}{The column index--an integer--of the date index. This column should have class 'Date'.}
 
-\item{frequency}{A string taking the same input as \code{base::seq(..., by = "frequency")} e.g., '1 month', '7 days', etc.}
+\item{frequency}{Date frequency. A string taking the same input as \code{base::seq.Date(..., by = "frequency")} e.g., '1 month', '7 days', '10 years' etc.
+The highest frequency supported at present is '1 day'.}
 
 \item{groups}{Column name(s) that identify the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but are not lagged.
 Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.}

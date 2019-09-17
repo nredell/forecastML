@@ -57,6 +57,23 @@ The main functions covered in each vignette are shown below as `function()`.
 
 ![](./tools/forecastML_cheat_sheet.png)
 
+## Key functions
+
+1. **`fill_gaps`:** Optional if no temporal gaps/missing rows in data collection. Fill gaps in data collection and 
+prepare a dataset of evenly-spaced time-series for modeling with lagged features. Returns a 'data.frame' with 
+missing rows added in so that you can either (a) impute or remove `NA`s prior to the `forecastML` pipeline 
+or (b) impute or remove them in the user-defined modeling function.
+
+2. **`create_lagged_df`:** Create model training and forecasting datasets with lagged, grouped, and static features.
+
+3. **`create_windows`:** Create time-contiguous validation datasets for model evaluation.
+
+4. **`train_model`:** Train the user-defined model across forecast horizons and validation datasets.
+
+5. **`return_error`:** Compute forecast error across forecast horizons and validation datasets.
+
+6. **`return_hyper`:** Return user-defined model hyperparameters across validation datasets.
+
 ## FAQ
 
 * **Q:** Where does `forecastML` fit in with respect to popular `R` machine learning packages like [mlr3](https://mlr3.mlr-org.com/) and [caret](https://github.com/topepo/caret)?
