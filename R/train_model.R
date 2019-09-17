@@ -43,11 +43,11 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
 
   data <- lagged_df
 
-  if(!methods::is(data, "lagged_df")) {
+  if (!methods::is(data, "lagged_df")) {
     stop("The 'data' argument takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
   }
 
-  if(!methods::is(windows, "windows")) {
+  if (!methods::is(windows, "windows")) {
     stop("The 'windows' argument takes an object of class 'windows' as input. Run create_windows() first.")
   }
 
@@ -210,15 +210,15 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data =
 
   type <- attributes(data)$type
 
-  if(!all(unlist(lapply(model_list, function(x) {class(x)[1]})) %in% "forecast_model")) {
+  if (!all(unlist(lapply(model_list, function(x) {class(x)[1]})) %in% "forecast_model")) {
     stop("The 'model_results' argument takes a list of objects of class 'forecast_model' as input. Run train_model() first.")
   }
 
-  if(length(model_list) != length(prediction_function)) {
+  if (length(model_list) != length(prediction_function)) {
     stop("The number of prediction functions does not equal the number of forecast models.")
   }
 
-  if(!type %in% c("train", "forecast")) {
+  if (!type %in% c("train", "forecast")) {
     stop("The 'data' argument takes an object of class 'lagged_df' from create_lagged_df().")
   }
 
@@ -674,7 +674,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
 
   data_forecast <- x
 
-  if(!methods::is(data_forecast, "forecast_results")) {
+  if (!methods::is(data_forecast, "forecast_results")) {
     stop("The 'forecast_results' argument takes an object of class 'forecast_results' as input. Run predict() on a 'forecast_model' object first.")
   }
 
@@ -747,7 +747,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
     if (1 %in% horizons) {  # Use geom_point instead of geom_line to plot a 1-step-ahead forecast.
 
       # If the plotting data.frame has bother lower and upper forecasts plot these bounds.
-      if (c(all(any(grepl("_pred_lower", names(data_forecast))), any(grepl("_pred_upper", names(data_forecast)))))) {
+      if (all(any(grepl("_pred_lower", names(data_forecast))), any(grepl("_pred_upper", names(data_forecast))))) {
 
         # geom_ribbon() does not work with a single data point when forecast bounds are plotted.
         p <- p + geom_linerange(data = data_forecast[data_forecast$model_forecast_horizon == 1, ],
@@ -765,7 +765,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
     if (!all(horizons == 1)) {  # Plot forecasts for model forecast horizons > 1.
 
       # If the plotting data.frame has bother lower and upper forecasts plot these bounds.
-      if (c(all(any(grepl("_pred_lower", names(data_forecast))), any(grepl("_pred_upper", names(data_forecast)))))) {
+      if (all(any(grepl("_pred_lower", names(data_forecast))), any(grepl("_pred_upper", names(data_forecast))))) {
 
         p <- p + geom_ribbon(data = data_forecast[data_forecast$model_forecast_horizon != 1, ],
                              aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),

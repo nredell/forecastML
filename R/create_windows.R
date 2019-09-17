@@ -39,11 +39,11 @@ create_windows <- function(lagged_df, window_length = 12,
 
   data <- lagged_df
 
-  if(!methods::is(data, "lagged_df")) {
+  if (!methods::is(data, "lagged_df")) {
     stop("This function takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
   }
 
-  if(missing(window_length)) {
+  if (missing(window_length)) {
     stop("Define a 'window_length' >= 0 for the validation dataset(s).")
   }
 
@@ -70,7 +70,7 @@ create_windows <- function(lagged_df, window_length = 12,
          Enter a window stop date as a length-1 vector of class `Date`.")
   }
 
-  if(!window_stop >= data_stop) {
+  if (!window_stop >= data_stop) {
     stop(paste0("The end of all validation windows needs to occur on or before row/date ", data_stop, " which is the end of the dataset."))
   }
 

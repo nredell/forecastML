@@ -139,10 +139,10 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
   }
 
   # Check the lookback_control argument.
-  if (length(horizon) == 1 & !is.null(lookback_control)) {  # A 1-horizon, non-nested lookback_control of feature lags.
+  if (length(horizon) == 1 && !is.null(lookback_control)) {  # A 1-horizon, non-nested lookback_control of feature lags.
 
     # Check if there is one list location for each feature in the dataset.
-    if(length(lookback_control) != (ncol(data))) {
+    if (length(lookback_control) != (ncol(data))) {
       stop("For a single forecast horizon, the length of the 'lookback_control' list should equal the number of features in
            the dataset. For multiple forecast horizons, 'lookback_control' is a nested list with length(lookback_control) ==
            length(horizons) and, one layer down, the nested list should have a length equal to the number of features in the dataset.
@@ -172,7 +172,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
       }
     })  # Impossible lags for non-static features have been removed.
 
-  } else if (length(horizon) > 1 & !is.null(lookback_control)) {  # A multiple-horizon, nested lookback_control of feature lags.
+  } else if (length(horizon) > 1 && !is.null(lookback_control)) {  # A multiple-horizon, nested lookback_control of feature lags.
 
     lookback_control <- lapply(seq_along(lookback_control), function(i) {
       lapply(seq_along(lookback_control[[i]]), function(j) {
@@ -624,7 +624,7 @@ summary.lagged_df <- function(object, ...) {
   n_predictors_at_each_horizon <- unlist(lapply(data, function(x) {ncol(x) - 1}))
   horizons <- attributes(data)$horizons
 
-  if(!methods::is(data, "lagged_df")) {
+  if (!methods::is(data, "lagged_df")) {
     stop("This method takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
   }
 
@@ -654,7 +654,7 @@ plot.lagged_df <- function(x, ...) {
 
   data <- x
 
-  if(!methods::is(data, "lagged_df")) {
+  if (!methods::is(data, "lagged_df")) {
     stop("This method takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
   }
 
