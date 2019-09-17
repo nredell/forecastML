@@ -1,6 +1,7 @@
 [![lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/#maturing)
 [![Travis Build
-Status](https://travis-ci.org/nredell/forecastML.svg?branch=master)](https://travis-ci.org/nredell/forecastML)
+Status](https://travis-ci.org/nredell/forecastML.svg?branch=master)](https://travis-ci.org/nredell/forecastML) 
+[![codecov](https://codecov.io/github/nredell/forecastML/branch/master/graphs/badge.svg)](https://codecov.io/github/nredell/forecastML)
 
 # package::forecastML <img src="./man/figures/forecastML_logo.png" alt="forecastML logo" align="right" height="138.5" style="display: inline-block;">
 
@@ -61,8 +62,9 @@ The main functions covered in each vignette are shown below as `function()`.
 * **Q:** Where does `forecastML` fit in with respect to popular `R` machine learning packages like [mlr3](https://mlr3.mlr-org.com/) and [caret](https://github.com/topepo/caret)?
 * **A:** The idea is that `forecastML` takes care of the tedious parts of forecasting with ML methods: creating training and forecasting datasets with different 
 types of features--grouped, static, and dynamic--as well as simplifying validation dataset creation to assess model performance at specific points in time. 
-That said, the workflow for packages like `mlr3` and `caret` word occur inside of the `forecastML::train_model()` function. Examples of this type of 
-modular workflow, including how to pass objects seemlessly between `forecastML` functions, are in the works.
+That said, the workflow for packages like `mlr3` and `caret` would occur inside of the user-supplied 
+modeling function which is passed into `forecastML::train_model()`. Examples of this type of 
+modular workflow with these packages in particular are in the works.
 
 ## Example
 
@@ -167,4 +169,4 @@ CRAN release.
 
 1. Thorough documentation including an `R` `pkgdown` site.
 
-2. Thorough testing with `R` package `testthat`. 
+2. Thorough testing with `R` package `testthat`.
