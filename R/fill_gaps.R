@@ -41,7 +41,6 @@ fill_gaps <- function(data, date_col = 1, frequency = NULL, groups = NULL,
                       static_features = NULL) {
 
   data <- as.data.frame(data)
-  #data <- data_buoy_gaps
 
   if (!methods::is(data, "data.frame")) {
     stop("The 'data' argument should be an object of class 'data.frame'.")
@@ -77,7 +76,7 @@ fill_gaps <- function(data, date_col = 1, frequency = NULL, groups = NULL,
     dplyr::summarize("date_min" = min(eval(parse(text = date_name)), na.rm = TRUE)) %>%
     dplyr::ungroup()
 
-  data_template$date_max <- max(data[, date_name], na.rm = TRUE)
+  data_template$date_max <- max(data[, date_name, drop = TRUE], na.rm = TRUE)
 
   if (!is.null(static_features)) {
 
@@ -92,8 +91,8 @@ fill_gaps <- function(data, date_col = 1, frequency = NULL, groups = NULL,
       dplyr::select_at(dplyr::vars(groups, static_features))
   }
 
-  data_template_list <- vector("list", nrow(data_template))
-  data_template_list <- lapply(seq_along(data_template_list), function(i) {
+    data_template_list <- vector("list", nrow(data_template))
+    data_template_list <- lapply(seq_along(data_template_list), function(i) {
 
     # Make a contiguous vector of dates.
     date_seq <- data.frame(seq(data_template[i, "date_min", drop = TRUE],
