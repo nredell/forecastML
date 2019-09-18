@@ -41,9 +41,7 @@
 #' @export
 train_model <- function(lagged_df, windows, model_function, model_name, use_future = FALSE) {
 
-  data <- lagged_df
-
-  if (!methods::is(data, "lagged_df")) {
+  if (!methods::is(lagged_df, "lagged_df")) {
     stop("The 'data' argument takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
   }
 
@@ -55,18 +53,15 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
     stop("Enter a model name for the 'model_name' argument.")
   }
 
-  outcome_cols <- attributes(data)$outcome_cols
-  outcome_names <- attributes(data)$outcome_names
-  row_indices <- attributes(data)$row_indices
-  date_indices <- attributes(data)$date_indices
-  frequency <- attributes(data)$frequency
-  horizons <- attributes(data)$horizons
-  data_stop <- attributes(data)$data_stop
+  outcome_cols <- attributes(lagged_df)$outcome_cols
+  outcome_names <- attributes(lagged_df)$outcome_names
+  row_indices <- attributes(lagged_df)$row_indices
+  date_indices <- attributes(lagged_df)$date_indices
+  frequency <- attributes(lagged_df)$frequency
+  horizons <- attributes(lagged_df)$horizons
+  data_stop <- attributes(lagged_df)$data_stop
   n_outcomes <- length(outcome_cols)
-  groups <- attributes(data)$groups
-  valid_indices_date <- NULL
-
-  window_indices <- windows
+  groups <- attributes(lagged_df)$groups
 
   #----------------------------------------------------------------------------
   # The default future behavior is to parallelize the model training over the longer dimension: (a) number of
@@ -75,7 +70,7 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
   # "options(globals.maxSize.default = Inf)" isn't recognized.
   if (isTRUE(use_future)) {
 
-    if (length(horizons) > nrow(windows)) {
+    if (length(horizons) >= nrow(windows)) {
 
       lapply_across_horizons <- future.apply::future_lapply
       lapply_across_val_windows <- base::lapply
@@ -94,42 +89,39 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
   #----------------------------------------------------------------------------
 
   # Seq along model forecast horizon > cross-validation windows.
-  data_out <- lapply_across_horizons(data, function(data) {  # model forecast horizon.
+  data_out <- lapply_across_horizons(lagged_df, function(data) {  # model forecast horizon.
 
-    model_plus_valid_data <- lapply_across_val_windows(1:nrow(window_indices), function(i) {  # validation windows within model forecast horizon.
+    model_plus_valid_data <- lapply_across_val_windows(1:nrow(windows), function(i) {  # validation windows within model forecast horizon.
 
-      window_length <- window_indices[i, "window_length"]
+      window_length <- windows[i, "window_length"]
 
       if (is.null(date_indices)) {
 
-        valid_indices <- window_indices[i, "start"]:window_indices[i, "stop"]
+        valid_indices <- windows[i, "start"]:windows[i, "stop"]
+        valid_indices_date <- NULL
 
       } else {
 
-        valid_indices <- which(date_indices >= window_indices[i, "start"] & date_indices <= window_indices[i, "stop"])
-        valid_indices_date <- date_indices[date_indices >= window_indices[i, "start"] & date_indices <= window_indices[i, "stop"]]
+        valid_indices <- which(date_indices >= windows[i, "start"] & date_indices <= windows[i, "stop"])
+        valid_indices_date <- date_indices[date_indices >= windows[i, "start"] & date_indices <= windows[i, "stop"]]
       }
 
       # A window length of 0 removes the nested cross-validation and trains on all input data in lagged_df.
       if (window_length == 0) {
 
-        data_train <- data
+        # Model training.
+        model <- model_function(data, outcome_cols)
 
       } else {
 
-        data_train <- data[!row_indices %in% valid_indices, , drop = FALSE]
+        # Model training.
+        model <- model_function(data[!row_indices %in% valid_indices, , drop = FALSE], outcome_cols)
       }
 
-      # Model training.
-      model <- model_function(data_train, outcome_cols)
-
-      model_plus_valid_data  <- list("model" = model, "window" = window_length,
-                                     "valid_indices" = valid_indices, "date_indices" = valid_indices_date)
-
-      model_plus_valid_data
+      list("model" = model, "window" = window_length, "valid_indices" = valid_indices, "date_indices" = valid_indices_date)
     })  # End model training across nested cross-validation windows for the horizon in "data".
 
-    names(model_plus_valid_data) <- paste0("window_", 1:nrow(window_indices))
+    names(model_plus_valid_data) <- paste0("window_", 1:nrow(windows))
     attr(model_plus_valid_data, "horizon") <- attributes(data)$horizon
     model_plus_valid_data
   })  # End training across horizons.
