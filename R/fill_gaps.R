@@ -54,6 +54,10 @@ fill_gaps <- function(data, date_col = 1, frequency = NULL, groups = NULL,
     stop("The date column identified by the 'data_col' argument should be an object of class 'Date'.")
   }
 
+  if (any(is.na(data[, date_col, drop = TRUE]))) {
+    stop("The date column identified by the 'data_col' argument has missing or 'NA' dates; remove them prior to running this function.")
+  }
+
   if (is.null("frequency")) {
     stop("The 'frequency' argument is required to set the expected frequency of data collection e.g., '1 day', '3 months', etc..")
   }
