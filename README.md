@@ -6,16 +6,15 @@ Status](https://travis-ci.org/nredell/forecastML.svg?branch=master)](https://tra
 # package::forecastML <img src="./man/figures/forecastML_logo.png" alt="forecastML logo" align="right" height="138.5" style="display: inline-block;">
 
 The purpose of `forecastML` is to provide a series of functions and visualizations that simplify the process of 
-**multi-step-ahead direct forecasting with standard machine learning algorithms**. It's a wrapper package aimed at providing 
-**maximum flexibility** in model-building--choose any machine learning algorithm from any `R` package--while helping 
-the user quickly assess the (a) accuracy, (b) stability, and (c) generalizability of grouped (i.e., 
+**multi-step-ahead direct forecasting with standard machine learning algorithms**. It's a wrapper package aimed at providing maximum flexibility in model-building--**choose any machine learning algorithm from any `R` package**--while helping the user quickly assess the (a) accuracy, (b) stability, and (c) generalizability of grouped (i.e., 
 multiple related time-series) and ungrouped single-outcome forecasts produced from potentially high-dimensional modeling datasets.
 
 This package is inspired by Bergmeir, Hyndman, and Koo's 2018 paper 
 [A note on the validity of cross-validation for evaluating autoregressive time series prediction](https://doi.org/10.1016/j.csda.2017.11.003). 
 In particular, `forecastML` makes use of 
 
-* **lagged predictors**,
+* **lagged features**,
+* **simple wrapper functions that support models from any `R` package**,
 * **nested cross-validation** with (a) user-specified standard cross-validation in the inner loop and (b) block-contiguous validation 
 datasets in the outer loop, and
 * **parallel processing** with the `future` package 
@@ -98,12 +97,14 @@ library(forecastML)
 # Sampled Seatbelts data from the R package datasets.
 data("data_seatbelts", package = "forecastML")
 
-# Example - Training data for 12 horizon-specific models w/ common lags per predictor.
-horizons <- 1:12
-lookback <- 1:15
+# Example - Training data for 12 horizon-specific models w/ common lags per feature. The data do 
+# not have any missing rows or temporal gaps in data collection; if there were gaps, 
+# we would need to use fill_gaps() first.
+horizons <- 1:12  # 12 models that forecast 1, 1:2, 1:3, ..., and 1:12 time steps ahead.
+lookback <- 1:15  # A lookback of 1 to 15 dataset rows (1 to )
 
 #------------------------------------------------------------------------------
-# Create a dataset of lagged predictors for modeling.
+# Create a dataset of lagged features for modeling.
 data_train <- forecastML::create_lagged_df(data_seatbelts, type = "train",
                                            outcome_cols = 1, lookback = lookback,
                                            horizon = horizons)
@@ -115,9 +116,10 @@ windows <- forecastML::create_windows(data_train, window_length = 12)
 #------------------------------------------------------------------------------
 # User-defined model function - LASSO
 # The model_function() wrapper function takes 2 positional arguments. First, a data.frame 
-# with a target and predictors with exactly the same format as
-# used in create_lagged_df(). Second, a column index of the target. The
-# function returns a model object suitable for the user-defined predict function.
+# with a target and features with exactly the same format as
+# returned by create_lagged_df(type = 'train'). Second, a column index of the target. The
+# function returns a model object suitable for the user-defined predict function. The returned model 
+# may also be a list that holds meta-data such as hyperparamter settings.
 
 model_function <- function(data, outcome_cols = 1) {
 
@@ -139,9 +141,12 @@ model_results <- forecastML::train_model(data_train, windows,
 # User-defined prediction function - LASSO
 # The predict() wrapper function takes 2 positional arguments. First,
 # the returned model from the user-defined modeling function (model_function() above).
-# Second, a data.frame of predictors--lagged predictors will be created automatically
-# using create_lagged_df() internally. The function can return a 1- or 3-column data.frame with either (a) point
-# forecasts or (b) point forecasts plus lower and upper forecast bounds (column order or names do not matter).
+# Second, a data.frame of model features. If predicting on validation data, expect the input data to be 
+# passed in the same format as returned by create_lagged_df(type = 'train') but with the outcome column 
+# removed. If forecasting, expect the input data to be in the same format as returned by 
+# create_lagged_df(type = 'forecast') but with the 'index' and 'horizon' columns removed. The function 
+# can return a 1- or 3-column data.frame with either (a) point
+# forecasts or (b) point forecasts plus lower and upper forecast bounds (column order and names do not matter).
 
 prediction_function <- function(model, data_features) {
 
@@ -172,7 +177,9 @@ data_forecast <- forecastML::create_lagged_df(data_seatbelts, type = "forecast",
 data_forecasts <- predict(model_results, prediction_function = list(prediction_function),
                           data = data_forecast)
 
-plot(data_forecasts, data_seatbelts[-(1:150), ], as.numeric(row.names(data_seatbelts[-(1:150), ])), 
+# We'll plot a background dataset of actuals as well.
+plot(data_forecasts, data_actual = data_seatbelts[-(1:150), ], 
+     actual_indices = as.numeric(row.names(data_seatbelts[-(1:150), ])), 
      horizons = c(1, 6, 12), windows = c(5, 10, 15))
 ```
 ![](./tools/validation_data_forecasts.png)
