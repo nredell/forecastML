@@ -130,6 +130,10 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
     group_cols <- which(names(data) %in% groups)
   }
 
+  if (!is.null(groups)) {
+    static_feature_cols <- which(names(data) %in% static_features)
+  }
+
   if (!xor(is.null(lookback), is.null(lookback_control))) {stop("Enter an argument for either `lookback`--a feature lag vector--or `lookback_control`--a list of feature lag vectors.")}
 
   if (!is.null(lookback)) {
@@ -160,13 +164,16 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
       } else {
 
-        if (i %in% c(group_cols, static_features)) {  # Set lags for grouping columns and static features to 0.
+        if (i %in% c(group_cols, static_feature_cols)) {  # Set lags for grouping columns and static features to 0.
 
           lookback_control[[i]] <- 0
 
         } else {
 
-          lookback_control[[i]] <- lookback_control[[i]][lookback_control[[i]] >= horizon]
+          if (!is.null(lookback_control[[i]])) {
+
+            lookback_control[[i]] <- lookback_control[[i]][lookback_control[[i]] >= horizon]
+          }
         }
         lookback_control[[i]]
       }
@@ -183,13 +190,16 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
         } else {
 
-          if (j %in% c(group_cols, static_features)) {  # Set lags for grouping columns to 0.
+          if (j %in% c(group_cols, static_feature_cols)) {  # Set lags for grouping columns to 0.
 
             lookback_control[[i]][[j]] <- 0
 
           } else {
 
-            lookback_control[[i]][[j]] <- lookback_control[[i]][[j]][lookback_control[[i]][[j]] >= horizon[i]]
+            if (!is.null(lookback_control[[i]][[j]])) {
+
+              lookback_control[[i]][[j]] <- lookback_control[[i]][[j]][lookback_control[[i]][[j]] >= horizon[i]]
+            }
           }
           lookback_control[[i]][[j]]
         }
