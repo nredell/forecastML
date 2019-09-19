@@ -101,7 +101,7 @@ data("data_seatbelts", package = "forecastML")
 # not have any missing rows or temporal gaps in data collection; if there were gaps, 
 # we would need to use fill_gaps() first.
 horizons <- 1:12  # 12 models that forecast 1, 1:2, 1:3, ..., and 1:12 time steps ahead.
-lookback <- 1:15  # A lookback of 1 to 15 dataset rows (1 to )
+lookback <- 1:15  # A lookback of 1 to 15 dataset rows (1:15 * 'date frequency' if dates are given).
 
 #------------------------------------------------------------------------------
 # Create a dataset of lagged features for modeling.
