@@ -37,7 +37,7 @@ library(forecastML)
 * Setting the following `R` environment parameter may be needed to compile the vignettes.
 
 ``` r
-base::Sys.setenv(LC_ALL="en_US.UTF-8")
+base::Sys.setenv(LC_ALL = "en_US.UTF-8")
 ```
 
 ## Vignettes
@@ -114,14 +114,15 @@ data_train <- forecastML::create_lagged_df(data_seatbelts, type = "train",
 windows <- forecastML::create_windows(data_train, window_length = 12)
 
 #------------------------------------------------------------------------------
-# User-defined model function - LASSO
-# The model_function() wrapper function takes 2 positional arguments. First, a data.frame 
-# with a target and features with exactly the same format as
-# returned by create_lagged_df(type = 'train'). Second, a column index of the target. The
-# function returns a model object suitable for the user-defined predict function. The returned model 
-# may also be a list that holds meta-data such as hyperparamter settings.
+# User-define model - LASSO
+# A user-defined wrapper function for model training that takes the following
+# arguments: (1) a horizon-specific data.frame made with create_lagged_df(..., type = "train")
+# (e.g., my_lagged_df$horizon_h) and, optionally, (2) any number of additional named arguments
+# which are passed as '...' in train_model(). The function returns a model object suitable for 
+# the user-defined predict function. The returned model may also be a list that holds meta-data such 
+# as hyperparamter settings.
 
-model_function <- function(data, outcome_cols = 1) {
+model_function <- function(data, outcome_cols) {
 
   x <- data[, -(outcome_cols), drop = FALSE]
   y <- data[, outcome_cols, drop = FALSE]
@@ -134,8 +135,9 @@ model_function <- function(data, outcome_cols = 1) {
 
 #------------------------------------------------------------------------------
 # Train a model across forecast horizons and validation datasets.
-model_results <- forecastML::train_model(data_train, windows,
-                                         model_function, model_name = "LASSO")
+# outcome_cols = 1 is passed in ... but could have been defined in the user-defined model function.
+model_results <- train_model(data_train, windows, model_name = "LASSO", model_function,
+                             outcome_cols = 1)
 
 #------------------------------------------------------------------------------
 # User-defined prediction function - LASSO

@@ -241,18 +241,22 @@ p
 
 #### User-defined modeling function
 
-* A user-defined wrapper function for model training that takes **2 positional arguments**:
-    * **1:** A data.frame with the target to be forecasted and model features from `create_lagged_df(..., type = "train")`.
-    * **2:** The column index of the modeled outcome.
-* and **returns** A model object that will be passed into the user-defined `predict()` function.
+* A user-defined wrapper function for model training that takes the following arguments: 
+    + **1:** A horizon-specific data.frame made with `create_lagged_df(..., type = "train")` 
+    (e.g., my_lagged_df$horizon_h),
+    + **2:** optionally, any number of additional named arguments which can be passed as '...' in
+    `train_model()`
+    + and **returns** a model object that will be passed into the user-defined `predict()` function.
 
-* Any data transformations, hyperparameter tuning, or inner loop cross-validation procedures should take place within this 
-function, with the limitation that it ultimately needs to `return()` one model.
+Any data transformations, hyperparameter tuning, or inner loop cross-validation procedures should take 
+place within this function, with the limitation that it ultimately needs to `return()` a model suitable for 
+the user-defined `predict()` function; a list can be returned to capture meta-data such as hyperparameter results.
 
 * Notice that the `xgboost`-specific input datasets are created within this wrapper function.
 
 ```{r}
-model_function <- function(data, outcome_col) {
+# The value of outcome_col can also be set in train_model() with train_model(outcome_col = 1).
+model_function <- function(data, outcome_col = 1) {
   
   # xgboost cannot handle missing outcomes data so we'll remove it.
   data <- data[!is.na(data[, outcome_col]), ]
@@ -307,8 +311,8 @@ validation windows, whichever is longer (when equal, the default is parallel acr
 
 model_results_cv <- forecastML::train_model(lagged_df = data_train,
                                             windows = windows,
-                                            model_function = model_function, 
                                             model_name = "xgboost",
+                                            model_function = model_function, 
                                             use_future = FALSE)
 ```
 
@@ -472,8 +476,8 @@ p
 
 model_results_no_cv <- forecastML::train_model(lagged_df = data_train, 
                                                windows = windows,
-                                               model_function = model_function, 
                                                model_name = "xgboost",
+                                               model_function = model_function,
                                                use_future = FALSE)
 ```
 

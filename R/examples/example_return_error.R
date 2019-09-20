@@ -12,11 +12,12 @@ data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_cols = 1,
 windows <- create_windows(data_train, window_length = 12)
 
 # User-define model - LASSO
-# The model takes in a data.frame with a target and predictors with exactly the same format as
-# in create_lagged_df(). 'outcome_cols' is the column index of the target. The
-# model returns a model object suitable for a predict-type function.
+# A user-defined wrapper function for model training that takes the following
+# arguments: (1) a horizon-specific data.frame made with create_lagged_df(..., type = "train")
+# (e.g., my_lagged_df$horizon_h) and, optionally, (2) any number of additional named arguments
+# which are passed as '...' in train_model().
 library(glmnet)
-model_function <- function(data, outcome_cols = 1) {
+model_function <- function(data, outcome_cols) {
 
   x <- data[, -(outcome_cols), drop = FALSE]
   y <- data[, outcome_cols, drop = FALSE]
@@ -27,8 +28,9 @@ model_function <- function(data, outcome_cols = 1) {
   return(model)
 }
 
-model_results <- train_model(data_train, windows,
-                             model_function, model_name = "LASSO")
+# outcome_cols = 1 is passed in ... but could have been defined in the user-defined model function.
+model_results <- train_model(data_train, windows, model_name = "LASSO", model_function,
+                             outcome_cols = 1)
 
 # User-defined prediction function - LASSO
 # The predict() wrapper takes two positional arguments. First,

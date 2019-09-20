@@ -7,11 +7,12 @@
 #'
 #' @param lagged_df An object of class 'lagged_df' from \code{\link{create_lagged_df}}.
 #' @param windows An object of class 'windows' from \code{\link{create_windows}}.
-#' @param model_function A user-defined wrapper function for model training that takes 2
-#' positional arguments--(1) a horizon-specific data.frame made with \code{create_lagged_df(..., type = "train")} and
-#' (2) the column index of the modeled outcome in the input data--and returns a model object which is used
-#' as input in the user-defined prediction function (see example).
-#' @param model_name A name for the model. Required.
+#' @param model_name A name for the model.
+#' @param model_function A user-defined wrapper function for model training that takes the following
+#' arguments: (1) a horizon-specific data.frame made with \code{create_lagged_df(..., type = "train")}
+#' (i.e., the datasets stored in \code{lagged_df}) and, optionally, (2) any number of additional named arguments
+#' which are passed as \code{...} in this function.
+#' @param ... Optional. Named arguments passed into the user-defined \code{model_function}.
 #' @param use_future Boolean. If \code{TRUE}, the \code{future} package is used for training models in parallel.
 #' The model will train in parallel across either (1) model forecast horizons or (b) validation windows,
 #' whichever is longer (i.e., \code{length(create_lagged_df())} or \code{nrow(create_windows())}). The user
@@ -39,7 +40,7 @@
 #' }
 #' @example /R/examples/example_train_model.R
 #' @export
-train_model <- function(lagged_df, windows, model_function, model_name, use_future = FALSE) {
+train_model <- function(lagged_df, windows, model_name, model_function, ..., use_future = FALSE) {
 
   if (!methods::is(lagged_df, "lagged_df")) {
     stop("The 'data' argument takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
@@ -53,15 +54,9 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
     stop("Enter a model name for the 'model_name' argument.")
   }
 
-  outcome_cols <- attributes(lagged_df)$outcome_cols
-  outcome_names <- attributes(lagged_df)$outcome_names
   row_indices <- attributes(lagged_df)$row_indices
   date_indices <- attributes(lagged_df)$date_indices
-  frequency <- attributes(lagged_df)$frequency
   horizons <- attributes(lagged_df)$horizons
-  data_stop <- attributes(lagged_df)$data_stop
-  n_outcomes <- length(outcome_cols)
-  groups <- attributes(lagged_df)$groups
 
   #----------------------------------------------------------------------------
   # The default future behavior is to parallelize the model training over the longer dimension: (a) number of
@@ -109,13 +104,25 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
       # A window length of 0 removes the nested cross-validation and trains on all input data in lagged_df.
       if (window_length == 0) {
 
-        # Model training.
-        model <- model_function(data, outcome_cols)
 
+        # Model training.
+        if (length(list(...)) == 0) {
+          model <- try(model_function(data))
+        } else {
+          model <- try(model_function(data, ...))
+        }
       } else {
 
         # Model training.
-        model <- model_function(data[!row_indices %in% valid_indices, , drop = FALSE], outcome_cols)
+        if (length(list(...)) == 0) {
+          model <- try(model_function(data[!row_indices %in% valid_indices, , drop = FALSE]))
+        } else {
+          model <- try(model_function(data[!row_indices %in% valid_indices, , drop = FALSE], ...))
+        }
+      }
+
+      if (methods::is(model, "try-error")) {
+        warning(paste0("A model returned class 'try-error' for validation window ", i))
       }
 
       list("model" = model, "window" = window_length, "valid_indices" = valid_indices, "date_indices" = valid_indices_date)
@@ -127,14 +134,14 @@ train_model <- function(lagged_df, windows, model_function, model_name, use_futu
   })  # End training across horizons.
 
   attr(data_out, "model_name") <- model_name
-  attr(data_out, "outcome_cols") <- outcome_cols
-  attr(data_out, "outcome_names") <- outcome_names
+  attr(data_out, "horizons") <- horizons
+  attr(data_out, "outcome_cols") <- attributes(lagged_df)$outcome_cols
+  attr(data_out, "outcome_names") <- attributes(lagged_df)$outcome_names
   attr(data_out, "row_indices") <- row_indices
   attr(data_out, "date_indices") <- date_indices
-  attr(data_out, "frequency") <- frequency
-  attr(data_out, "data_stop") <- data_stop
-  attr(data_out, "horizons") <- horizons
-  attr(data_out, "groups") <- groups
+  attr(data_out, "frequency") <- attributes(lagged_df)$frequency
+  attr(data_out, "data_stop") <- attributes(lagged_df)$data_stop
+  attr(data_out, "groups") <- attributes(lagged_df)$groups
 
   class(data_out) <- c("forecast_model", class(data_out))
 
@@ -218,7 +225,6 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data =
   outcome_names <- attributes(model_list[[1]])$outcome_names
   row_indices <- attributes(model_list[[1]])$row_indices
   date_indices <- attributes(model_list[[1]])$date_indices
-  frequency <- attributes(model_list[[1]])$frequency
 
   if (type == "train") {
 
@@ -345,7 +351,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data =
   attr(data_out, "outcome_names") <- outcome_names
   attr(data_out, "row_indices") <- row_indices
   attr(data_out, "date_indices") <- date_indices
-  attr(data_out, "frequency") <- frequency
+  attr(data_out, "frequency") <- attributes(model_list[[1]])$frequency
   attr(data_out, "data_stop") <- data_stop
   attr(data_out, "groups") <- groups
 
@@ -373,7 +379,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data =
 #' @param valid_indices Optional. A numeric or date vector to filter results by validation row indices or dates.
 #' @param group_filter Optional. A string for filtering plot results for grouped time-series
 #' (e.g., \code{"group_col_1 == 'A'"}). The results are passed to \code{dplyr::filter()} internally.
-#' @param ... Arguments passed to \code{base::plot()}
+#' @param ... Not used.
 #' @return Diagnostic plots of class 'ggplot'.
 #' @export
 plot.training_results <- function(x,
@@ -655,7 +661,7 @@ plot.training_results <- function(x,
 #' \code{facet_plot = NULL} plots results in one facet.
 #' @param group_filter Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"});
 #' passed to \code{dplyr::filter()} internally.
-#' @param ... Arguments passed to \code{base::plot()}
+#' @param ... Not used.
 #' @return Forecast plot of class 'ggplot'.
 #' @export
 plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,

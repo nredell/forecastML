@@ -219,23 +219,27 @@ plot(windows, data_list, show_labels = TRUE)
 
 ## User-defined modeling function
 
-We'll compare the forecasting performance of two models: (a) a cross-validated LASSO and (b) a non-tuned Random Forest. 
-The following user-defined functions are needed for each model:
+We'll compare the forecasting performance of two models: (a) a cross-validated LASSO and (b) a non-tuned Random Forest. The following user-defined functions are needed for each model:
 
-* A user-defined wrapper function for model training that takes **2 positional arguments**:
-    * **1:** A data.frame with the target to be forecasted and model features from `create_lagged_df(..., type = "train")`.
-    * **2:** The column index of the modeled outcome.
-* and **returns** A model object that will be passed into the user-defined `predict()` function.
+* A user-defined wrapper function for model training that takes the following arguments: 
+    + **1:** A horizon-specific data.frame made with `create_lagged_df(..., type = "train")` 
+    (e.g., my_lagged_df$horizon_h),
+    + **2:** optionally, any number of additional named arguments which can be passed as '...' in
+    `train_model()` 
+    + and **returns** a model object that will be passed into the user-defined `predict()` function.
 
-Any data transformations, hyperparameter tuning, or inner loop cross-validation procedures should take place within this 
-function, with the limitation that it ultimately needs to `return()` one model.
+Any data transformations, hyperparameter tuning, or inner loop cross-validation procedures should take 
+place within this function, with the limitation that it ultimately needs to `return()` a model suitable for 
+the user-defined `predict()` function; a list can be returned to capture meta-data such as hyperparameter results.
 
 ```{r}
 # Example 1 - LASSO
-model_function <- function(data, outcome_cols = 1) {
+# Alternatively, we could define an outcome column identifier argument, say, 'outcome_cols = 1' in 
+# this function or just 'outcome_cols' and then set the argument as 'outcome_cols = 1' in train_model().
+model_function <- function(data) {
 
-  x <- data[, -(outcome_cols), drop = FALSE]
-  y <- data[, outcome_cols, drop = FALSE]
+  x <- data[, -(1), drop = FALSE]
+  y <- data[, 1, drop = FALSE]
   x <- as.matrix(x, ncol = ncol(x))
   y <- as.matrix(y, ncol = ncol(y))
 
@@ -244,9 +248,11 @@ model_function <- function(data, outcome_cols = 1) {
 }
 
 # Example 2 - Random Forest
-model_function_2 <- function(data, outcome_cols = 1) {
+# Alternatively, we could define an outcome column identifier argument, say, 'outcome_cols = 1' in 
+# this function or just 'outcome_cols' and then set the argument as 'outcome_cols = 1' in train_model().
+model_function_2 <- function(data) {
 
-  outcome_names <- names(data)[outcome_cols]
+  outcome_names <- names(data)[1]
   model_formula <- formula(paste0(outcome_names,  "~ ."))
 
   model <- randomForest::randomForest(formula = model_formula, data = data, ntree = 200)
@@ -271,11 +277,11 @@ given forecast horizon. On a standard 16GB RAM 8 core laptop, training in parall
 ```{r}
 #future::plan(future::multiprocess)
 
-model_results <- forecastML::train_model(lagged_df = data_list, windows, 
-                                         model_function, model_name = "LASSO", use_future = FALSE)
+model_results <- forecastML::train_model(data_list, windows, model_name = "LASSO",
+                                         model_function, use_future = FALSE)
 
-model_results_2 <- forecastML::train_model(lagged_df = data_list, windows, 
-                                           model_function_2, model_name = "RF", use_future = FALSE)
+model_results_2 <- forecastML::train_model(data_list, windows, model_name = "RF", 
+                                           model_function_2, use_future = FALSE)
 ```
 
 <br>
@@ -617,7 +623,7 @@ plot(windows, data_list, show_labels = TRUE)
 Without nested cross-validation and holdout windows, the prediction plot is essnetially a plot of model fit.
 
 ```{r}
-model_results <- forecastML::train_model(data_list, windows, model_function, model_name = "LASSO")
+model_results <- forecastML::train_model(data_list, windows,  model_name = "LASSO", model_function)
 
 data_results <- predict(model_results, prediction_function = list(prediction_function), data = data_list)
 

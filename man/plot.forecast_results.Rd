@@ -30,7 +30,7 @@ The data can be historical and/or holdout/test data, forecasts and actuals are m
 \item{group_filter}{Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"});
 passed to \code{dplyr::filter()} internally.}
 
-\item{...}{Arguments passed to \code{base::plot()}}
+\item{...}{Not used.}
 }
 \value{
 Forecast plot of class 'ggplot'.
