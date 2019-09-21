@@ -4,7 +4,7 @@
 \alias{fill_gaps}
 \title{Prepare a dataset for modeling by filling in temporal gaps in data collection}
 \usage{
-fill_gaps(data, date_col = 1, frequency = NULL, groups = NULL,
+fill_gaps(data, date_col = 1, frequency, groups = NULL,
   static_features = NULL)
 }
 \arguments{
@@ -18,9 +18,10 @@ The highest frequency supported at present is '1 day'.}
 \item{groups}{Column name(s) that identify the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but are not lagged.
 Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.}
 
-\item{static_features}{For grouped time-series only. Column name(s) that identify features that do not change through time.
-These columns are used as model features but are not lagged.
-Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.}
+\item{static_features}{For grouped time-series only (optional). Column name(s) that identify features that do not change through time.
+These columns are expected to be used as model features but are not lagged (e.g., a ZIP code column). The most recent values for each
+static feature for each group are used to fill in the resulting missing data in static features when new rows are
+added to the dataset to fill gaps in data collection.}
 }
 \value{
 An object of class 'data.frame': The returned data.frame has the same number of columns and column order but

@@ -17,9 +17,10 @@
 #' The highest frequency supported at present is '1 day'.
 #' @param groups Column name(s) that identify the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but are not lagged.
 #' Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.
-#' @param static_features For grouped time-series only. Column name(s) that identify features that do not change through time.
-#' These columns are used as model features but are not lagged.
-#' Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.
+#' @param static_features For grouped time-series only (optional). Column name(s) that identify features that do not change through time.
+#' These columns are expected to be used as model features but are not lagged (e.g., a ZIP code column). The most recent values for each
+#' static feature for each group are used to fill in the resulting missing data in static features when new rows are
+#' added to the dataset to fill gaps in data collection.
 #' @return An object of class 'data.frame': The returned data.frame has the same number of columns and column order but
 #' with additional rows to account for gaps in data collection. For grouped data, any new rows added to the returned data.frame will appear
 #' between the minimum--or oldest--date for that group and the maximum--or most recent--date across all groups. If the user-supplied
@@ -37,7 +38,7 @@
 #' @example /R/examples/example_fill_gaps.R
 #'
 #' @export
-fill_gaps <- function(data, date_col = 1, frequency = NULL, groups = NULL,
+fill_gaps <- function(data, date_col = 1, frequency, groups = NULL,
                       static_features = NULL) {
 
   data <- as.data.frame(data)
@@ -58,8 +59,9 @@ fill_gaps <- function(data, date_col = 1, frequency = NULL, groups = NULL,
     stop("The date column identified by the 'data_col' argument has missing or 'NA' dates; remove them prior to running this function.")
   }
 
-  if (is.null("frequency")) {
-    stop("The 'frequency' argument is required to set the expected frequency of data collection e.g., '1 day', '3 months', etc..")
+  if (missing(frequency)) {
+    stop("The 'frequency' argument is required to set the expected frequency of data collection e.g., '1 day', '3 months', '10 years' etc.;
+         see base::seq.Date() for valid date frequencies.")
   }
 
   if (is.null(groups) && !is.null(static_features)) {
@@ -71,8 +73,16 @@ fill_gaps <- function(data, date_col = 1, frequency = NULL, groups = NULL,
 
   date_name <- names(data)[date_col]
 
-  data <- data %>%
-    dplyr::arrange(eval(parse(text = groups)), eval(parse(text = date_name)))
+  if (is.null(groups)) {
+
+    data <- data %>%
+      dplyr::arrange(eval(parse(text = date_name)))
+
+  } else {
+
+    data <- data %>%
+      dplyr::arrange(eval(parse(text = groups)), eval(parse(text = date_name)))
+  }
 
   # Create a merge template giving the date bounds for non-grouped or grouped data.
   data_template <- data %>%
@@ -138,8 +148,16 @@ fill_gaps <- function(data, date_col = 1, frequency = NULL, groups = NULL,
 
   data_out <- dplyr::left_join(data_template, data, by = c(date_name, groups))
 
-  data_out <- data_out %>%
-    dplyr::arrange(eval(parse(text = groups)), eval(parse(text = date_name)))
+  if (is.null(groups)) {
+
+    data_out <- data_out %>%
+      dplyr::arrange(eval(parse(text = date_name)))
+
+  } else {
+
+    data_out <- data_out %>%
+      dplyr::arrange(eval(parse(text = groups)), eval(parse(text = date_name)))
+  }
 
   # Re-order the complete dataset to have the same column order as the input dataset.
   data_out <- dplyr::select(data_out, col_names)
