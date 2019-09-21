@@ -150,7 +150,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
            the dataset. For multiple forecast horizons, 'lookback_control' is a nested list with length(lookback_control) ==
            length(horizons) and, one layer down, the nested list should have a length equal to the number of features in the dataset.
            'lookback_control' list slots with 'NULL' drops columns from the input data, and 'lookback_control' list slots with 0 are used for
-           grouping columns and static features.")
+           grouping columns and static features (grouping/static features will automatically be coerced to 0s).")
     }
 
     #--------------------------------------------------------------------------
@@ -417,38 +417,20 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
         if (all(!is.na(lookback_over_horizon), length(lookback_over_horizon) > 0) || var_names[j] %in% c(groups, static_features)) {
 
           #--------------------------------------------------------------------
-          # If 'lookback' is specified and the lags are the same across features, only compute the
-          # feature lagging function once.
-          if (!is.null(lookback) && j == 1) {
+          # Create a list of lag functions for dplyr::mutate_at(). This approach is approximately 30% faster than the
+          # previous sapply approach of mutating and adding one lagged feature column at a time.
+          # This list of functions has slightly different lags from type = 'train' to account for the whole
+          # future aspect of this data.frame.
+          lag_functions <- vector("list", length(lookback_over_horizon))
+          for (k in seq_along(lag_functions)) {
 
-            # Create a list of lag functions for dplyr::mutate_at(). This approach is approximately 30% faster than the
-            # previous sapply approach of mutating and adding one lagged feature column at a time.
-            # This list of functions has slightly different lags from type = 'train' to account for the whole
-            # future aspect of this data.frame.
-            lag_functions <- vector("list", length(lookback_over_horizon))
-            for (k in seq_along(lag_functions)) {
-
-              lag_functions[[k]] <- function(.) {
-                dplyr::lag(unlist(.), lookback_over_horizon[k] - forecast_horizon)
-              }
-
-              body(lag_functions[[k]])[[2]][[3]] <- get('lookback_over_horizon')[k] - forecast_horizon  # Change the body of the function to reflect the feature-specific lag.
-              names(lag_functions)[k] <- paste0(var_names[j], "_lag_", lookback_over_horizon[k])
+            lag_functions[[k]] <- function(.) {
+              dplyr::lag(unlist(.), lookback_over_horizon[k] - forecast_horizon)
             }
 
-          } else if (!is.null(lookback_control)) {  # Custom lag functions are needed for each feature in the 'j' loop.
-
-            lag_functions <- vector("list", length(lookback_over_horizon))
-            for (k in seq_along(lag_functions)) {
-
-              lag_functions[[k]] <- function(.) {
-                dplyr::lag(unlist(.), lookback_over_horizon[k] - forecast_horizon)
-              }
-
-              body(lag_functions[[k]])[[2]][[3]] <- get('lookback_over_horizon')[k] - forecast_horizon  # Change the body of the function to reflect the feature-specific lag.
-              names(lag_functions)[k] <- paste0(var_names[j], "_lag_", lookback_over_horizon[k])
-            }
-          }  # End custom feature lag function creation.
+            body(lag_functions[[k]])[[2]][[3]] <- get('lookback_over_horizon')[k] - forecast_horizon  # Change the body of the function to reflect the feature-specific lag.
+            names(lag_functions)[k] <- paste0(var_names[j], "_lag_", lookback_over_horizon[k])
+          } # End custom feature lag function creation.
           #--------------------------------------------------------------------
 
           if (!is.null(groups)) {  # Create lagged features by group.
