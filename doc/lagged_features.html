@@ -12,7 +12,7 @@
 
 <meta name="author" content="Nickalus Redell, nickalusredell@gmail.com" />
 
-<meta name="date" content="2019-09-09" />
+<meta name="date" content="2019-09-21" />
 
 <title>Custom Feature Lags</title>
 
@@ -2549,7 +2549,7 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 
 <h1 class="title toc-ignore">Custom Feature Lags</h1>
 <h4 class="author">Nickalus Redell, <a href="mailto:nickalusredell@gmail.com" class="email">nickalusredell@gmail.com</a></h4>
-<h4 class="date">2019-09-09</h4>
+<h4 class="date">2019-09-21</h4>
 
 
 
@@ -2568,8 +2568,8 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <a class="sourceLine" id="cb1-6" title="6"></a>
 <a class="sourceLine" id="cb1-7" title="7">data &lt;-<span class="st"> </span>data[, <span class="kw">c</span>(<span class="st">&quot;DriversKilled&quot;</span>, <span class="st">&quot;kms&quot;</span>, <span class="st">&quot;PetrolPrice&quot;</span>, <span class="st">&quot;law&quot;</span>)]</a>
 <a class="sourceLine" id="cb1-8" title="8">DT<span class="op">::</span><span class="kw">datatable</span>(<span class="kw">head</span>(data, <span class="dv">5</span>))</a></code></pre></div>
-<div id="htmlwidget-42b59caa38c73c0942f0" style="width:100%;height:auto;" class="datatables html-widget"></div>
-<script type="application/json" data-for="htmlwidget-42b59caa38c73c0942f0">{"x":{"filter":"none","data":[["1","2","3","4","5"],[107,97,102,87,119],[9059,7685,9963,10955,11823],[0.102971811805368,0.102362995884646,0.102062490635914,0.100873300511862,0.101019672891934],[0,0,0,0,0]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>DriversKilled<\/th>\n      <th>kms<\/th>\n      <th>PetrolPrice<\/th>\n      <th>law<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2,3,4]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-6d1d4dabad17745283c0" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-6d1d4dabad17745283c0">{"x":{"filter":"none","data":[["1","2","3","4","5"],[107,97,102,87,119],[9059,7685,9963,10955,11823],[0.102971811805368,0.102362995884646,0.102062490635914,0.100873300511862,0.101019672891934],[0,0,0,0,0]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>DriversKilled<\/th>\n      <th>kms<\/th>\n      <th>PetrolPrice<\/th>\n      <th>law<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2,3,4]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 <hr />
 <p><br></p>
 </div>
@@ -2661,8 +2661,8 @@ code > span.fu { color: #900; font-weight: bold; }  code > span.er { color: #a61
 <li>Inspecting the modeling data.frame confirms that the 12-month-lagged feature for <code>PetrolPrice</code> is not a feature in our 12-month-out forecast model training data set.</li>
 </ul>
 <div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" title="1">DT<span class="op">::</span><span class="kw">datatable</span>(<span class="kw">head</span>(data_train<span class="op">$</span>horizon_<span class="dv">12</span>))</a></code></pre></div>
-<div id="htmlwidget-6bd7541c1dc991b103a3" style="width:100%;height:auto;" class="datatables html-widget"></div>
-<script type="application/json" data-for="htmlwidget-6bd7541c1dc991b103a3">{"x":{"filter":"none","data":[["13","14","15","16","17","18"],[125,134,110,102,103,111],[107,97,102,87,119,106],[9059,7685,9963,10955,11823,12391],[0,0,0,0,0,0]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>DriversKilled<\/th>\n      <th>DriversKilled_lag_12<\/th>\n      <th>kms_lag_12<\/th>\n      <th>law_lag_12<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2,3,4]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
+<div id="htmlwidget-eaf87d2cb12d9b90711f" style="width:100%;height:auto;" class="datatables html-widget"></div>
+<script type="application/json" data-for="htmlwidget-eaf87d2cb12d9b90711f">{"x":{"filter":"none","data":[["13","14","15","16","17","18"],[125,134,110,102,103,111],[107,97,102,87,119,106],[9059,7685,9963,10955,11823,12391],[0,0,0,0,0,0]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>DriversKilled<\/th>\n      <th>DriversKilled_lag_12<\/th>\n      <th>kms_lag_12<\/th>\n      <th>law_lag_12<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[1,2,3,4]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
 </div>
 
 
