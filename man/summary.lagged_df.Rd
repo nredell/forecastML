@@ -9,7 +9,7 @@
 \arguments{
 \item{object}{An object of class 'lagged_df' from \code{create_lagged_df}.}
 
-\item{...}{Arguments passed to \code{base::summary}.}
+\item{...}{Not used.}
 }
 \value{
 A printed summary of the contents of the lagged_df object.

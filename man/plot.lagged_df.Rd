@@ -9,7 +9,7 @@
 \arguments{
 \item{x}{An object of class 'lagged_df' from \code{create_lagged_df()}.}
 
-\item{...}{Arguments passed to \code{base::plot()}}
+\item{...}{Not used.}
 }
 \value{
 A single plot of class 'ggplot' if \code{lookback} was specified in \code{create_lagged_df()};

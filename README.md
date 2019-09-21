@@ -120,7 +120,7 @@ windows <- forecastML::create_windows(data_train, window_length = 12)
 # (e.g., my_lagged_df$horizon_h) and, optionally, (2) any number of additional named arguments
 # which are passed as '...' in train_model(). The function returns a model object suitable for 
 # the user-defined predict function. The returned model may also be a list that holds meta-data such 
-# as hyperparamter settings.
+# as hyperparameter settings.
 
 model_function <- function(data, outcome_cols) {
 
