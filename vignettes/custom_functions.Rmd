@@ -4,7 +4,7 @@ author: "Nickalus Redell, nickalusredell@gmail.com"
 date: "`r lubridate::today()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Forecasting with Multiple Time-Series}
+  %\VignetteIndexEntry{Customizing Wrapper Functions}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -127,7 +127,7 @@ model_results <- forecastML::train_model(data_train, windows, model_name = "RF",
 ```
 
 
-* View the `return()` values from the user-defined `model_function()`. The returned vales are stored in 
+* View the `return()` values from the user-defined `model_function()`. The returned values are stored in 
 `my_training_results$horizon_h$window_w$model`.
 
 ```{r}
