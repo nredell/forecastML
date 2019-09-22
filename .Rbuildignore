@@ -7,3 +7,4 @@
 ^doc$
 ^Meta$
 ^codecov\.yml$
+^cran-comments\.md$

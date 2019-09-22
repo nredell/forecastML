@@ -1,10 +1,10 @@
 Package: forecastML
 Type: Package
-Title: Time-Series Forecasting with Machine Learning Methods
+Title: TimevSeries Forecasting with Machine Learning Methods
 Version: 0.5.0
 Author: Nickalus Redell
 Maintainer: Nickalus Redell <nickalusredell@gmail.com>
-Description: The purpose of 'forecastML' is to provide a series of functions and visualizations that simplify the process of multi-step-ahead direct forecasting with standard machine learning algorithms. 'forecastML' is a wrapper package aimed at providing maximum flexibility in model-building--choose any machine learning algorithm from any R package--while helping the user quickly assess the (a) accuracy, (b) stability, and (c) generalizability of grouped (i.e., multiple related time-series) and ungrouped single-outcome forecasts produced from potentially high-dimensional modeling datasets. This package is inspired by Bergmeir, Hyndman, and Koo's (2018) paper "A note on the validity of cross-validation for evaluating autoregressive time series prediction" <https://doi.org/10.1016/j.csda.2017.11.003>. 
+Description: The purpose of 'forecastML' is to provide a series of functions and visualizations that simplify the process of multi-step-ahead direct forecasting with standard machine learning algorithms. 'forecastML' is a wrapper package aimed at providing maximum flexibility in model-building--choose any machine learning algorithm from any R package--while helping the user quickly assess the (a) accuracy, (b) stability, and (c) generalizability of grouped (i.e., multiple related time series) and ungrouped single-outcome forecasts produced from potentially high-dimensional modeling datasets. This package is inspired by Bergmeir, Hyndman, and Koo's (2018) paper "A note on the validity of cross-validation for evaluating autoregressive time series prediction" <https://doi.org/10.1016/j.csda.2017.11.003>. 
 License: MIT + file LICENSE
 URL: https://github.com/nredell/forecastML/
 Encoding: UTF-8
@@ -32,8 +32,8 @@ Collate:
     'data_buoy_gaps.R'
 Depends: 
     R (>= 3.4.0),
-    ggplot2 (>= 3.1.0)
 Suggests: 
+    ggplot2 (>= 3.1.0),
     glmnet (>= 2.0.16),
     DT (>= 0.5),
     knitr (>= 1.22),
