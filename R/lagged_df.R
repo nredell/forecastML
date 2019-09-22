@@ -45,16 +45,16 @@
 #' The contents of the returned data.frame(s) are as follows:
 #'
 #' \describe{
-#'   \item{\strong{type = 'train', non-grouped:}}{A data.frame of lagged features.}
+#'   \item{\strong{type = 'train', non-grouped:}}{A data.frame of lagged features with the first \code{1:max(lookback)} rows removed.}
 #'   \item{\strong{type = 'train', grouped:}}{A data.frame of unlagged grouping columns followed by lagged and static features.}
 #'   \item{\strong{type = 'forecast', non-grouped:}}{(1) An 'index' column giving the row index or date of the
 #'   forecast periods (e.g., a 100 row non-date-based training dataset would start with an index of 101). (2) A 'horizon' column
-#'   that indicates the forecast period from 1:max(horizons). (3) Lagged features identical to the
+#'   that indicates the forecast period from \code{1:max(horizons)}. (3) Lagged features identical to the
 #'   'train', non-grouped dataset.}
 #'   \item{\strong{type = 'forecast', grouped:}}{(1) An 'index' column giving the date of the
 #'   forecast periods. The first forecast date for each group is the maximum date from the \code{dates} argument
 #'   + 1 * \code{frequency} which is the user-supplied date frequency.(2) A 'horizon' column that indicates
-#'   the forecast period from \code{1:max(horizons)}. (3) Lagged and static features identical to the train', grouped dataset.}
+#'   the forecast period from \code{1:max(horizons)}. (3) Lagged and static features identical to the 'train', grouped dataset.}
 #' }
 #' @section Attributes:
 #'

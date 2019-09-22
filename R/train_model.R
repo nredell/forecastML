@@ -125,7 +125,8 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
         warning(paste0("A model returned class 'try-error' for validation window ", i))
       }
 
-      list("model" = model, "window" = window_length, "valid_indices" = valid_indices, "date_indices" = valid_indices_date)
+      list("model" = model, "window" = i, "window_length" = window_length, "valid_indices" = valid_indices,
+           "date_indices" = valid_indices_date)
     })  # End model training across nested cross-validation windows for the horizon in "data".
 
     names(model_plus_valid_data) <- paste0("window_", 1:nrow(windows))
@@ -302,8 +303,8 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data =
 
           data_temp <- data.frame("model" = model_name,
                                   "model_forecast_horizon" = attributes(model_list[[i]][[j]])$horizon,
-                                  "window_length" = data_results$window,
-                                  "window_number" = k,
+                                  "window_length" = data_results$window_length,
+                                  "window_number" = data_results$window,
                                   "valid_indices" = data_results$valid_indices)
 
           data_temp$date_indices <- data_results$date_indices
@@ -322,8 +323,8 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data =
           data_temp <- data.frame("model" = model_name,
                                   "model_forecast_horizon" = horizons[j],
                                   "horizon" = forecast_horizons,
-                                  "window_length" = data_results$window,
-                                  "window_number" = k,
+                                  "window_length" = data_results$window_length,
+                                  "window_number" = data_results$window,
                                   "forecast_period" = forecast_period)
 
           if (is.null(groups)) {
@@ -542,10 +543,10 @@ plot.training_results <- function(x,
     p <- p + facet_grid(horizon ~ ., drop = TRUE)
     p <- p + theme_bw()
       if (type == "prediction") {
-        p <- p + xlab("Dataset index/row") + ylab("Outcome") + labs(color = "Model") +
+        p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Model") +
         ggtitle("Forecasts vs. Actuals Through Time - Faceted by horizon")
       } else if (type == "residual") {
-        p <- p + xlab("Dataset index/row") + ylab("Residual") + labs(color = "Model") +
+        p <- p + xlab("Dataset index") + ylab("Residual") + labs(color = "Model") +
         ggtitle("Forecast Error Through Time - Faceted by forecast horizon")
       }
     return(p)
@@ -556,7 +557,6 @@ plot.training_results <- function(x,
 
     data_plot$forecast_origin <- with(data_plot, valid_indices - horizon)
 
-    # data_plot$group <- with(data_plot, paste0(window_length, "_", valid_indices))
     data_plot$group <- with(data_plot, paste0(valid_indices))
     data_plot$group <- ordered(data_plot$group)
 
@@ -587,7 +587,7 @@ plot.training_results <- function(x,
       p <- p + geom_line(data = data_outcome, aes(x = .data$index,
                                                   y = eval(parse(text = outcome_names))), color = "gray50")
       p <- p + theme_bw()
-      p <- p + xlab("Dataset index/row") + ylab("Outcome") + labs(color = "Model") + labs(fill = NULL) +
+      p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Model") + labs(fill = NULL) +
         ggtitle("Rolling Origin Forecast Stability - Faceted by dataset index/row")
     return(p)
   }
@@ -637,7 +637,7 @@ plot.training_results <- function(x,
                                                 group = .data$window_number), color = "grey50")
     p <- p + scale_color_viridis_d()
     p <- p + theme_bw()
-    p <- p + xlab("Dataset index/row") + ylab("Coefficient of variation (Abs)") + labs(color = "Model") +
+    p <- p + xlab("Dataset index") + ylab("Coefficient of variation (Abs)") + labs(color = "Model") +
       ggtitle("Forecast Variability Across Forecast Horizons")
     return(p)
   }
@@ -800,7 +800,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
 
     p <- p + scale_color_viridis_d()
     p <- p + theme_bw()
-    p <- p + xlab("Dataset row / index") + ylab("Outcome") + labs(color = toupper(gsub("_", " ", paste(plot_group, collapse = " + \n")))) +
+    p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = toupper(gsub("_", " ", paste(plot_group, collapse = " + \n")))) +
       ggtitle("N-Step-Ahead Model Forecasts")
     return(p)
   }

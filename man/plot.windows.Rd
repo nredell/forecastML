@@ -17,7 +17,7 @@
 \item{group_filter}{Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
 This string is passed to \code{dplyr::filter()} internally.}
 
-\item{...}{Arguments passed to \code{base::plot()}}
+\item{...}{Note used.}
 }
 \value{
 A plot of the outer-loop nested cross-validation windows of class 'ggplot'.

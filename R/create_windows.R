@@ -158,7 +158,7 @@ create_windows <- function(lagged_df, window_length = 12,
 #' @param show_labels Boolean. Show validation dataset IDs on the plot.
 #' @param group_filter Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
 #' This string is passed to \code{dplyr::filter()} internally.
-#' @param ... Arguments passed to \code{base::plot()}
+#' @param ... Note used.
 #' @return A plot of the outer-loop nested cross-validation windows of class 'ggplot'.
 #' @example /R/examples/example_plot_windows.R
 #' @export
@@ -169,7 +169,7 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
   data <- lagged_df
 
   if (!methods::is(windows, "windows")) {
-    stop("The 'windows' argument takes an object of class 'windows' as input. Run window_skip() first.")
+    stop("The 'windows' argument takes an object of class 'windows' as input. Run create_windows() first.")
   }
 
   if (!methods::is(data, "lagged_df")) {
@@ -276,6 +276,6 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
     p <- p + theme(legend.position = "none")
   }
 
-  p <- p + xlab("Dataset index / row") + ylab("Outcome") + labs(color = "Groups") + ggtitle("Validation Windows")
+  p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Groups") + ggtitle("Validation Windows")
   return(p)
 }
