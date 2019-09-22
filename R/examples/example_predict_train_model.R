@@ -24,7 +24,7 @@ model_function <- function(data, outcome_cols) {
   x <- as.matrix(x, ncol = ncol(x))
   y <- as.matrix(y, ncol = ncol(y))
 
-  model <- glmnet::cv.glmnet(x, y)
+  model <- glmnet::cv.glmnet(x, y, nfolds = 3)
   return(model)
 }
 
@@ -54,6 +54,7 @@ data_valid <- predict(model_results, prediction_function = list(prediction_funct
 # Forecast.
 data_forecast <- create_lagged_df(data_seatbelts, type = "forecast", outcome_cols = 1,
                                   lookback = lookback, horizon = horizons)
+
 data_forecasts <- predict(model_results, prediction_function = list(prediction_function),
                           data = data_forecast)
 }
