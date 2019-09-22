@@ -32,7 +32,7 @@ Collate:
     'data_buoy.R'
     'data_buoy_gaps.R'
 Depends: 
-    R (>= 3.4.0),
+    R (>= 3.4.0)
 Suggests: 
     glmnet (>= 2.0.16),
     DT (>= 0.5),
