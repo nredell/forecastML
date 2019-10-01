@@ -58,7 +58,6 @@ and has the following generic S3 methods
 }
 
 \examples{
-\donttest{
 # Sampled Seatbelts data from the R package datasets.
 data("data_seatbelts", package = "forecastML")
 
@@ -84,7 +83,7 @@ model_function <- function(data, outcome_cols) {
   x <- as.matrix(x, ncol = ncol(x))
   y <- as.matrix(y, ncol = ncol(y))
 
-  model <- glmnet::cv.glmnet(x, y)
+  model <- glmnet::cv.glmnet(x, y, nfolds = 3)
   return(model)
 }
 
@@ -95,5 +94,4 @@ model_results <- train_model(data_train, windows, model_name = "LASSO", model_fu
 # View the results for the model (a) trained on the first horizon
 # and (b) to be assessed on the first outer-loop validation window.
 model_results$horizon_1$window_1$model
-}
 }

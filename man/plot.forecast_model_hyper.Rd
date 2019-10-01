@@ -32,7 +32,6 @@ Hyperparameter plots of class 'ggplot'.
 Plot hyperparameter stability and relationship with error metrics across validation datasets.
 }
 \examples{
-\donttest{
 # Sampled Seatbelts data from the R package datasets.
 data("data_seatbelts", package = "forecastML")
 
@@ -58,7 +57,7 @@ model_function <- function(data, outcome_cols) {
   x <- as.matrix(x, ncol = ncol(x))
   y <- as.matrix(y, ncol = ncol(y))
 
-  model <- glmnet::cv.glmnet(x, y)
+  model <- glmnet::cv.glmnet(x, y, nfolds = 3)
   return(model)
 }
 
@@ -104,7 +103,4 @@ data_hyper <- return_hyper(model_results, hyper_function)
 
 plot(data_hyper, data_valid, data_error, type = "stability",
      horizons = c(1, 12))
-
-plot(data_hyper, data_valid, data_error, type = "error")
-}
 }

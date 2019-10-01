@@ -1,6 +1,6 @@
 ---
 title: "forecastML Overview"
-author: "Nickalus Redell, nickalusredell@gmail.com"
+author: "Nickalus Redell"
 date: "`r lubridate::today()`"
 output: rmarkdown::html_vignette
 vignette: >
@@ -9,27 +9,26 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-
 ![](forecastML_logo.png){width=150px, height=160px}
 
 # Purpose
 
 The purpose of `forecastML` is to provide a series of functions and visualizations that simplify the process of 
-**multi-step-ahead direct forecasting with standard machine learning algorithms**. It's a wrapper package aimed at providing 
-**maximum flexibility** in model-building--choose any machine learning algorithm from any `R` package--while helping 
-the user quickly assess the (a) accuracy, (b) stability, and (c) generalizability of grouped (i.e., 
+**multi-step-ahead direct forecasting with standard machine learning algorithms**. It's a wrapper package aimed at providing maximum flexibility in model-building--**choose any machine learning algorithm from any `R` package**--while helping the user quickly assess the (a) accuracy, (b) stability, and (c) generalizability of grouped (i.e., 
 multiple related time-series) and ungrouped single-outcome forecasts produced from potentially high-dimensional modeling datasets.
 
 This package is inspired by Bergmeir, Hyndman, and Koo's 2018 paper 
-[A note on the validity of cross-validation for evaluating autoregressive time series prediction](https://www.sciencedirect.com/science/article/pii/S0167947317302384). 
+[A note on the validity of cross-validation for evaluating autoregressive time series prediction](https://doi.org/10.1016/j.csda.2017.11.003). 
 In particular, `forecastML` makes use of 
 
-* **lagged predictors**,
+* **lagged features**,
+* **simple wrapper functions that support models from any `R` package**,
 * **nested cross-validation** with (a) user-specified standard cross-validation in the inner loop and (b) block-contiguous validation 
 datasets in the outer loop, and
 * **parallel processing** with the `future` package 
 
 to build and evaluate high-dimensional forecast models **without having to use methods that are time-series specific**. 
+
 The following quote from Bergmeir et al.'s article nicely sums up the aim of this package:
 
 > "When purely (non-linear, nonparametric) autoregressive methods are applied to forecasting problems, as is often the case
@@ -153,7 +152,7 @@ We'll create a list of datasets, one for each forecast horizon, with lagged valu
 The `lookback` argument in `forecastML::create_lagged_df()` specifies the feature lags in dataset rows.
 
 ```{r}
-horizons <- 1:ts_frequency
+horizons <- c(1, 3, 6, 9, 12)
 lookback <- 1:15
 
 data_list <- forecastML::create_lagged_df(data_train, type = "train",
@@ -193,7 +192,7 @@ randomly seleted rows, to mimic forecasting over multi-step-ahead forecast horiz
 placement of outer loop validation datasets.
 
 ```{r, warnings = FALSE, message = FALSE}
-windows <- forecastML::create_windows(lagged_df = data_list, window_length = 12, skip = 0,
+windows <- forecastML::create_windows(lagged_df = data_list, window_length = 24, skip = 0,
                                       window_start = NULL, window_stop = NULL,
                                       include_partial_window = TRUE)
 windows
@@ -202,9 +201,9 @@ windows
 <br>
 
 Below is a plot of the nested cross-validation outer loop datasets or windows. In our example, 
-a `window_length` of 12 resulted in 14 validation windows.
+a `window_length` of 24 (months) resulted in 7 validation windows.
 
-In this nested cross-validation setup, a model is trained with data from 13 windows and 
+In this nested cross-validation setup, a model is trained with data from 6 windows and 
 **forecast accuracy is assessed on the left-out window**. This means that we'll need to train 14 models, 
 each selecting different optimal hyperparameters and model coefficients--if available--from 
 the inner validation loop.
@@ -271,8 +270,8 @@ for each algorithm.
 These models could be trained in parallel on any OS with the very flexible `future` package by uncommenting the code below and 
 setting `use_future = TRUE`. To avoid nested parallelization, models are either trained in parallel across forecast horizons or 
 validation windows, whichever is longer (when equal, the default is parallel across forecast horizons). In this example we have 
-12 horizon-specific models and 14 validation datasets so the 168 models would be trained in parallel across validation datasets for a 
-given forecast horizon. On a standard 16GB RAM 8 core laptop, training in parallel cuts the training time in half from 60 seconds to 30 seconds.
+5 horizon-specific models and 7 validation datasets so the 35 models would be trained in parallel across horizons for a 
+given validation dataset.
 
 ```{r}
 #future::plan(future::multiprocess)
@@ -342,9 +341,9 @@ Let's view the models' predictions. The data.frame with S3 class `training_resul
 * **date_indices:** If given, validation dataset date indices from `attributes(create_lagged_df())$date_indices`.
 * **"groups":** If given, the user-supplied groups in `create_lagged_df()`.
 * **"outcome_name":** The target being forecasted.
-* **"outcome_name" _pred:** The model predictions.
-* **"outcome_name" _pred_lower:** If given, the lower prediction bounds returned by the user-supplied prediction function.
-* **"outcome_name" _pred_upper:** If given, the upper prediction bounds returned by the user-supplied prediction function.
+* **"outcome_name" pred:** The model predictions.
+* **"outcome_name" pred_lower:** If given, the lower prediction bounds returned by the user-supplied prediction function.
+* **"outcome_name" pred_upper:** If given, the upper prediction bounds returned by the user-supplied prediction function.
 
 ```{r}
 DT::datatable(head(data_results, 100), options = list(scrollX = TRUE))
@@ -363,7 +362,7 @@ plot(data_results, type = "prediction", horizons = c(1, 6, 12))
 Below is a plot of the forecast error for select validation windows at select forecast horizons.
 
 ```{r}
-plot(data_results, type = "residual", horizons = c(1, 6, 12), windows = 10:14)
+plot(data_results, type = "residual", horizons = c(1, 6, 12), windows = 5:7)
 ```
 
 <br>
@@ -416,7 +415,7 @@ The forecast errors for nested cross-validation are returned at 3 levels of gran
 data_error <- forecastML::return_error(data_results, metrics = c("mae", "mape", "smape"),
                                        models = NULL)
 
-DT::datatable(data_error$error_global, options = list(scrollX = TRUE))
+DT::datatable(data_error$error_global, options = list(scrollX = TRUE), )
 ```
 
 <br>
@@ -424,7 +423,7 @@ DT::datatable(data_error$error_global, options = list(scrollX = TRUE))
 Below is a plot of error metrics across time for select validation windows and forecast horizons.
 
 ```{r}
-plot(data_error, data_results, type = "time", horizons = c(1, 6, 12), windows = 10:14)
+plot(data_error, data_results, type = "time", horizons = c(1, 6, 12), windows = 5:7)
 ```
 
 <br>
@@ -480,7 +479,7 @@ hyper_function <- function(model) {
 Below are two plots which show (a) univariate hyperparameter variability across the training data 
 and (b) the relationship between each error metric and hyperparameter values.
 
-```{r}
+```{r, warning = FALSE, message = FALSE}
 data_hyper <- forecastML::return_hyper(model_results, hyper_function)
 
 plot(data_hyper, data_results, data_error, type = "stability", horizons = c(1, 6, 12))
@@ -528,10 +527,9 @@ a data.frame of forecasts with the following columns:
 * **window_number:** Validation dataset number.
 * **forecast_period:** The dataset row/date for the forecast.
 * **"groups":** If given, the user-supplied groups in `create_lagged_df()`.
-* **"outcome_name" _pred:** The model forecasts.
-* **"outcome_name" _pred_lower:** If given, the lower forecast bounds returned by the user-supplied prediction function.
-* **"outcome_name" _pred_upper:** If given, the upper forecast bounds returned by the user-supplied prediction function.
-
+* **"outcome_name" pred:** The model forecasts.
+* **"outcome_name" pred_lower:** If given, the lower forecast bounds returned by the user-supplied prediction function.
+* **"outcome_name" pred_upper:** If given, the upper forecast bounds returned by the user-supplied prediction function.
 
 An S3 object of class, `forecast_results`, is returned. This object will have different plotting and error methods than 
 the `training_results` class from earlier.
@@ -644,8 +642,6 @@ data_error <- forecastML::return_error(data_results, metrics = c("mae", "mape", 
 DT::datatable(head(data_error$error_global), options = list(scrollX = TRUE))
 plot(data_error, data_results, type = "horizon")
 ```
-
-
 
 ## forecastML::return_hyper
 

@@ -1,4 +1,3 @@
-\donttest{
 # Sampled Seatbelts data from the R package datasets.
 data("data_seatbelts", package = "forecastML")
 
@@ -57,4 +56,3 @@ data_forecast <- create_lagged_df(data_seatbelts, type = "forecast", outcome_col
 
 data_forecasts <- predict(model_results, prediction_function = list(prediction_function),
                           data = data_forecast)
-}

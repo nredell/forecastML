@@ -69,7 +69,6 @@ The output of \code{return_error()} has the following generic S3 methods
 }
 
 \examples{
-\donttest{
 # Sampled Seatbelts data from the R package datasets.
 data("data_seatbelts", package = "forecastML")
 
@@ -95,7 +94,7 @@ model_function <- function(data, outcome_cols) {
   x <- as.matrix(x, ncol = ncol(x))
   y <- as.matrix(y, ncol = ncol(y))
 
-  model <- glmnet::cv.glmnet(x, y)
+  model <- glmnet::cv.glmnet(x, y, nfolds = 3)
   return(model)
 }
 
@@ -124,5 +123,4 @@ data_valid <- predict(model_results, prediction_function = list(prediction_funct
 
 # Forecast error metrics for validation datasets.
 data_error <- return_error(data_valid)
-}
 }

@@ -1,6 +1,6 @@
 ---
 title: "Forecasting with Multiple Time-Series"
-author: "Nickalus Redell, nickalusredell@gmail.com"
+author: "Nickalus Redell"
 date: "`r lubridate::today()`"
 output: rmarkdown::html_vignette
 vignette: >
@@ -24,8 +24,6 @@ We won't concern ourselves with error metrics or hyperparameter evaluation which
 `return_error()` and `return_hyper()` functions. This functionality is covered 
 in the package overview vignette.
 
-***
-
 ## Setup
 
 To forecast with multiple/grouped/hierarchical time-series in `forecastML`, your data needs the following 
@@ -47,8 +45,6 @@ lags when using `create_lagged_df()` which is the first step in the `forecastML`
 gaps in data collection, use the `fill_gaps()` function; handling the resulting missing values in the 
 target being forecasted and the dynamic features can be done (a) prior to `create_lagged_df()` or (b) 
 in the user-defined model training function.
-
-***
 
 ## Example
 
@@ -91,8 +87,6 @@ data("data_buoy_gaps", package = "forecastML")
 
 DT::datatable(head(data_buoy_gaps), options = list(scrollX = TRUE))
 ```
-
-***
 
 ### forecastML::fill_gaps
 
@@ -137,8 +131,6 @@ p <- p + theme_bw() + theme(
 ) + xlab(NULL)
 p
 ```
-
-***
 
 ### Modeling setup
 
@@ -197,8 +189,6 @@ print(paste0("The class of `data_train` is ", class(data_train)))
 DT::datatable(head(data_train$horizon_1), options = list(scrollX = TRUE))
 ```
 
-***
-
 * The plot below shows the feature map across forecast horiozons. Here, we set all 
 non-static features to have the same lags (refer to the custom lags vignette to see how this could be modified). 
 Notice that features that don't support direct forecasting to the given horizon are silently dropped.
@@ -209,24 +199,19 @@ p <- p + geom_tile(NULL)  # Remove the gray border for a cleaner plot.
 p
 ```
 
-***
-
 #### CV setup
 
-* We'll model with **7 validation datasets**. Our earliest weather recordings start on 1-1-2012. 
-We'll model with the first 350 days of the year and then skip the last 15 days with the 
-`skip = 15` argument. The model will be trained on these last 15 days of each year, but 
-we won't evaluate our performance here.
+* We'll model with **3 validation datasets**. 
+Given that our measurements are taken daily, we'll set the `skip = 730` argument to skip 2 years 
+between validation datasets.
 
 ```{r, message = FALSE, warning = FALSE}
-windows <- forecastML::create_windows(data_train, window_length = 350, skip = 15,
+windows <- forecastML::create_windows(data_train, window_length = 365, skip = 730,
                                       include_partial_window = FALSE)
 
 p <- plot(windows, data_train) + theme(legend.position = "none")
 p
 ```
-
-***
 
 * Now we'll use the `group_filter = "buoy_id == 1"` argument to get a closer look at 
 1 of our 14 time-series. The user-supplied filter is passed to `dplyr::filter()` internally.
@@ -236,8 +221,6 @@ p <- plot(windows, data_train, group_filter = "buoy_id == 1") +
   theme(legend.position = "none")
 p
 ```
-
-***
 
 #### User-defined modeling function
 
@@ -284,7 +267,7 @@ model_function <- function(data, outcome_col = 1) {
   watchlist <- list(train = data_train, test = data_test)
   set.seed(224)
   model <- xgboost::xgb.train(data = data_train, params = params, 
-                              max.depth = 8, nthread = 2, nrounds = 50,
+                              max.depth = 8, nthread = 2, nrounds = 30,
                               metrics = "rmse", verbose = 0, 
                               early_stopping_rounds = 5, 
                               watchlist = watchlist)
@@ -297,7 +280,7 @@ model_function <- function(data, outcome_col = 1) {
 
 #### Model training
 
-* This should take ~2 to 3 minutes to train our '3 forecast horizons' * '7 validation datasets' = *21 models*.
+* This should take ~1 minute to train our '3 forecast horizons' * '3 validation datasets' = *9 models*.
 
 * The user-defined modeling wrapper function could be much more elaborate, in which case many more models 
 could potentially be trained here.
@@ -329,8 +312,6 @@ we show a `summary()` of the model for the first validation window which is 2012
 ```{r}
 summary(model_results_cv$horizon_1$window_1$model)
 ```
-
-***
 
 ### Forecasting with nested models
 
@@ -371,8 +352,6 @@ data_pred_cv <- predict(model_results_cv, prediction_function = prediction_funct
 print(paste0("The class of `data_pred_cv` is ", class(data_pred_cv)))
 ```
 
-***
-
 * The predictions are solid lines; the actuals are dashed lines.
 
 * We'll filter this plot for closer inspection below.
@@ -380,8 +359,6 @@ print(paste0("The class of `data_pred_cv` is ", class(data_pred_cv)))
 ```{r, message = FALSE, warning = FALSE}
 plot(data_pred_cv) + theme(legend.position = "none")
 ```
-
-***
 
 * It's somewhat difficult to see how we've done here, so we'll use the `group_filter` argument again 
 to focus on specific results. Note that the `plot()` function returns a `ggplot` object so that we 
@@ -394,8 +371,6 @@ p <- p + scale_x_date(limits = c(as.Date("2015-01-01"), as.Date("2015-12-31")))
 p <- p + facet_grid(horizon ~ buoy_id) + ggtitle(paste0(p$labels$title, " and buoy ID"))
 p
 ```
-
-***
 
 #### Forecasting
 
@@ -415,8 +390,6 @@ print(paste0("The class of `data_forecast` is ", class(data_forecast)))
 DT::datatable(head(data_forecast$horizon_1), options = list(scrollX = TRUE))
 ```
 
-***
-
 * Now we'll forecast 1, 1:7, and 1:30 days into the future with `predict(..., data = data_forecast)`.
 
 * The first time step into the future is `max(dates) + 1 * frequency`. Here, this is 
@@ -429,16 +402,12 @@ data_forecasts <- predict(model_results_cv, prediction_function = prediction_fun
 print(paste0("The class of `data_forecasts` is ", class(data_forecasts)))
 ```
 
-***
-
 * Plots for each model--just `xgboost` here--and time horizon. The separate lines are for the 
 combination of `buoy_id` * validation window.
 
 ```{r, message = FALSE, warning = FALSE}
 plot(data_forecasts) + theme(legend.position = "none")
 ```
-
-***
 
 * We'll filter results to look at the forecasts across validation windows for `buoy_id == 1`. 
 In this case, a validation window shows how the model would forecast if it were not trained 
@@ -447,8 +416,6 @@ on data in a given time frame.
 ```{r, message = FALSE, warning = FALSE}
 plot(data_forecasts, group_filter = "buoy_id == 1")
 ```
-
-***
 
 ### Model training all data
 
@@ -468,8 +435,6 @@ p <- plot(windows, data_train) + theme(legend.position = "none")
 p
 ```
 
-***
-
 ```{r}
 # Un-comment the code below and set 'use_future' to TRUE.
 #future::plan(future::multiprocess)
@@ -486,7 +451,6 @@ model_results_no_cv <- forecastML::train_model(lagged_df = data_train,
 print(paste0("The class of `model_results_no_cv` is ", class(model_results_no_cv)))
 ```
 
-***
 
 ```{r}
 data_forecasts <- predict(model_results_no_cv, prediction_function = prediction_function, 
@@ -495,22 +459,17 @@ data_forecasts <- predict(model_results_no_cv, prediction_function = prediction_
 print(paste0("The class of `data_forecasts` is ", class(data_forecasts)))
 ```
 
-***
 
 ```{r}
 DT::datatable(head(data_forecasts), options = list(scrollX = TRUE))
 ```
 
-***
 
 ```{r, message = FALSE, warning = FALSE}
 plot(data_forecasts)
 ```
 
-***
 
 ```{r, message = FALSE, warning = FALSE}
 plot(data_forecasts, group_filter = "buoy_id == 1") + theme(legend.position = "none")
 ```
-
-***

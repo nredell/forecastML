@@ -1,6 +1,6 @@
 ---
 title: "Customizing Wrapper Functions"
-author: "Nickalus Redell, nickalusredell@gmail.com"
+author: "Nickalus Redell"
 date: "`r lubridate::today()`"
 output: rmarkdown::html_vignette
 vignette: >

@@ -1,4 +1,3 @@
-\donttest{
 # Sampled Seatbelts data from the R package datasets.
 data("data_seatbelts", package = "forecastML")
 
@@ -53,4 +52,3 @@ data_valid <- predict(model_results, prediction_function = list(prediction_funct
 
 # Forecast error metrics for validation datasets.
 data_error <- return_error(data_valid)
-}

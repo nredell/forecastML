@@ -120,7 +120,6 @@ and has the following generic S3 methods
 }
 
 \examples{
-\donttest{
 # Sampled Seatbelts data from the R package datasets.
 data("data_seatbelts", package = "forecastML")
 #------------------------------------------------------------------------------
@@ -148,5 +147,4 @@ data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_cols = 1,
                                lookback_control = lookback, horizon = horizons)
 head(data_train[[length(horizons)]])
 #------------------------------------------------------------------------------
-}
 }

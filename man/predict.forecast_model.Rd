@@ -63,7 +63,6 @@ If \code{data} is an object of class 'lagged_df' from \code{create_lagged_df(...
 predictions are returned for the horizons specified in \code{create_lagged_df()}.
 }
 \examples{
-\donttest{
 # Sampled Seatbelts data from the R package datasets.
 data("data_seatbelts", package = "forecastML")
 
@@ -89,7 +88,7 @@ model_function <- function(data, outcome_cols) {
   x <- as.matrix(x, ncol = ncol(x))
   y <- as.matrix(y, ncol = ncol(y))
 
-  model <- glmnet::cv.glmnet(x, y)
+  model <- glmnet::cv.glmnet(x, y, nfolds = 3)
   return(model)
 }
 
@@ -119,7 +118,7 @@ data_valid <- predict(model_results, prediction_function = list(prediction_funct
 # Forecast.
 data_forecast <- create_lagged_df(data_seatbelts, type = "forecast", outcome_cols = 1,
                                   lookback = lookback, horizon = horizons)
+
 data_forecasts <- predict(model_results, prediction_function = list(prediction_function),
                           data = data_forecast)
-}
 }

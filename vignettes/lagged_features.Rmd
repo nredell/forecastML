@@ -1,6 +1,6 @@
 ---
 title: "Custom Feature Lags"
-author: "Nickalus Redell, nickalusredell@gmail.com"
+author: "Nickalus Redell"
 date: "`r lubridate::today()`"
 output: rmarkdown::html_vignette
 vignette: >
@@ -17,8 +17,6 @@ function. The rationale behind creating custom feature
 lags is to improve model accuracy by removing noisy or redundant features in high dimensional training data. 
 Keeping only those feature lags that show high autocorrelation or cross-correlation with the modeled 
 outcome--e.g., 3 and 12 months for monthly data--is a good place to start.
-
-***
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(fig.width = 6, fig.height = 4)
@@ -37,8 +35,6 @@ data <- data_seatbelts
 data <- data[, c("DriversKilled", "kms", "PetrolPrice", "law")]
 DT::datatable(head(data, 5))
 ```
-
-***
 
 <br>
 
@@ -105,8 +101,6 @@ models because these lags don't support direct forecasting at these time horizon
 plot(data_train)
 ```
 
-***
-
 <br>
 
 ## Removing features
@@ -148,8 +142,6 @@ data_train <- forecastML::create_lagged_df(data, type = "train", outcome_cols = 
 ```{r, results = 'hide'}
 plot(data_train)[[remove_col]]  # we're selecting 1 of our 4 feature-level plots.
 ```
-
-***
 
 <br>
 

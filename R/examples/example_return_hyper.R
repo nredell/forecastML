@@ -1,4 +1,3 @@
-\donttest{
 # Sampled Seatbelts data from the R package datasets.
 data("data_seatbelts", package = "forecastML")
 
@@ -70,4 +69,3 @@ data_hyper <- return_hyper(model_results, hyper_function)
 
 plot(data_hyper, data_valid, data_error, type = "stability",
      horizons = c(1, 12))
-}

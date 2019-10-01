@@ -1,4 +1,3 @@
-\donttest{
 # Sampled Seatbelts data from the R package datasets.
 data("data_seatbelts", package = "forecastML")
 #------------------------------------------------------------------------------
@@ -17,5 +16,3 @@ lookback <- list(c(3, 6, 9, 12), c(4:12), c(6:15), c(8))
 data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_cols = 1,
                                lookback_control = lookback, horizon = horizons)
 plot(data_train)
-#------------------------------------------------------------------------------
-}

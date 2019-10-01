@@ -1,4 +1,3 @@
-\donttest{
 # Sampled Seatbelts data from the R package datasets.
 data("data_seatbelts", package = "forecastML")
 
@@ -35,4 +34,3 @@ model_results <- train_model(data_train, windows, model_name = "LASSO", model_fu
 # View the results for the model (a) trained on the first horizon
 # and (b) to be assessed on the first outer-loop validation window.
 model_results$horizon_1$window_1$model
-}
