@@ -58,6 +58,19 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
   date_indices <- attributes(lagged_df)$date_indices
   horizons <- attributes(lagged_df)$horizons
 
+  # These are the arguments from the user-defined modeling function passed in train_model() with ...
+  # which is optional but potentially convenient for the user who can avoid re-defining the modeling function
+  # in repeated calls to train_model(). The arguments in ... will passed as a named list in do.call(). This
+  # local scoping within future_lapply() appears to be necessary because global arguments passed in ...
+  # aren't being found by the future package when use_future = TRUE.
+  n_args <- ...length()
+  if (n_args > 0) {
+    model_function_args <- as.list(substitute(list(...)))[-1]
+    # Global objects passed in ... need to be evaluated prior to any future calls. For instance, if a
+    # custom ... model argument outcome_col = x is given, x needs to be evaluated before model_function_args
+    # is passed in future_lapply().
+    model_function_args <- lapply(model_function_args, eval)
+  }
   #----------------------------------------------------------------------------
   # The default future behavior is to parallelize the model training over the longer dimension: (a) number of
   # forecast horizons or (b) number of validation windows. This is due to a current limitation
@@ -84,9 +97,9 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
   #----------------------------------------------------------------------------
 
   # Seq along model forecast horizon > cross-validation windows.
-  data_out <- lapply_across_horizons(lagged_df, function(data) {  # model forecast horizon.
+  data_out <- lapply_across_horizons(lagged_df, function(data, ...) {  # model forecast horizon.
 
-    model_plus_valid_data <- lapply_across_val_windows(1:nrow(windows), function(i) {  # validation windows within model forecast horizon.
+    model_plus_valid_data <- lapply_across_val_windows(1:nrow(windows), function(i, ...) {  # validation windows within model forecast horizon.
 
       window_length <- windows[i, "window_length"]
 
@@ -104,21 +117,30 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
       # A window length of 0 removes the nested cross-validation and trains on all input data in lagged_df.
       if (window_length == 0) {
 
+        # Model training over all data.
+        if (n_args == 0) {  # No user-defined model args passed in ...
 
-        # Model training.
-        if (length(list(...)) == 0) {
           model <- try(model_function(data))
-        } else {
-          model <- try(model_function(data, ...))
-        }
-      } else {
 
-        # Model training.
-        if (length(list(...)) == 0) {
-          model <- try(model_function(data[!row_indices %in% valid_indices, , drop = FALSE]))
         } else {
-          model <- try(model_function(data[!row_indices %in% valid_indices, , drop = FALSE], ...))
+
+          model <- try({
+            do.call(model_function, append(list(data), model_function_args))
+          })
         }
+
+      } else {  # Model training with cv.
+
+        if (n_args == 0) {  # No user-defined model args passed in ...
+
+          model <- try(model_function(data[!row_indices %in% valid_indices, , drop = FALSE]))
+
+        } else {
+
+          model <- try({
+              do.call(model_function, append(list(data[!row_indices %in% valid_indices, , drop = FALSE]), model_function_args))
+            })
+          }
       }
 
       if (methods::is(model, "try-error")) {
@@ -256,7 +278,11 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data =
           x_valid <- data[[j]][row_indices %in% data_results$valid_indices, -(outcome_cols), drop = FALSE]
           y_valid <- data[[j]][row_indices %in% data_results$valid_indices, outcome_cols, drop = FALSE]  # Actuals in function return.
 
-          data_pred <- prediction_fun(data_results$model, x_valid)  # Nested cross-validation.
+          data_pred <- try(prediction_fun(data_results$model, x_valid))  # Nested cross-validation.
+
+          if (methods::is(data_pred, "try-error")) {
+            warning(paste0("A model's prediction returned class 'try-error' for validation window ", k))
+          }
 
           if (!is.null(groups)) {
 
@@ -270,7 +296,11 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data =
           forecast_horizons <- data[[j]][, "horizon", drop = FALSE]
           data_for_forecast <- data[[j]][, !names(data[[j]]) %in% c("index", "horizon"), drop = FALSE]  # Remove ID columns for predict().
 
-          data_pred <- prediction_fun(data_results$model, data_for_forecast)  # User-defined prediction function.
+          data_pred <- try(prediction_fun(data_results$model, data_for_forecast))  # User-defined prediction function.
+
+          if (methods::is(data_pred, "try-error")) {
+            warning(paste0("A model's prediction returned class 'try-error' for validation window ", k))
+          }
 
           if (!is.null(groups)) {
 
