@@ -82,16 +82,17 @@ capabilities of the user-specified model.
 * **Q:** Where does `forecastML` fit in with respect to popular `R` machine learning packages like [mlr3](https://mlr3.mlr-org.com/) and [caret](https://github.com/topepo/caret)?
 * **A:** The idea is that `forecastML` takes care of the tedious parts of forecasting with ML methods: creating training and forecasting datasets with different 
 types of features--grouped, static, and dynamic--as well as simplifying validation dataset creation to assess model performance at specific points in time. 
-That said, the workflow for packages like `mlr3` and `caret` would occur inside of the user-supplied 
-modeling function which is passed into `forecastML::train_model()`. Examples of this type of 
-modular workflow with these packages in particular are in the works.
+That said, the workflow for packages like `mlr3` and `caret` would mostly occur inside of the user-supplied 
+modeling function which is passed into `forecastML::train_model()`. Refer to the wrapper function customization 
+vignette for more details.
 
 ## Example
 
 Below is an example of how to create 12 horizon-specific ML models to forecast the number of `DriversKilled` 
 12 time periods into the future using the `Seatbelts` dataset. Notice in the last plot that there are multiple forecasts; 
 these are from the slightly different LASSO models trained in the nested cross-validation. An example of selecting optimal 
-hyperparameters and retraining to create a single forecast model can be found in the overview vignette.
+hyperparameters and retraining to create a single forecast model (i.e., `create_windows(..., window_length = 0)`) can be found 
+in the overview vignette.
 
 ``` r
 library(glmnet)
@@ -121,11 +122,11 @@ windows <- forecastML::create_windows(data_train, window_length = 12)
 # A user-defined wrapper function for model training that takes the following
 # arguments: (1) a horizon-specific data.frame made with create_lagged_df(..., type = "train")
 # (e.g., my_lagged_df$horizon_h) and, optionally, (2) any number of additional named arguments
-# which are passed as '...' in train_model(). The function returns a model object suitable for 
+# which can also be passed in '...' in train_model(). The function returns a model object suitable for 
 # the user-defined predict function. The returned model may also be a list that holds meta-data such 
 # as hyperparameter settings.
 
-model_function <- function(data, outcome_cols) {
+model_function <- function(data, outcome_cols) {  # outcome_cols = 1 could be defined here.
 
   x <- data[, -(outcome_cols), drop = FALSE]
   y <- data[, outcome_cols, drop = FALSE]
@@ -140,7 +141,7 @@ model_function <- function(data, outcome_cols) {
 # Train a model across forecast horizons and validation datasets.
 # outcome_cols = 1 is passed in ... but could have been defined in the user-defined model function.
 model_results <- train_model(data_train, windows, model_name = "LASSO", model_function,
-                             outcome_cols = 1)
+                             outcome_cols = 1, use_future = FALSE)
 
 #------------------------------------------------------------------------------
 # User-defined prediction function - LASSO
@@ -194,9 +195,16 @@ plot(data_forecasts, data_actual = data_seatbelts[-(1:150), ],
 
 ## Roadmap
 
-The following steps outline the functionality that I'd like to add leading up to an eventual 
-CRAN release.
+* The following outlines what I'd like to improve leading up to an eventual CRAN release.
+    1. Additional testing with `R` package `testthat`.
 
-1. Thorough documentation including an `R` `pkgdown` site.
-
-2. Thorough testing with `R` package `testthat`.
+* Long-term
+    1. At present, there isn't any direct support for adding features to the model training or forecasting datasets that 
+    fall somewhere between static and dynamic. For example, a day of the week feature is dynamic in that it changes 
+    through time, but its future values are always known--like a static feature. The best strategy for handling 
+    these types of features right now is to identify them as static in `create_lagged_df()` (type = 'train' or 'forecast') 
+    and then `lapply()` over the list of data.frames and apply any transformations. This approach would look 
+    approximately like `my_lagged_df <- lapply(my_lagged_df, function(x){x$weekday <- lubridate::wday(x$date); x})`. Note that 
+    the same transformation would have to occur on the forecasting dataset because static features are simply filled 
+    forward as they are expected to be constant values (dynamic values for static features are allowed to support this 
+    specific functionality.)
