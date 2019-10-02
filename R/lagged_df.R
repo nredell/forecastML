@@ -751,7 +751,7 @@ plot.lagged_df <- function(x, ...) {
     p <- p + scale_x_continuous(limits = c(eval(parse(text = (lookback_max * -1) - 1)), max(data_plot$time, na.rm = TRUE) + 1))
     p <- p + theme_bw()
     p <- p + xlab("Time (0 is the current time)") + ylab("Forecast horizon") +
-      labs(fill = NULL) + ggtitle("Map of Predictor Lags for a Single Predictor")
+      labs(fill = NULL) + ggtitle("Map of Feature Lags for a Single Feature")
     return(p)
 
   } else {
@@ -778,7 +778,7 @@ plot.lagged_df <- function(x, ...) {
       p <- p + scale_x_continuous(limits = c(eval(parse(text = (lookback_max * -1) - 1)), max(data_plot$time, na.rm = TRUE) + 1))
       p <- p + theme_bw()
       p <- p + xlab("Time (0 is the current time)") + ylab("Forecast horizon") +
-        labs(fill = NULL) + ggtitle(paste0("Map of Predictor Lags: ", predictor_names[i]))
+        labs(fill = NULL) + ggtitle(paste0("Map of Feature Lags: ", predictor_names[i]))
     })
   }
 }
