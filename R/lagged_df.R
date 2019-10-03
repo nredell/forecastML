@@ -836,7 +836,9 @@ plot.lagged_df <- function(x, ...) {
 
   } else {
 
-    lapply(1:n_predictors, function(i) {
+    predictor_indices <- unique(data_plot$predictor_number)[!is.na(unique(data_plot$predictor_number))]
+
+    lapply(predictor_indices, function(i) {
 
       data_plot_predictor_1 <- dplyr::filter(data_plot, .data$feature == "Feature" & .data$predictor_number == i)
       data_plot_predictor_1$feature_match <- paste0(data_plot_predictor_1$horizon, "-", data_plot_predictor_1$time)
