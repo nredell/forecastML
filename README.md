@@ -7,19 +7,19 @@ Status](https://travis-ci.org/nredell/forecastML.svg?branch=master)](https://tra
 
 The purpose of `forecastML` is to provide a series of functions and visualizations that simplify the process of 
 **multi-step-ahead direct forecasting with standard machine learning algorithms**. It's a wrapper package aimed at providing maximum flexibility in model-building--**choose any machine learning algorithm from any `R` package**--while helping the user quickly assess the (a) accuracy, (b) stability, and (c) generalizability of grouped (i.e., 
-multiple related time-series) and ungrouped single-outcome forecasts produced from potentially high-dimensional modeling datasets.
+multiple related time series) and ungrouped single-outcome forecasts produced from potentially high-dimensional modeling datasets.
 
 This package is inspired by Bergmeir, Hyndman, and Koo's 2018 paper 
 [A note on the validity of cross-validation for evaluating autoregressive time series prediction](https://doi.org/10.1016/j.csda.2017.11.003). 
 In particular, `forecastML` makes use of 
 
-* **lagged features**,
+* **lagged, grouped, dynamic, and static features**,
 * **simple wrapper functions that support models from any `R` package**,
 * **nested cross-validation** with (a) user-specified standard cross-validation in the inner loop and (b) block-contiguous validation 
 datasets in the outer loop, and
 * **parallel processing** with the `future` package 
 
-to build and evaluate high-dimensional forecast models **without having to use methods that are time-series specific**. 
+to build and evaluate high-dimensional forecast models **without having to use methods that are time series specific**. 
 
 The following quote from Bergmeir et al.'s article nicely sums up the aim of this package:
 
@@ -49,8 +49,9 @@ The main functions covered in each vignette are shown below as `function()`.
 
 * **[Creating custom feature lags for model training](https://nredell.github.io/forecastML/doc/lagged_features.html)**. `create_lagged_df(lookback_control = ...)`
 
-* **[Forecasting with multiple or grouped time-series](https://nredell.github.io/forecastML/doc/grouped_forecast.html)**. 
-`fill_gaps()`, `create_lagged_df(dates = ..., groups = ..., static_features = ...)`, `create_windows()`, `train_model()`
+* **[Forecasting with multiple or grouped time series](https://nredell.github.io/forecastML/doc/grouped_forecast.html)**. 
+`fill_gaps()`, 
+`create_lagged_df(dates = ..., dynamic_features = ..., groups = ..., static_features = ...)`, `create_windows()`, `train_model()`
 
 * **[Customizing the user-defined wrapper functions](https://nredell.github.io/forecastML/doc/custom_functions.html)**. 
 `train()` and `predict()`
@@ -62,7 +63,7 @@ The main functions covered in each vignette are shown below as `function()`.
 ## Key functions
 
 1. **`fill_gaps`:** Optional if no temporal gaps/missing rows in data collection. Fill gaps in data collection and 
-prepare a dataset of evenly-spaced time-series for modeling with lagged features. Returns a 'data.frame' with 
+prepare a dataset of evenly-spaced time series for modeling with lagged features. Returns a 'data.frame' with 
 missing rows added in so that you can either (a) impute, remove, or ignore `NA`s prior to the `forecastML` pipeline 
 or (b) impute, remove, or ignore them in the user-defined modeling function--depending on the `NA` handling 
 capabilities of the user-specified model.
@@ -196,15 +197,5 @@ plot(data_forecasts, data_actual = data_seatbelts[-(1:150), ],
 ## Roadmap
 
 * The following outlines what I'd like to improve leading up to an eventual CRAN release.
-    1. Additional testing with `R` package `testthat`.
-
-* Long-term
-    1. At present, there isn't any direct support for adding features to the model training or forecasting datasets that 
-    fall somewhere between static and dynamic. For example, a day of the week feature is dynamic in that it changes 
-    through time, but its future values are always known--like a static feature. The best strategy for handling 
-    these types of features right now is to identify them as static in `create_lagged_df()` (type = 'train' or 'forecast') 
-    and then `lapply()` over the list of data.frames and apply any transformations. This approach would look 
-    approximately like `my_lagged_df <- lapply(my_lagged_df, function(x){x$weekday <- lubridate::wday(x$date); x})`. Note that 
-    the same transformation would have to occur on the forecasting dataset because static features are simply filled 
-    forward as they are expected to be constant values (dynamic values for static features are allowed to support this 
-    specific functionality.)
+    + Additional testing with `R` package `testthat`.
+    

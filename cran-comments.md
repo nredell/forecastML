@@ -8,3 +8,8 @@
 0 errors | 0 warnings | 0 notes
 
 * This is a new release.
+
+* 10-2-2019
+    + Reduced build time by several minutes (< 5 min w/ devtools::check())
+    + Removed donttest{} in all examples
+    + Fixed copyright format

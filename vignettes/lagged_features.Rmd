@@ -53,8 +53,6 @@ ts_date_interval <- "1 month"
 dates <- seq(as.Date("1969-01-01"), as.Date("1984-12-01"), by = ts_date_interval)
 ```
 
-<br>
-
 ## Custom feature lags
 
 * We'll use custom lags for each of our 4 modeled features using the `lookback_control` argument 
@@ -83,9 +81,10 @@ lookback_control <- lapply(lookback_control, function(x) {
     )
   })
 
-data_train <- forecastML::create_lagged_df(data, type = "train", outcome_cols = 1, 
+data_train <- forecastML::create_lagged_df(data, type = "train", outcome_cols = 1,
+                                           horizons = horizons, 
                                            lookback_control = lookback_control,
-                                           horizons = horizons, dates = dates,
+                                           dates = dates,
                                            frequency = ts_date_interval)
 ```
 

@@ -138,7 +138,7 @@ model_results$horizon_12$window_1$model
 ### User-defined prediction function
 
 * The user-defined prediction function only takes two positional parameters. The first parameter 
-is the returned value of the user-defined modeling function; here, a list with 2 elements. The second parameter is the horizon-specific dataset with model features from `create_lagged_df()` (`type = "train"` or `type = "forecast"`).
+is the returned value of the user-defined modeling function; here, a list with 3 elements. The second parameter is the horizon-specific dataset with model features from `create_lagged_df()` (`type = "train"` or `type = "forecast"`).
 
 ```{r}
 prediction_function <- function(model, data_features) {

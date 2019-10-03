@@ -2,12 +2,12 @@
 % Please edit documentation in R/lagged_df.R
 \name{create_lagged_df}
 \alias{create_lagged_df}
-\title{Create model training and forecasting datasets with lagged, grouped, and static features}
+\title{Create model training and forecasting datasets with lagged, grouped, dynamic, and static features}
 \usage{
 create_lagged_df(data, type = c("train", "forecast"), outcome_cols = 1,
   horizons, lookback = NULL, lookback_control = NULL, dates = NULL,
-  frequency = NULL, groups = NULL, static_features = NULL,
-  use_future = FALSE)
+  frequency = NULL, dynamic_features = NULL, groups = NULL,
+  static_features = NULL, use_future = FALSE)
 }
 \arguments{
 \item{data}{A data.frame with the (a) target to be forecasted and (b) features/predictors. An optional date column can be given in the
@@ -43,12 +43,14 @@ are given.}
 \item{frequency}{Date frequency. A string taking the same input as \code{base::seq.Date(..., by = "frequency")} e.g., '1 month', '7 days', '10 years' etc.
 The highest frequency supported at present is '1 day'. Required if \code{dates} are given.}
 
-\item{groups}{Column name(s) that identify the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but
-are not lagged. Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.}
+\item{dynamic_features}{A character vector of column names that identify features that change through time but which are not lagged (e.g., weekday or year).
+If \code{type = "forecast"}, these features will receive \code{NA} values; though, they can be filled in by the user after running this function.}
 
-\item{static_features}{For grouped time-series only. Column name(s) that identify features that do not change through time.
-These columns are used as model features but are not lagged.
-Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.}
+\item{groups}{A character vector of column names that identify the groups/hierarchies when multiple time-series are present. These columns are used as model features but
+are not lagged. Note that combining feature lags with grouped time series will result in \code{NA} values throughout the data.}
+
+\item{static_features}{For grouped time-series only. A character vector of column names that identify features that do not change through time.
+These columns are not lagged. If \code{type = "forecast"}, these features will be filled forward using the most recent value for the group.}
 
 \item{use_future}{Boolean. If \code{TRUE}, the \code{future} package is used for creating lagged data.frames.
 \code{multisession} or \code{multicore} futures are especially useful for (a) grouped time series with many groups and
@@ -77,7 +79,7 @@ The contents of the returned data.frame(s) are as follows:
 }
 }
 \description{
-Create a list of datasets with lagged, grouped, and static features to (a) train forecasting models for
+Create a list of datasets with lagged, grouped, dynamic, and static features to (a) train forecasting models for
 specified forecast horizons and (b) forecast into the future with a trained ML model.
 }
 \section{Attributes}{
