@@ -163,11 +163,13 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
       if (is.null(groups)) {
 
-        lookback_control[[i]][lookback_control[[i]] >= horizon]
-
-        if (i %in% c(dynamic_feature_cols)) {  # Set lags for dynamic features features to 0.
+        if (i %in% dynamic_feature_cols) {  # Set lags for dynamic features features to 0.
 
           lookback_control[[i]] <- 0
+
+        } else {
+
+          lookback_control[[i]][lookback_control[[i]] >= horizon]
         }
 
       } else {
