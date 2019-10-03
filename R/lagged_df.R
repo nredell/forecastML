@@ -305,12 +305,15 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
           } else {
 
-            # A nested list of lags is needed for custom lookback_control(s) for each forecast horizon.
-            lookback_over_horizon <- lookback_control[[i]][[j]]
-
             # Set for feature lags for grouping, dynamic, and static features.
             if (length(lookback_over_horizon) == 0 && var_names[j] %in% c(groups, dynamic_features, static_features)) {
+
               lookback_over_horizon <- 0
+
+            } else {
+
+              # A nested list of lags is needed for custom lookback_control(s) for each forecast horizon.
+              lookback_over_horizon <- lookback_control[[i]][[j]]
             }
           }
         }
@@ -436,12 +439,15 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
           } else {
 
-            # A nested list of lags is needed for custom lookback_control(s) for each forecast horizon.
-            lookback_over_horizon <- lookback_control[[i]][[j]]
-
             # Set feature lags for grouping features.
             if (var_names[j] %in% c(groups, dynamic_features, static_features)) {
+
               lookback_over_horizon <- 0
+
+            } else {
+
+              # A nested list of lags is needed for custom lookback_control(s) for each forecast horizon.
+              lookback_over_horizon <- lookback_control[[i]][[j]]
             }
           }
         }
