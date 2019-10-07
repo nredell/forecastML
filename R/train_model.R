@@ -42,16 +42,20 @@
 #' @export
 train_model <- function(lagged_df, windows, model_name, model_function, ..., use_future = FALSE) {
 
-  if (!methods::is(lagged_df, "lagged_df")) {
+  if (missing(lagged_df) || !methods::is(lagged_df, "lagged_df")) {
     stop("The 'data' argument takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
   }
 
-  if (!methods::is(windows, "windows")) {
+  if (missing(windows) || !methods::is(windows, "windows")) {
     stop("The 'windows' argument takes an object of class 'windows' as input. Run create_windows() first.")
   }
 
-  if (is.null(model_name)) {
+  if (missing(model_name)) {
     stop("Enter a model name for the 'model_name' argument.")
+  }
+
+  if (missing(model_function) || !is.function(model_function)) {
+    stop("The 'model_function' argument takes a user-defined model training function as input.")
   }
 
   row_indices <- attributes(lagged_df)$row_indices
@@ -158,7 +162,7 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
 
   attr(data_out, "model_name") <- model_name
   attr(data_out, "horizons") <- horizons
-  attr(data_out, "outcome_cols") <- attributes(lagged_df)$outcome_cols
+  attr(data_out, "outcome_col") <- attributes(lagged_df)$outcome_col
   attr(data_out, "outcome_names") <- attributes(lagged_df)$outcome_names
   attr(data_out, "row_indices") <- row_indices
   attr(data_out, "date_indices") <- date_indices
@@ -244,7 +248,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data =
     stop("The 'data' argument takes an object of class 'lagged_df' from create_lagged_df().")
   }
 
-  outcome_cols <- attributes(model_list[[1]])$outcome_cols
+  outcome_col <- attributes(model_list[[1]])$outcome_col
   outcome_names <- attributes(model_list[[1]])$outcome_names
   row_indices <- attributes(model_list[[1]])$row_indices
   date_indices <- attributes(model_list[[1]])$date_indices
@@ -275,8 +279,8 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data =
         # Predict on training data or the forecast dataset?
         if (type == "train") {  # Nested cross-validation.
 
-          x_valid <- data[[j]][row_indices %in% data_results$valid_indices, -(outcome_cols), drop = FALSE]
-          y_valid <- data[[j]][row_indices %in% data_results$valid_indices, outcome_cols, drop = FALSE]  # Actuals in function return.
+          x_valid <- data[[j]][row_indices %in% data_results$valid_indices, -(outcome_col), drop = FALSE]
+          y_valid <- data[[j]][row_indices %in% data_results$valid_indices, outcome_col, drop = FALSE]  # Actuals in function return.
 
           data_pred <- try(prediction_fun(data_results$model, x_valid))  # Nested cross-validation.
 
@@ -378,7 +382,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data =
 
   data_out <- as.data.frame(data_out)
 
-  attr(data_out, "outcome_cols") <- outcome_cols
+  attr(data_out, "outcome_col") <- outcome_col
   attr(data_out, "outcome_names") <- outcome_names
   attr(data_out, "row_indices") <- row_indices
   attr(data_out, "date_indices") <- date_indices
@@ -418,13 +422,13 @@ plot.training_results <- function(x,
                                   models = NULL, horizons = NULL,
                                   windows = NULL, valid_indices = NULL, group_filter = NULL, ...) {
 
+  if (!methods::is(x, "training_results")) {
+    stop("The 'x' argument takes an object of class 'training_results' as input. Run predict() on a 'forecast_model' object first.")
+  }
+
   data <- x
 
   type <- type[1]
-
-  if (!methods::is(data, "training_results")) {
-    stop("The 'data' argument takes an object of class 'training_results' as input. Run predict() on a 'forecast_model' object first.")
-  }
 
   if (type == "forecast_stability") {
     if (!xor(is.null(windows), is.null(valid_indices))) {
@@ -438,12 +442,12 @@ plot.training_results <- function(x,
   }
   #----------------------------------------------------------------------------
 
-  outcome_cols <- attributes(data)$outcome_cols
+  outcome_col <- attributes(data)$outcome_col
   outcome_names <- attributes(data)$outcome_names
   date_indices <- attributes(data)$date_indices
   frequency <- attributes(data)$frequency
   groups <- attributes(data)$group
-  n_outcomes <- length(outcome_cols)
+  n_outcomes <- length(outcome_col)
 
   forecast_stability_plot_windows <- windows
 
@@ -708,11 +712,11 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
 
   type <- "forecast"  # Only one plot option at present.
 
-  outcome_cols <- attributes(data_forecast)$outcome_cols
+  outcome_col <- attributes(data_forecast)$outcome_col
   outcome_names <- attributes(data_forecast)$outcome_names
   date_indices <- attributes(data_forecast)$date_indices
   groups <- attributes(data_forecast)$group
-  n_outcomes <- length(outcome_cols)
+  n_outcomes <- length(outcome_col)
 
   if (!is.null(data_actual)) {
 
@@ -831,7 +835,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
     p <- p + scale_color_viridis_d()
     p <- p + theme_bw()
     p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = toupper(gsub("_", " ", paste(plot_group, collapse = " + \n")))) +
-      ggtitle("N-Step-Ahead Model Forecasts")
+      ggtitle("H-Step-Ahead Model Forecasts")
     return(p)
   }
 }

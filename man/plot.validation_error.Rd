@@ -23,7 +23,7 @@
 
 \item{group_filter}{A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).}
 
-\item{...}{Arguments passed to \code{base::plot()}}
+\item{...}{Not used.}
 }
 \value{
 Forecast error plots of class 'ggplot'.

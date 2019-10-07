@@ -38,14 +38,14 @@
 #' @example /R/examples/example_fill_gaps.R
 #'
 #' @export
-fill_gaps <- function(data, date_col = 1, frequency, groups = NULL,
+fill_gaps <- function(data, date_col = 1L, frequency, groups = NULL,
                       static_features = NULL) {
 
-  data <- as.data.frame(data)
-
-  if (!methods::is(data, "data.frame")) {
-    stop("The 'data' argument should be an object of class 'data.frame'.")
+  if (!methods::is(data, c("data.frame"))) {
+    stop("The 'data' argument takes an object of class 'data.frame'.")
   }
+
+  data <- as.data.frame(data)
 
   if (length(date_col) != 1) {
     stop("The 'data_col' argument should be an integer giving the column location of the date index.")

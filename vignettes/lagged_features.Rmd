@@ -81,7 +81,7 @@ lookback_control <- lapply(lookback_control, function(x) {
     )
   })
 
-data_train <- forecastML::create_lagged_df(data, type = "train", outcome_cols = 1,
+data_train <- forecastML::create_lagged_df(data, type = "train", outcome_col = 1,
                                            horizons = horizons, 
                                            lookback_control = lookback_control,
                                            dates = dates,
@@ -127,7 +127,7 @@ remove_col <- which(grepl("PetrolPrice", names(data)))
 # Remove the feature from the 12-month-out lagged data.frame.
 lookback_control[[which(horizons == 12)]][remove_col] <- list(NULL)
 
-data_train <- forecastML::create_lagged_df(data, type = "train", outcome_cols = 1, 
+data_train <- forecastML::create_lagged_df(data, type = "train", outcome_col = 1, 
                                            lookback_control = lookback_control,
                                            horizons = horizons, dates = dates,
                                            frequency = ts_date_interval)

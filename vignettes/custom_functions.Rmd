@@ -48,7 +48,7 @@ horizon and the other across a 1:12-month horizon.
 ```{r}
 data_train <- forecastML::create_lagged_df(data,
                                            type = "train",
-                                           outcome_cols = 1, 
+                                           outcome_col = 1, 
                                            lookback = 1:12,
                                            horizons = c(3, 12),
                                            dates = dates,

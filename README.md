@@ -111,7 +111,7 @@ lookback <- 1:15  # A lookback of 1 to 15 dataset rows (1:15 * 'date frequency' 
 #------------------------------------------------------------------------------
 # Create a dataset of lagged features for modeling.
 data_train <- forecastML::create_lagged_df(data_seatbelts, type = "train",
-                                           outcome_cols = 1, lookback = lookback,
+                                           outcome_col = 1, lookback = lookback,
                                            horizon = horizons)
 
 #------------------------------------------------------------------------------
@@ -127,10 +127,10 @@ windows <- forecastML::create_windows(data_train, window_length = 12)
 # the user-defined predict function. The returned model may also be a list that holds meta-data such 
 # as hyperparameter settings.
 
-model_function <- function(data, outcome_cols) {  # outcome_cols = 1 could be defined here.
+model_function <- function(data, my_outcome_col) {  # my_outcome_col = 1 could be defined here.
 
-  x <- data[, -(outcome_cols), drop = FALSE]
-  y <- data[, outcome_cols, drop = FALSE]
+  x <- data[, -(my_outcome_col), drop = FALSE]
+  y <- data[, my_outcome_col, drop = FALSE]
   x <- as.matrix(x, ncol = ncol(x))
   y <- as.matrix(y, ncol = ncol(y))
 
@@ -140,9 +140,13 @@ model_function <- function(data, outcome_cols) {  # outcome_cols = 1 could be de
 
 #------------------------------------------------------------------------------
 # Train a model across forecast horizons and validation datasets.
-# outcome_cols = 1 is passed in ... but could have been defined in the user-defined model function.
-model_results <- train_model(data_train, windows, model_name = "LASSO", model_function,
-                             outcome_cols = 1, use_future = FALSE)
+# my_outcome_col = 1 is passed in ... but could have been defined in the user-defined model function.
+model_results <- forecastML::train_model(data_train,
+                                         windows = windows,
+                                         model_name = "LASSO", 
+                                         model_function = model_function,
+                                         my_outcome_col = 1,  # ...
+                                         use_future = FALSE)
 
 #------------------------------------------------------------------------------
 # User-defined prediction function - LASSO
@@ -177,7 +181,7 @@ plot(data_valid, horizons = c(1, 6, 12))
 
 # Forward-looking forecast data.frame.
 data_forecast <- forecastML::create_lagged_df(data_seatbelts, type = "forecast",
-                                              outcome_cols = 1,
+                                              outcome_col = 1,
                                               lookback = lookback, horizons = horizons)
 
 # Forecasts.

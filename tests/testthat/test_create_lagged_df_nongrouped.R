@@ -29,7 +29,7 @@ test_that("lagged_df, forecasting data, non-grouped with daily date horizons are
   #------------------------------------------------------------------------------
 
   data_out <- forecastML::create_lagged_df(data = data_test, type = "forecast",
-                                           outcome_cols = 1, horizons = 3,
+                                           outcome_col = 1, horizons = 3,
                                            lookback = 3:4, dates = dates,
                                            frequency = "1 day")
 
@@ -65,7 +65,7 @@ test_that("lagged_df, forecasting data, non-grouped with monthly date horizons a
   #------------------------------------------------------------------------------
 
   data_out <- forecastML::create_lagged_df(data = data_test, type = "forecast",
-                                           outcome_cols = 1, horizons = 3,
+                                           outcome_col = 1, horizons = 3,
                                            lookback = 3:4, dates = dates,
                                            frequency = "1 month")
 

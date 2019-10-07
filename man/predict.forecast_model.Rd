@@ -70,7 +70,7 @@ data("data_seatbelts", package = "forecastML")
 horizons <- c(1, 12)
 lookback <- 1:15
 
-data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_cols = 1,
+data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_col = 1,
                                lookback = lookback, horizon = horizons)
 
 windows <- create_windows(data_train, window_length = 12)
@@ -81,10 +81,10 @@ windows <- create_windows(data_train, window_length = 12)
 # (e.g., my_lagged_df$horizon_h) and, optionally, (2) any number of additional named arguments
 # which are passed as '...' in train_model().
 library(glmnet)
-model_function <- function(data, outcome_cols) {
+model_function <- function(data, my_outcome_col) {
 
-  x <- data[, -(outcome_cols), drop = FALSE]
-  y <- data[, outcome_cols, drop = FALSE]
+  x <- data[, -(my_outcome_col), drop = FALSE]
+  y <- data[, my_outcome_col, drop = FALSE]
   x <- as.matrix(x, ncol = ncol(x))
   y <- as.matrix(y, ncol = ncol(y))
 
@@ -92,9 +92,9 @@ model_function <- function(data, outcome_cols) {
   return(model)
 }
 
-# outcome_cols = 1 is passed in ... but could have been defined in the user-defined model function.
+# my_outcome_col = 1 is passed in ... but could have been defined in model_function().
 model_results <- train_model(data_train, windows, model_name = "LASSO", model_function,
-                             outcome_cols = 1)
+                             my_outcome_col = 1)
 
 # User-defined prediction function - LASSO
 # The predict() wrapper takes two positional arguments. First,
@@ -116,7 +116,7 @@ data_valid <- predict(model_results, prediction_function = list(prediction_funct
                       data = data_train)
 
 # Forecast.
-data_forecast <- create_lagged_df(data_seatbelts, type = "forecast", outcome_cols = 1,
+data_forecast <- create_lagged_df(data_seatbelts, type = "forecast", outcome_col = 1,
                                   lookback = lookback, horizon = horizons)
 
 data_forecasts <- predict(model_results, prediction_function = list(prediction_function),

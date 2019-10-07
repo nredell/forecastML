@@ -8,21 +8,21 @@
 #' rows--usually due to periods when no data was collected--will result in poorly trained models due to incorrect feature lags.
 #' Use \code{\link{fill_gaps}} to fill in any missing rows/data prior to running this function.
 #' @param type The type of dataset to return--(a) model training or (b) forecast prediction. The default is \code{train}.
-#' @param outcome_cols The column index--an integer--of the target to be forecasted. Forecasting only one outcome column is allowed at present, however,
+#' @param outcome_col The column index--an integer--of the target to be forecasted. Forecasting only one outcome column is allowed at present, however,
 #' groups of time-series can be forecasted if they are stacked vertically in a long dataset and the \code{groups}, \code{dates},
 #' and \code{frequency} arguments are specified.
-#' @param horizons A numeric vector of one or more forecast horizons, h, measured in input dataset rows. For each horizon, 1:h
-#' forecasts are returned (e.g., \code{horizon = 12} trains a model to minimize 1 to 12-step-ahead error and returns forecasts
-#' for 1:12 steps into the future). If \code{dates} are given, a horizon of 1, for example, would equal 1 * \code{frequency} in calendar time.
+#' @param horizons A numeric vector of one or more forecast horizons, h, measured in input dataset rows. For each horizons, 1:h
+#' forecasts are returned (e.g., \code{horizons = 12} trains a model to minimize 1 to 12-step-ahead error and returns forecasts
+#' for 1:12 steps into the future). If \code{dates} are given, a horizons of 1, for example, would equal 1 * \code{frequency} in calendar time.
 #' @param lookback A numeric vector giving the lags--in dataset rows--for creating the lagged features. All non-grouping and
 #' non-static features in the input dataset, \code{data}, are lagged by the same values which, for
 #' non-grouped time-series, will produce an input dataset with dimensions
-#' nrow(\code{data}) by (n_features * \code{length(lookback))}. Lags that don't support direct forecasting for a given horizon
+#' nrow(\code{data}) by (n_features * \code{length(lookback))}. Lags that don't support direct forecasting for a given horizons
 #' are silently dropped. Either \code{lookback} or \code{lookback_control} need to be specified.
 #' @param lookback_control A list of numeric vectors, specifying potentially unique lags for each feature. The length
 #' of the list should equal \code{ncol(data)} and be ordered the same as the columns in \code{data}. For grouped time-series, lags for the grouping column(s)
 #' and static feature columns should have a \code{lookback_control} value of 0. \code{list(NULL)} \code{lookback_control} values drop columns
-#' from the input dataset. Lags that don't support direct forecasting for a given horizon
+#' from the input dataset. Lags that don't support direct forecasting for a given horizons
 #' are silently dropped. Either \code{lookback} or \code{lookback_control} need to be specified.
 #' @param dates A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal \code{nrow(data)}. Required if \code{groups}
 #' are given.
@@ -41,7 +41,7 @@
 #' @return An S3 object of class 'lagged_df' or 'grouped_lagged_df': A list of data.frames with new columns for the lagged/non-lagged features.
 #' The length of the returned list is equal to the number of forecast horizons and is in the order of
 #' horizons supplied to the \code{horizons} argument. Horizon-specific datasets can be accessed with
-#' \code{my_lagged_df$horizon_h} where 'h' gives the forecast horizon.
+#' \code{my_lagged_df$horizon_h} where 'h' gives the forecast horizons.
 #'
 #' The contents of the returned data.frame(s) are as follows:
 #'
@@ -49,22 +49,22 @@
 #'   \item{\strong{type = 'train', non-grouped:}}{A data.frame of lagged features with the first \code{1:max(lookback)} rows removed.}
 #'   \item{\strong{type = 'train', grouped:}}{A data.frame of unlagged grouping columns followed by lagged and static features.}
 #'   \item{\strong{type = 'forecast', non-grouped:}}{(1) An 'index' column giving the row index or date of the
-#'   forecast periods (e.g., a 100 row non-date-based training dataset would start with an index of 101). (2) A 'horizon' column
+#'   forecast periods (e.g., a 100 row non-date-based training dataset would start with an index of 101). (2) A 'horizons' column
 #'   that indicates the forecast period from \code{1:max(horizons)}. (3) Lagged features identical to the
 #'   'train', non-grouped dataset.}
 #'   \item{\strong{type = 'forecast', grouped:}}{(1) An 'index' column giving the date of the
 #'   forecast periods. The first forecast date for each group is the maximum date from the \code{dates} argument
-#'   + 1 * \code{frequency} which is the user-supplied date frequency.(2) A 'horizon' column that indicates
+#'   + 1 * \code{frequency} which is the user-supplied date frequency.(2) A 'horizons' column that indicates
 #'   the forecast period from \code{1:max(horizons)}. (3) Lagged and static features identical to the 'train', grouped dataset.}
 #' }
 #' @section Attributes:
 #'
 #' \itemize{
-#'   \item \code{names}: The horizon-specific datasets that can be accessed by \code{my_lagged_df$horizon_h} where 'h' gives
-#'   the forecast horizon.
+#'   \item \code{names}: The horizons-specific datasets that can be accessed by \code{my_lagged_df$horizon_h} where 'h' gives
+#'   the forecast horizons.
 #'   \item \code{type}: Training, \code{train}, or forecasting, \code{forecast}, dataset(s).
 #'   \item \code{horizons}: Forecast horizons measured in dataset rows.
-#'   \item \code{outcome_cols}: The column index of the target being forecasted.
+#'   \item \code{outcome_col}: The column index of the target being forecasted.
 #'   \item \code{outcome_names}: The name of the target being forecasted.
 #'   \item \code{predictor_names}: The predictor or feature names from the input dataset.
 #'   \item \code{row_indices}: The \code{row.names()} of the output dataset. For non-grouped datasets, the first
@@ -101,143 +101,65 @@
 #' @importFrom purrr map2
 #'
 #' @export
-create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols = 1, horizons, lookback = NULL,
+create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 1L, horizons, lookback = NULL,
                              lookback_control = NULL, dates = NULL, frequency = NULL, dynamic_features = NULL,
                              groups = NULL, static_features = NULL, use_future = FALSE) {
 
-  if (!methods::is(data, c("data.frame"))) {stop("The 'data' argument takes an object of class 'data.frame'.")}
-
-  data <- as.data.frame(data)
-
-  type <- type[1]  # Model-training datasets are the default.
-
-  outcome_cols <- as.numeric(outcome_cols[1])  # Restricting to one outcome at present.
-  horizon <- as.numeric(horizons)  # Forecast horizons.
-
-  row_names <- 1:nrow(data)
-
-  # The following columns are used as predictors: outcome_names, 'NULL' in a list slot in 'lookback_control'
-  # drops columns from from the input data, and grouping columns are retained as features but not lagged.
-  # var_names are used in the nested lapply functions.
-  var_names <- names(data)
-
-  # Outcome data.
-  data_y <- data[, outcome_cols, drop = FALSE]
-  #----------------------------------------------------------------------------
-
-  dynamic_feature_cols <- which(names(data) %in% dynamic_features)
-
-  # Group column indices to keep grouping columns when checking the 'lookback_cotrol' argument--the value of which should be 0 for grouping columns.
-  if (!is.null(groups)) {
-    group_cols <- which(names(data) %in% groups)
+  if (!methods::is(data, c("data.frame"))) {
+    stop("The 'data' argument takes an object of class 'data.frame'.")
   }
 
-  if (!is.null(groups)) {
-    static_feature_cols <- which(names(data) %in% static_features)
-  }
-  #----------------------------------------------------------------------------
-
-  if (!xor(is.null(lookback), is.null(lookback_control))) {stop("Enter an argument for either `lookback`--a feature lag vector--or `lookback_control`--a list of feature lag vectors.")}
-
-  if (!is.null(lookback)) {
-    lookback <- as.numeric(lookback)
-    if (!all(lookback >= 0)) {stop("The 'lookback' argument needs to be a vector of positive numbers.")}
-    if (!max(lookback) >= min(horizon)) {stop("The highest lookback needs to be >= the shortest forecast horizon to allow for direct forecasting with lagged predictors.")}
+  if (!any(type %in% c("train", "forecast"))) {
+    stop("The 'type' argument needs to be one of 'train' or 'forecast'.")
   }
 
-  # Check the lookback_control argument.
-  if (length(horizon) == 1 && !is.null(lookback_control)) {  # A 1-horizon, non-nested lookback_control of feature lags.
+  if (length(outcome_col) != 1 | !methods::is(outcome_col, c("numeric"))) {
+    stop("The 'outcome_col' argument needs to be a positive integer of length 1.")
+  }
+
+  if (!length(horizons) >= 1 | !methods::is(horizons, c("numeric"))) {
+    stop("The 'horizons' argument needs to be a numeric vector of length >= 1.")
+  }
+
+  if (!all(horizons < nrow(data))) {
+    stop("The forecast horizons needs to be less than nrow(data).")
+  }
+
+  if (all(is.null(lookback), is.null(lookback_control))) {
+    stop("Enter an argument for either `lookback`--a feature lag vector--or `lookback_control`--a list of feature lag vectors.")
+  }
+
+  if (!xor(is.null(lookback), is.null(lookback_control))) {
+    stop("Enter an argument for either `lookback`--a feature lag vector--or `lookback_control`--a list of feature lag vectors.")
+  }
+
+  if (!is.null(lookback) && (!length(lookback) >= 1 | !all(lookback > 0) | !methods::is(lookback, c("numeric")))) {
+    stop("The 'lookback' argument needs to be a numeric vector of positive integers of length >= 1.")
+  }
+
+  if (!is.null(lookback) && !max(lookback) >= min(horizons)) {
+    stop("The highest lookback needs to be >= the shortest forecast horizons to allow for direct forecasting with lagged features.")
+  }
+
+  if (length(horizons) == 1 && !is.null(lookback_control)) {  # A 1-horizons, non-nested lookback_control of feature lags.
 
     # Check if there is one list location for each feature in the dataset.
-    if (length(lookback_control) != (ncol(data))) {
-      stop("For a single forecast horizon, the length of the 'lookback_control' list should equal the number of features in
+    if (length(lookback_control) != ncol(data)) {
+      stop("For a single forecast horizons, the length of the 'lookback_control' list should equal the number of features in
            the dataset. For multiple forecast horizons, 'lookback_control' is a nested list with length(lookback_control) ==
            length(horizons) and, one layer down, the nested list should have a length equal to the number of features in the dataset.
            'lookback_control' list slots with 'NULL' drops columns from the input data, and 'lookback_control' list slots with 0 are used for
            grouping columns and dynamic/static features (grouping/dynamic/static features will automatically be coerced to 0s).")
     }
-    #--------------------------------------------------------------------------
-    # Clean the lookback_control list of impossible lag values for the given forecast horizon.
-    # This will be an attribute for this function's return which is used for plotting.
-    lookback_control <- lapply(seq_along(lookback_control), function(i) {
-
-      if (is.null(groups)) {
-
-        if (i %in% dynamic_feature_cols) {  # Set lags for dynamic features to 0.
-
-          lookback_control[[i]] <- 0
-
-        } else {
-
-          lookback_control[[i]][lookback_control[[i]] >= horizon]
-        }
-
-      } else {
-
-        if (i %in% c(group_cols, dynamic_feature_cols, static_feature_cols)) {  # Set lags for grouping columns and static features to 0.
-
-          lookback_control[[i]] <- 0
-
-        } else {
-
-          if (!is.null(lookback_control[[i]])) {
-
-            lookback_control[[i]] <- lookback_control[[i]][lookback_control[[i]] >= horizon]
-          }
-        }
-        lookback_control[[i]]
-      }
-    })  # Impossible lags for lagged features have been removed.
-
-  } else if (length(horizon) > 1 && !is.null(lookback_control)) {  # A multiple-horizon, nested lookback_control of feature lags.
-
-    lookback_control <- lapply(seq_along(lookback_control), function(i) {
-      lapply(seq_along(lookback_control[[i]]), function(j) {
-
-        if (is.null(groups)) {
-
-          if (!j %in% dynamic_feature_cols) {  # Set lags for dynamic features to 0.
-
-            lookback_control[[i]][[j]][lookback_control[[i]][[j]] >= horizon[i]]
-
-          } else {
-
-            lookback_control[[i]][[j]] <- 0
-          }
-
-        } else {
-
-          if (j %in% c(group_cols, static_feature_cols)) {  # Set lags for grouping columns and static features to 0.
-
-            lookback_control[[i]][[j]] <- 0
-
-          } else {
-
-            if (!is.null(lookback_control[[i]][[j]])) {
-
-              lookback_control[[i]][[j]] <- lookback_control[[i]][[j]][lookback_control[[i]][[j]] >= horizon[i]]
-            }
-          }
-          lookback_control[[i]][[j]]
-        }
-      })
-    })  # Impossible lags for lagged features have been removed.
-  }  # Impossible lags in 'lookback_control' have been removed.
-  #--------------------------------------------------------------------------
-
-  # This will be used to remove the rows with NAs in our new lagged predictor dataset--rows 1:lookback_max at the begnning of the dataset.
-  # This is only used for non-grouped datasets and allows easy forecasting with methods that can't handle NA values.
-  if (!is.null(lookback)) {
-    lookback_max <- max(lookback, na.rm = TRUE)
-  } else {
-    # TO-do: Greater flexibility could be added in the case of different horizons having different max lags. At present, the lags for longer forecast
-    # horizons are also used to remove dataset rows from input datasets with shorter forecast horizons, which may only use shorter lags. This amounts
-    # to unnecessarily discarding training data for short-term forecast horizons when these models are trained alongside long-term models.
-    lookback_max <- max(unlist(lookback_control), na.rm = TRUE)
   }
-  #----------------------------------------------------------------------------
 
-  if (!all(horizon < nrow(data))) {stop("The forecast horizon needs to be less than nrow(data).")}
+  if (!is.null(dynamic_features) && (!length(dynamic_features) >= 1 | !methods::is(dynamic_features, c("character")))) {
+    stop("The 'dynamic_features' argument needs to be a character vector of length >= 1.")
+  }
+
+  if (!is.null(static_features) && (!length(static_features) >= 1 | !methods::is(static_features, c("character")))) {
+    stop("The 'static_features' argument needs to be a character vector of length >= 1.")
+  }
 
   dates <- if (methods::is(dates, "data.frame")) {
 
@@ -267,8 +189,111 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
   if (!is.null(groups) && is.null(dates)) {
     stop("The 'dates' argument needs to be specified with grouped data.")
   }
+
+  data <- as.data.frame(data)
+
+  type <- type[1]  # Model-training datasets are the default.
+
+  row_names <- 1:nrow(data)
+
+  var_names <- names(data)
+
+  dynamic_feature_cols <- which(names(data) %in% dynamic_features)
+
+  # Group column indices to keep grouping columns when checking the 'lookback_cotrol' argument--the value of which should be 0 for grouping columns.
+  if (!is.null(groups)) {
+    group_cols <- which(names(data) %in% groups)
+  }
+
+  if (!is.null(groups)) {
+    static_feature_cols <- which(names(data) %in% static_features)
+  }
+
+  # Outcome data.
+  data_y <- data[, outcome_col, drop = FALSE]
   #----------------------------------------------------------------------------
 
+  if (length(horizons) == 1 && !is.null(lookback_control)) {
+
+    # Clean the lookback_control list of impossible lag values for the given forecast horizons.
+    # This will be an attribute for this function's return which is used for plotting.
+    lookback_control <- lapply(seq_along(lookback_control), function(i) {
+
+      if (is.null(groups)) {
+
+        if (i %in% dynamic_feature_cols) {  # Set lags for dynamic features to 0.
+
+          lookback_control[[i]] <- 0
+
+        } else {
+
+          lookback_control[[i]][lookback_control[[i]] >= horizons]
+        }
+
+      } else {
+
+        if (i %in% c(group_cols, dynamic_feature_cols, static_feature_cols)) {  # Set lags for grouping columns and static features to 0.
+
+          lookback_control[[i]] <- 0
+
+        } else {
+
+          if (!is.null(lookback_control[[i]])) {
+
+            lookback_control[[i]] <- lookback_control[[i]][lookback_control[[i]] >= horizons]
+          }
+        }
+        lookback_control[[i]]
+      }
+    })  # Impossible lags for lagged features have been removed.
+
+  } else if (length(horizons) > 1 && !is.null(lookback_control)) {  # A multiple-horizons, nested lookback_control of feature lags.
+
+    lookback_control <- lapply(seq_along(lookback_control), function(i) {
+      lapply(seq_along(lookback_control[[i]]), function(j) {
+
+        if (is.null(groups)) {
+
+          if (!j %in% dynamic_feature_cols) {  # Set lags for dynamic features to 0.
+
+            lookback_control[[i]][[j]][lookback_control[[i]][[j]] >= horizons[i]]
+
+          } else {
+
+            lookback_control[[i]][[j]] <- 0
+          }
+
+        } else {
+
+          if (j %in% c(group_cols, static_feature_cols)) {  # Set lags for grouping columns and static features to 0.
+
+            lookback_control[[i]][[j]] <- 0
+
+          } else {
+
+            if (!is.null(lookback_control[[i]][[j]])) {
+
+              lookback_control[[i]][[j]] <- lookback_control[[i]][[j]][lookback_control[[i]][[j]] >= horizons[i]]
+            }
+          }
+          lookback_control[[i]][[j]]
+        }
+      })
+    })  # Impossible lags for lagged features have been removed.
+  }  # Impossible lags in 'lookback_control' have been removed.
+  #--------------------------------------------------------------------------
+
+  # This will be used to remove the rows with NAs in our new lagged predictor dataset--rows 1:lookback_max at the begnning of the dataset.
+  # This is only used for non-grouped datasets and allows easy forecasting with methods that can't handle NA values.
+  if (!is.null(lookback)) {
+    lookback_max <- max(lookback, na.rm = TRUE)
+  } else {
+    # TO-do: Greater flexibility could be added in the case of different horizons having different max lags. At present, the lags for longer forecast
+    # horizons are also used to remove dataset rows from input datasets with shorter forecast horizons, which may only use shorter lags. This amounts
+    # to unnecessarily discarding training data for short-term forecast horizons when these models are trained alongside long-term models.
+    lookback_max <- max(unlist(lookback_control), na.rm = TRUE)
+  }
+  #----------------------------------------------------------------------------
   # Setting the lagged feature loops to parallel processing depending on user input.
   if (isTRUE(use_future)) {
 
@@ -279,15 +304,14 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
     lapply_function <- base::lapply
   }
   #----------------------------------------------------------------------------
-
   # Each item in the list is a data.frame of lagged features that allow direct forecasting.
-  # to the given horizon.
+  # to the given horizons.
   if (type == "train") {
 
     # Loop over forecast model horizons [i] > features in dataset [j].
-    data_out <- lapply(seq_along(horizon), function(i) {
+    data_out <- lapply(seq_along(horizons), function(i) {
 
-      forecast_horizon <- horizon[i]
+      forecast_horizon <- horizons[i]
 
       # Only create lagged features that allow direct forecasting to max(i). If a single lookback vector is defined,
       # we'll do this filtering outside of the inner loop below.
@@ -298,8 +322,8 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
       data_x <- lapply_function(1:ncol(data), function(j) {
         # Only create lagged features that allow direct forecasting to max(i)--unique lags for each feature.
         if (!is.null(lookback_control)) {
-          # As a convenience to the user, a single-horizon forecast that uses a custom lookback doesn't need to be a nested list.
-          if (length(horizon) == 1) {
+          # As a convenience to the user, a single-horizons forecast that uses a custom lookback doesn't need to be a nested list.
+          if (length(horizons) == 1) {
 
             lookback_over_horizon <- lookback_control[[j]]
 
@@ -314,13 +338,13 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
             } else {
 
-              # A nested list of lags is needed for custom lookback_control(s) for each forecast horizon.
+              # A nested list of lags is needed for custom lookback_control(s) for each forecast horizons.
               lookback_over_horizon <- lookback_control[[i]][[j]]
             }
           }
         }
 
-        # If there are no feature-level lags suitable for the forecast horizon, return NULL for this feature-level lagged data.frame.
+        # If there are no feature-level lags suitable for the forecast horizons, return NULL for this feature-level lagged data.frame.
         # However, grouping, dynamic, and static features will pass through and be added to the output dataset without lags.
         if (all(!is.na(lookback_over_horizon), length(lookback_over_horizon) > 0) || var_names[j] %in% c(groups, dynamic_features, static_features)) {
 
@@ -386,16 +410,16 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
         }
 
         data_x
-      })  # End loop 'j', the creation of lagged features for a given forecast model horizon.
+      })  # End loop 'j', the creation of lagged features for a given forecast model horizons.
 
-      data_x <- dplyr::bind_cols(data_x)  # A single data.frame of lags for all features at a given forecast model horizon.
+      data_x <- dplyr::bind_cols(data_x)  # A single data.frame of lags for all features at a given forecast model horizons.
 
       # Re-order the columns so that the grouping features, if any, are first; dynamic/static features remain in-place.
       if (!is.null(groups)) {
         data_x <- dplyr::select(data_x, groups, names(data_x)[!names(data_x) %in% groups])
       }
 
-      # The complete dataset for a given forecast model horizon.
+      # The complete dataset for a given forecast model horizons.
       data_out <- dplyr::bind_cols(data_y, data_x)
 
       # If the forecast is grouped, leave the NAs in the dataset for the user because the ML model used for these
@@ -404,11 +428,11 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
         data_out <- data_out[-(1:lookback_max), ]  # To-do: make this more flexible for multiple forecast model horizons.
       }
 
-      attr(data_out, "horizon") <- forecast_horizon
+      attr(data_out, "horizons") <- forecast_horizon
       if (!is.null(lookback)) {
         attr(data_out, "lookback") <- lookback_over_horizon  # Non-grouped data.
       } else {
-        attr(data_out, "lookback") <- if (length(horizon) == 1) {lookback_control} else {lookback_control[[i]]}  # length(horizon) == 1 is the user convenience mentioned earlier.
+        attr(data_out, "lookback") <- if (length(horizons) == 1) {lookback_control} else {lookback_control[[i]]}  # length(horizons) == 1 is the user convenience mentioned earlier.
       }
 
       data_out
@@ -420,9 +444,9 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
   if (type == "forecast") {  # Create a dataset for forecasting h steps into the future.
 
     # Loop over forecast model horizons [i] > features in dataset [j].
-    data_out <- lapply(seq_along(horizon), function(i) {
+    data_out <- lapply(seq_along(horizons), function(i) {
 
-      forecast_horizon <- horizon[i]
+      forecast_horizon <- horizons[i]
 
       # Only create lagged features that allow direct forecasting to max(i). If a single lookback vector is defined,
       # we'll do this filtering outside of the inner loop below.
@@ -434,8 +458,8 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
         # Only create lagged features that allow direct forecasting to max(i)--unique lags for each feature.
         if (!is.null(lookback_control)) {
-          # As a convenience to the user a single-horizon forecast that uses a custom lookback doesn't need to be a nested list.
-          if (length(horizon) == 1) {
+          # As a convenience to the user a single-horizons forecast that uses a custom lookback doesn't need to be a nested list.
+          if (length(horizons) == 1) {
 
             lookback_over_horizon <- lookback_control[[j]]
 
@@ -448,13 +472,13 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
             } else {
 
-              # A nested list of lags is needed for custom lookback_control(s) for each forecast horizon.
+              # A nested list of lags is needed for custom lookback_control(s) for each forecast horizons.
               lookback_over_horizon <- lookback_control[[i]][[j]]
             }
           }
         }
 
-        # If there are no feature-level lags suitable for the forecast horizon, return NULL for this feature-level lagged data.frame.
+        # If there are no feature-level lags suitable for the forecast horizons, return NULL for this feature-level lagged data.frame.
         # However, grouping features will pass through and be added to the output dataset without lags.
         if (all(!is.na(lookback_over_horizon), length(lookback_over_horizon) > 0) || var_names[j] %in% c(groups, dynamic_features, static_features)) {
 
@@ -498,7 +522,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
                   dplyr::select(!!groups, !!static_features, .data$max_row_number)
 
                 # Create the same, static dataset for forecasting into the future, the only difference
-                # being an index which indicates the forecast horizon.
+                # being an index which indicates the forecast horizons.
                 data_x <- lapply(forecast_horizon:1, function(k) {
                   data_x$horizon <- k
                   data_x
@@ -529,11 +553,11 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
                   dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions) %>%
                   dplyr::mutate("max_row_number" = max(.data$row_number, na.rm = TRUE),
                                 "horizon" = .data$max_row_number - .data$row_number + 1) %>%
-                  dplyr::filter(horizon <= forecast_horizon) %>%
+                  dplyr::filter(.data$horizon <= forecast_horizon) %>%
                   dplyr::mutate("horizon" = rev(.data$horizon),
                                 "row_number" = .data$max_row_number + .data$horizon) %>%
                   dplyr::ungroup() %>%
-                  dplyr::select(.data$row_number, horizon, groups, names(lag_functions))
+                  dplyr::select(.data$row_number, .data$horizon, groups, names(lag_functions))
 
               } else {  # Assign NA values to all future dynamic features. There's some unnecessary computation here.
 
@@ -542,11 +566,11 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
                   dplyr::mutate("row_number" = 1:dplyr::n()) %>%
                   dplyr::mutate("max_row_number" = max(.data$row_number, na.rm = TRUE),
                                 "horizon" = .data$max_row_number - .data$row_number + 1) %>%
-                  dplyr::filter(horizon <= forecast_horizon) %>%
+                  dplyr::filter(.data$horizon <= forecast_horizon) %>%
                   dplyr::mutate("horizon" = rev(.data$horizon),
                                 "row_number" = .data$max_row_number + .data$horizon) %>%
                   dplyr::ungroup() %>%
-                  dplyr::select(.data$row_number, horizon, groups)
+                  dplyr::select(.data$row_number, .data$horizon, groups)
 
                 data_x[[var_names[j]]] <- NA
               }
@@ -592,7 +616,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
         }
 
         data_x
-      })  # End loop 'j', the creation of lagged features for a given forecast model horizon.
+      })  # End loop 'j', the creation of lagged features for a given forecast model horizons.
       #------------------------------------------------------------------------
 
       # Merge all feature-level lags into 1 data.frame.
@@ -632,11 +656,11 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
         data_x <- data_x[, c(ncol(data_x), 1:(ncol(data_x) - 1))]
       }
 
-      attr(data_x, "horizon") <- forecast_horizon
+      attr(data_x, "horizons") <- forecast_horizon
       if (!is.null(lookback)) {
         attr(data_x, "lookback") <- lookback_over_horizon
       } else {
-        attr(data_x, "lookback") <- if (length(horizon) == 1) {lookback_control} else {lookback_control[[i]]}
+        attr(data_x, "lookback") <- if (length(horizons) == 1) {lookback_control} else {lookback_control[[i]]}
       }
       as.data.frame(data_x)
     })  # End loop 'i' and return 'data_out'.
@@ -647,9 +671,9 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_cols =
 
   # Global classes and attributes for the return object.
   attr(data_out, "type") <- type
-  attr(data_out, "horizons") <- horizon
-  attr(data_out, "outcome_cols") <- outcome_cols
-  attr(data_out, "outcome_names") <- names(data)[outcome_cols]
+  attr(data_out, "horizons") <- horizons
+  attr(data_out, "outcome_col") <- outcome_col
+  attr(data_out, "outcome_names") <- names(data)[outcome_col]
   attr(data_out, "predictor_names") <- var_names
   attr(data_out, "dynamic_features") <- dynamic_features
   attr(data_out, "static_features") <- static_features
@@ -708,8 +732,8 @@ summary.lagged_df <- function(object, ...) {
     "Data start index: ", attributes(data)$data_start, " \n",
     "Data stop index: ", attributes(data)$data_stop, " \n",
     "Number of predictors in input data: ", length(attributes(data)$predictor_names), " \n",
-    "Minimum number of predictors with lags: ", min(n_predictors_at_each_horizon, na.rm = TRUE), " at forecast horizon ", horizons[which.min(n_predictors_at_each_horizon)], " \n",
-    "Maximum number of predictors with lags: ", max(n_predictors_at_each_horizon, na.rm = TRUE), " at forecast horizon ", horizons[which.max(n_predictors_at_each_horizon)], " \n"
+    "Minimum number of predictors with lags: ", min(n_predictors_at_each_horizon, na.rm = TRUE), " at forecast horizons ", horizons[which.min(n_predictors_at_each_horizon)], " \n",
+    "Maximum number of predictors with lags: ", max(n_predictors_at_each_horizon, na.rm = TRUE), " at forecast horizons ", horizons[which.max(n_predictors_at_each_horizon)], " \n"
   ))
 }
 #------------------------------------------------------------------------------
@@ -732,9 +756,9 @@ plot.lagged_df <- function(x, ...) {
     stop("This method takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
   }
 
-  horizon <- attributes(data)$horizons
+  horizons <- attributes(data)$horizons
 
-  # Within a given horizon, an indicator for different lag vectors for each predictor.
+  # Within a given horizons, an indicator for different lag vectors for each predictor.
   if (methods::is(attributes(data[[1]])$lookback, "list")) {
     lookback_per_predictor <- TRUE
   } else {
@@ -757,7 +781,7 @@ plot.lagged_df <- function(x, ...) {
 
   if (lookback_per_predictor) {
 
-    # seq_along horizon > predictor.
+    # seq_along horizons > predictor.
     data_horizon <- lapply(seq_along(lookback), function(i) {
 
       data_predictor <- lapply(seq_along(lookback[[i]]), function(j) {
@@ -767,12 +791,12 @@ plot.lagged_df <- function(x, ...) {
           lookback_predictor <- lookback[[i]][[j]]
 
           if (all(!is.na(lookback_predictor), length(lookback_predictor) > 0)) {
-            data_predictor <- expand.grid("horizon" = horizon[i], "time" = lookback_predictor)
+            data_predictor <- expand.grid("horizons" = horizons[i], "time" = lookback_predictor)
             data_predictor$predictor_number <- j
 
-          } else {  # Nothing to plot, no feature lags appropriate for this horizon.
+          } else {  # Nothing to plot, no feature lags appropriate for this horizons.
 
-            data_predictor <- expand.grid("horizon" = NA, "time" = NA)
+            data_predictor <- expand.grid("horizons" = NA, "time" = NA)
             data_predictor$predictor_number <- j
           }
           data_predictor
@@ -790,7 +814,7 @@ plot.lagged_df <- function(x, ...) {
 
   } else {
 
-    data_plot <- purrr::map2(horizon, lookback, function(x, y) {expand.grid("horizon" = x, "time" = y)})
+    data_plot <- purrr::map2(horizons, lookback, function(x, y) {expand.grid("horizons" = x, "time" = y)})
     data_plot <- dplyr::bind_rows(data_plot)
   }
 
@@ -802,35 +826,35 @@ plot.lagged_df <- function(x, ...) {
   data_plot$feature <- "Feature"  # Feature is present in plot.
 
   # Make a grid for plotting the presence of lagged features, no lagged features, and forecast horizons.
-  data_grid_past <- expand.grid("horizon" = min(horizon):max(horizon),
+  data_grid_past <- expand.grid("horizons" = min(horizons):max(horizons),
                                 "time" = (-1 * lookback_max):-1)
-  data_grid_future <- expand.grid("horizon" = min(horizon):max(horizon),
-                                  "time" = 1:max(horizon))
-  # For forecast horizon plot fill, remove the rows in the data that exceed the horizon.
-  data_grid_future <- data_grid_future[with(data_grid_future, time <= horizon), ]
+  data_grid_future <- expand.grid("horizons" = min(horizons):max(horizons),
+                                  "time" = 1:max(horizons))
+  # For forecast horizons plot fill, remove the rows in the data that exceed the horizons.
+  data_grid_future <- data_grid_future[with(data_grid_future, time <= horizons), ]
   data_grid <- dplyr::bind_rows(data_grid_past, data_grid_future)
 
-  data_plot <- dplyr::left_join(data_grid, data_plot, by = c("horizon", "time"))
+  data_plot <- dplyr::left_join(data_grid, data_plot, by = c("horizons", "time"))
 
   # Plot fill and legend contents.
   data_plot$feature[is.na(data_plot$feature) & data_plot$time <= 0] <- "No feature"
   data_plot$feature[is.na(data_plot$feature)] <- "Forecast"
 
   # Filter to remove user-specified unused horizons from the plot grid.
-  data_plot <- data_plot[data_plot$horizon %in% horizon, ]
+  data_plot <- data_plot[data_plot$horizons %in% horizons, ]
 
   if (!lookback_per_predictor) {
 
-    data_plot$horizon <- factor(data_plot$horizon, levels = sort(unique(as.numeric(data_plot$horizon))), ordered = TRUE)
+    data_plot$horizons <- factor(data_plot$horizons, levels = sort(unique(as.numeric(data_plot$horizons))), ordered = TRUE)
 
-    p <- ggplot(data_plot, aes(x = .data$time, y = .data$horizon, fill = .data$feature))
+    p <- ggplot(data_plot, aes(x = .data$time, y = .data$horizons, fill = .data$feature))
     p <- p + geom_tile(color = "gray85")
     p <- p + scale_fill_viridis_d()
     p <- p + geom_vline(xintercept = 0, size = 2)
     # With a continuous scale, the limits need to extend 1 unit beyond the min and max to capture the bookend geom_tile-s.
     p <- p + scale_x_continuous(limits = c(eval(parse(text = (lookback_max * -1) - 1)), max(data_plot$time, na.rm = TRUE) + 1))
     p <- p + theme_bw()
-    p <- p + xlab("Time (0 is the current time)") + ylab("Forecast horizon") +
+    p <- p + xlab("Time (0 is the current time)") + ylab("Forecast horizons") +
       labs(fill = NULL) + ggtitle("Map of Feature Lags for a Single Feature")
     return(p)
 
@@ -841,25 +865,25 @@ plot.lagged_df <- function(x, ...) {
     lapply(predictor_indices, function(i) {
 
       data_plot_predictor_1 <- dplyr::filter(data_plot, .data$feature == "Feature" & .data$predictor_number == i)
-      data_plot_predictor_1$feature_match <- paste0(data_plot_predictor_1$horizon, "-", data_plot_predictor_1$time)
+      data_plot_predictor_1$feature_match <- paste0(data_plot_predictor_1$horizons, "-", data_plot_predictor_1$time)
       data_plot_predictor_2 <- data_grid_past
       data_plot_predictor_2$feature <- "No feature"
-      data_plot_predictor_2$feature_match <- paste0(data_plot_predictor_2$horizon, "-", data_plot_predictor_2$time)
+      data_plot_predictor_2$feature_match <- paste0(data_plot_predictor_2$horizons, "-", data_plot_predictor_2$time)
       data_plot_predictor_2 <- data_plot_predictor_2[!(data_plot_predictor_2$feature_match %in% data_plot_predictor_1$feature_match), ]
       data_plot_predictor_3 <- dplyr::filter(data_plot, .data$feature == "Forecast")
       data_plot_predictor <- dplyr::bind_rows(data_plot_predictor_1, data_plot_predictor_2, data_plot_predictor_3)
 
-      data_plot_predictor <- data_plot_predictor[as.numeric(data_plot_predictor$horizon) %in% horizon, ]
-      data_plot_predictor$horizon <- factor(data_plot_predictor$horizon, levels = sort(unique(as.numeric(data_plot_predictor$horizon))), ordered = TRUE)
+      data_plot_predictor <- data_plot_predictor[as.numeric(data_plot_predictor$horizons) %in% horizons, ]
+      data_plot_predictor$horizons <- factor(data_plot_predictor$horizons, levels = sort(unique(as.numeric(data_plot_predictor$horizons))), ordered = TRUE)
 
-      p <- ggplot(data_plot_predictor, aes(x = .data$time, y = .data$horizon, fill = .data$feature))
+      p <- ggplot(data_plot_predictor, aes(x = .data$time, y = .data$horizons, fill = .data$feature))
       p <- p + geom_tile(color = "gray85")
       p <- p + scale_fill_viridis_d()
       p <- p + geom_vline(xintercept = 0, size = 2)
       # With a continuous scale, the limits need to extend 1 unit beyond the min and max to capture the bookend geom_tile-s.
       p <- p + scale_x_continuous(limits = c(eval(parse(text = (lookback_max * -1) - 1)), max(data_plot$time, na.rm = TRUE) + 1))
       p <- p + theme_bw()
-      p <- p + xlab("Time (0 is the current time)") + ylab("Forecast horizon") +
+      p <- p + xlab("Time (0 is the current time)") + ylab("Forecast horizons") +
         labs(fill = NULL) + ggtitle(paste0("Map of Feature Lags: ", predictor_names[i]))
     })
   }

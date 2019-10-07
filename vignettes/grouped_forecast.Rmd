@@ -163,7 +163,7 @@ data$buoy_id <- as.numeric(factor(data$buoy_id))
 * Inputs for dataset creation with `create_lagged_df()`.
 
 ```{r}
-outcome_cols <- 1  # The column position of our 'wind_spd' outcome.
+outcome_col <- 1  # The column position of our 'wind_spd' outcome.
 
 horizons <- c(1, 7, 30)  # Forecast 1, 1:7, and 1:30 days into the future.
 
@@ -193,7 +193,7 @@ the future. We'll view the 1-day-ahead training data below.
 ```{r}
 type <- "train"  # Create a model-training dataset.
 
-data_train <- forecastML::create_lagged_df(data, type = type, outcome_cols = outcome_cols,
+data_train <- forecastML::create_lagged_df(data, type = type, outcome_col = outcome_col,
                                            horizons = horizons, lookback = lookback,
                                            dates = dates, frequency = frequency,
                                            dynamic_features = dynamic_features,
@@ -405,7 +405,7 @@ the future. We'll view the 1-day-ahead forecasting data below.
 ```{r}
 type <- "forecast"  # Create a forecasting dataset for our predict() function.
 
-data_forecast <- forecastML::create_lagged_df(data, type = type, outcome_cols = outcome_cols,
+data_forecast <- forecastML::create_lagged_df(data, type = type, outcome_col = outcome_col,
                                               horizons = horizons, lookback = lookback,
                                               dates = dates, frequency = frequency,
                                               dynamic_features = dynamic_features,

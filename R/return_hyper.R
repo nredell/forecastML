@@ -17,15 +17,19 @@
 #' }
 #' @example /R/examples/example_return_hyper.R
 #' @export
-return_hyper <- function(forecast_model, hyper_function = NULL) {
+return_hyper <- function(forecast_model, hyper_function) {
+
+  if(missing(forecast_model) || !methods::is(forecast_model, "forecast_model")) {
+    stop("The 'model_results' argument takes an object of class 'forecast_model' as input. Run train_model() first.")
+  }
+
+  if(missing(hyper_function) | !is.function(hyper_function)) {
+    stop("The 'hyper_function' argument should be a user-defined function that returns a data.frame of hyperparameter results.")
+  }
 
   model_results <- forecast_model
 
-  if(!methods::is(model_results, "forecast_model")) {
-    stop("The 'model_results' argument takes a list of objects of class 'forecast_model' as input. Run train_model() first.")
-  }
-
-  outcome_cols <- attributes(model_results)$outcome_cols
+  outcome_col <- attributes(model_results)$outcome_col
   outcome_names <- attributes(model_results)$outcome_names
   horizon <- attributes(model_results)$horizons
 
@@ -60,7 +64,7 @@ return_hyper <- function(forecast_model, hyper_function = NULL) {
   })
   data_out <- dplyr::bind_rows(data_out)
 
-  attr(data_out, "outcome_cols") <- outcome_cols
+  attr(data_out, "outcome_col") <- outcome_col
   attr(data_out, "outcome_names") <- outcome_names
   attr(data_out, "hyper_names") <- hyper_names
 
@@ -83,7 +87,7 @@ return_hyper <- function(forecast_model, hyper_function = NULL) {
 #' @param type Select plot type; 'stability' is the default plot.
 #' @param horizons Optional. A numeric vector to filter results by horizon.
 #' @param windows Optional. A numeric vector to filter results by validation window number.
-#' @param ... Arguments passed to \code{base::plot()}
+#' @param ... Not used.
 #' @return Hyperparameter plots of class 'ggplot'.
 #' @example /R/examples/example_return_hyper.R
 #' @export
@@ -114,7 +118,7 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
 
   data_results <- dplyr::distinct(data_results, .data$valid_indices, .keep_all = TRUE)
 
-  outcome_cols <- attributes(data_hyper)$outcome_cols
+  outcome_col <- attributes(data_hyper)$outcome_col
   outcome_names <- attributes(data_hyper)$outcome_names
   hyper_names <- attributes(data_hyper)$hyper_names
 

@@ -1,7 +1,7 @@
 #' Create time-contiguous validation datasets for model evaluation
 #'
-#' Flexibly ceate blocks of time-contiguous validation datasets to assess the likely forecast accuracy
-#' of trained models in at various times in the past. These validation datasets are similar to
+#' Flexibly ceate blocks of time-contiguous validation datasets to assess forecast accuracy
+#' of trained models at various times in the past. These validation datasets are similar to
 #' the outer loop of a nested cross-validation model training setup.
 #'
 #' @param lagged_df An object of class 'lagged_df' or 'grouped_lagged_df' from \code{\link{create_lagged_df}}.
@@ -11,7 +11,7 @@
 #' the cross-validation results.
 #' @param window_start Optional. An index or date identifying the row/date to start creating contiguous validation datasets.
 #' @param window_stop Optional. An index or date identifying the row to stop creating contiguous validation datasets.
-#' @param skip Optional. An integer giving a fixed number of dataset rows/time to skip between validation datasets. If dates were given
+#' @param skip An integer giving a fixed number of dataset rows/time to skip between validation datasets. If dates were given
 #' in \code{create_lagged_df}, the time between validation windows is \code{skip} * 'date frequency'.
 #' @param include_partial_window Boolean. If \code{TRUE}, keep validation datasets that are shorter than \code{window_length}.
 #' @return An S3 object of class 'windows': A data.frame giving the indices for the validation datasets.
@@ -33,23 +33,21 @@
 #' @importFrom rlang !!
 #' @importFrom rlang !!!
 #' @export
-create_windows <- function(lagged_df, window_length = 12,
+create_windows <- function(lagged_df, window_length = 12L,
                            window_start = NULL, window_stop = NULL, skip = 0,
                            include_partial_window = TRUE) {
 
-  data <- lagged_df
-
-  if (!methods::is(data, "lagged_df")) {
+  if (!methods::is(lagged_df, "lagged_df")) {
     stop("This function takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
   }
 
-  if (missing(window_length)) {
-    stop("Define a 'window_length' >= 0 for the validation dataset(s).")
+  data <- lagged_df
+
+  if (length(window_length) != 1 | !methods::is(window_length, c("numeric"))) {
+    stop("The 'window_length' argument needs to be a positive integer of length 1.")
   }
 
-  window_length <- as.numeric(window_length)
-
-  outcome_cols <- attributes(data)$outcome_cols
+  outcome_col <- attributes(data)$outcome_col
   outcome_names <- attributes(data)$outcome_names
   row_names <- attributes(data)$row_indices
   date_indices <- attributes(data)$date_indices
@@ -140,7 +138,7 @@ create_windows <- function(lagged_df, window_length = 12,
 
   attributes(window_matrices) <- unlist(list(attributes(window_matrices),  # Keep the data.frame's attributes.
                                              list("skip" = skip,
-                                                  "outcome_cols" = outcome_cols,
+                                                  "outcome_col" = outcome_col,
                                                   "outcome_names" = outcome_names)), recursive = FALSE)
 
   class(window_matrices) <- c("windows", class(window_matrices))
@@ -155,31 +153,30 @@ create_windows <- function(lagged_df, window_length = 12,
 #'
 #' @param x An object of class 'windows' from \code{create_windows()}.
 #' @param lagged_df An object of class 'lagged_df' from \code{create_lagged_df()}.
-#' @param show_labels Boolean. Show validation dataset IDs on the plot.
+#' @param show_labels Boolean. If \code{TRUE}, show validation dataset IDs on the plot.
 #' @param group_filter Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
 #' This string is passed to \code{dplyr::filter()} internally.
-#' @param ... Note used.
+#' @param ... Not used.
 #' @return A plot of the outer-loop nested cross-validation windows of class 'ggplot'.
 #' @example /R/examples/example_plot_windows.R
 #' @export
 plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, ...) {
 
+  if (!methods::is(x, "windows")) {
+    stop("The 'x' argument takes an object of class 'windows' as input. Run create_windows() first.")
+  }
+
+  if (!methods::is(lagged_df, "lagged_df")) {
+    stop("The 'lagged_df' argument takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
+  }
+
   windows <- x
 
   data <- lagged_df
 
-  if (!methods::is(windows, "windows")) {
-    stop("The 'windows' argument takes an object of class 'windows' as input. Run create_windows() first.")
-  }
-
-  if (!methods::is(data, "lagged_df")) {
-    stop("The 'data' argument takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
-  }
-
-  outcome_cols <- attributes(data)$outcome_cols
+  outcome_col <- attributes(data)$outcome_col
   outcome_names <- attributes(data)$outcome_names
   row_names <- as.numeric(row.names(data[[1]]))  # To-do: for index-based lagged_dfs, adjust for first row differences across variable lookbacks.
-  n_outcomes <- length(outcome_cols)
   date_indices <- attributes(data)$date_indices
   groups <- attributes(data)$groups
   skip <- attributes(windows)$skip
@@ -221,9 +218,9 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
     data_plot_group <- data_windows %>%
       dplyr::group_by(.data$window_length, .data$window) %>%
       dplyr::summarise("index" = .data$start + ((.data$stop - .data$start) / 2))  # Window midpoint for plot label.
-    data_plot_group$label_height <- ifelse(min(data_plot[, 1:n_outcomes], na.rm = TRUE) < 0,
-                                           (max(data_plot[, 1:n_outcomes], na.rm = TRUE) - base::abs(min(data_plot[, 1:n_outcomes], na.rm = TRUE))) / 2,
-                                           (max(data_plot[, 1:n_outcomes], na.rm = TRUE) + base::abs(min(data_plot[, 1:n_outcomes], na.rm = TRUE))) / 2)
+    data_plot_group$label_height <- ifelse(min(data_plot[, 1], na.rm = TRUE) < 0,
+                                           (max(data_plot[, 1], na.rm = TRUE) - base::abs(min(data_plot[, 1], na.rm = TRUE))) / 2,
+                                           (max(data_plot[, 1], na.rm = TRUE) + base::abs(min(data_plot[, 1], na.rm = TRUE))) / 2)
     data_plot_group <- data_plot_group[!is.na(data_plot_group$window), ]
   }
   #----------------------------------------------------------------------------

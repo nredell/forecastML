@@ -29,7 +29,7 @@ test_that("lagged_df, training data, non-grouped with dates is correct", {
   #------------------------------------------------------------------------------
 
   data_out <- forecastML::create_lagged_df(data = data_test, type = "train",
-                                           outcome_cols = 1, horizons = 1,
+                                           outcome_col = 1, horizons = 1,
                                            lookback = 1, dates = dates,
                                            frequency = "1 month")
 
@@ -70,7 +70,7 @@ test_that("lagged_df, forecasting data, non-grouped with dates is correct", {
   #------------------------------------------------------------------------------
 
   data_out <- forecastML::create_lagged_df(data = data_test, type = "forecast",
-                                           outcome_cols = 1, horizons = 1,
+                                           outcome_col = 1, horizons = 1,
                                            lookback = 1, dates = dates,
                                            frequency = "1 month")
 

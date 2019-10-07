@@ -4,7 +4,7 @@
 \alias{create_windows}
 \title{Create time-contiguous validation datasets for model evaluation}
 \usage{
-create_windows(lagged_df, window_length = 12, window_start = NULL,
+create_windows(lagged_df, window_length = 12L, window_start = NULL,
   window_stop = NULL, skip = 0, include_partial_window = TRUE)
 }
 \arguments{
@@ -19,7 +19,7 @@ the cross-validation results.}
 
 \item{window_stop}{Optional. An index or date identifying the row to stop creating contiguous validation datasets.}
 
-\item{skip}{Optional. An integer giving a fixed number of dataset rows/time to skip between validation datasets. If dates were given
+\item{skip}{An integer giving a fixed number of dataset rows/time to skip between validation datasets. If dates were given
 in \code{create_lagged_df}, the time between validation windows is \code{skip} * 'date frequency'.}
 
 \item{include_partial_window}{Boolean. If \code{TRUE}, keep validation datasets that are shorter than \code{window_length}.}
@@ -28,8 +28,8 @@ in \code{create_lagged_df}, the time between validation windows is \code{skip} *
 An S3 object of class 'windows': A data.frame giving the indices for the validation datasets.
 }
 \description{
-Flexibly ceate blocks of time-contiguous validation datasets to assess the likely forecast accuracy
-of trained models in at various times in the past. These validation datasets are similar to
+Flexibly ceate blocks of time-contiguous validation datasets to assess forecast accuracy
+of trained models at various times in the past. These validation datasets are similar to
 the outer loop of a nested cross-validation model training setup.
 }
 \section{Methods and related functions}{
@@ -56,7 +56,7 @@ data("data_seatbelts", package = "forecastML")
 horizons <- 1:12
 lookback <- 1:15
 
-data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_cols = 1,
+data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_col = 1,
                                lookback = lookback, horizon = horizons)
 
 create_windows(data_train, window_length = 12)

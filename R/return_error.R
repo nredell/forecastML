@@ -55,19 +55,19 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
     stop("The 'data' argument takes an object of class 'training_results' or 'forecast_results' as input. Run predict() on a 'forecast_model' object first.")
   }
 
-  if (methods::is(data, "forecast_results") && is.null(data_test)) {
-    stop("Computing forecast error metrics requires a data.frame input to the 'data_test' argument.")
-  }
-
   if (methods::is(data, "training_results") && !is.null(data_test)) {
     stop("The 'data_test' argument should be NULL when assessing validation error.")
+  }
+
+  if (methods::is(data, "forecast_results") && is.null(data_test)) {
+    stop("Computing forecast error metrics requires a data.frame input to the 'data_test' argument.")
   }
 
   if (xor(is.null(data_test), is.null(test_indices))) {
     stop("If you would like to use a test dataset to assess forecast error, both 'data_test' and 'test_indices' should be specified.")
   }
 
-  outcome_cols <- attributes(data)$outcome_cols
+  outcome_col <- attributes(data)$outcome_col
   outcome_names <- attributes(data)$outcome_names
   groups <- attributes(data)$groups
 
@@ -226,17 +226,17 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 #' @param horizons Optional. A numeric vector to filter results by horizon.
 #' @param windows Optional. A numeric vector to filter results by validation window number.
 #' @param group_filter A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
-#' @param ... Arguments passed to \code{base::plot()}
+#' @param ... Not used.
 #' @return Forecast error plots of class 'ggplot'.
 #' @export
 plot.validation_error <- function(x, data_results, type = c("time", "horizon", "global"),
                                   models = NULL, horizons = NULL, windows = NULL, group_filter = NULL, ...) {
 
-  data_error <- x
-
-  if(!methods::is(data_error, "validation_error")) {
-    stop("The 'data_error' argument takes an object of class 'validation_error' as input. Run return_error() first.")
+  if(!methods::is(x, "validation_error")) {
+    stop("The 'x' argument takes an object of class 'validation_error' as input. Run return_error() first.")
   }
+
+  data_error <- x
 
   if(!methods::is(data_results, "training_results")) {
     stop("The 'data_results' argument takes an object of class 'training_results' as input. Run predict.forecast_model() first.")
@@ -244,7 +244,7 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
 
   type <- type[1]
 
-  outcome_cols <- attributes(data_results)$outcome_cols
+  outcome_col <- attributes(data_results)$outcome_col
   outcome_names <- attributes(data_results)$outcome_names
   groups <- attributes(data_results)$groups
 

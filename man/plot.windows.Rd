@@ -12,12 +12,12 @@
 
 \item{lagged_df}{An object of class 'lagged_df' from \code{create_lagged_df()}.}
 
-\item{show_labels}{Boolean. Show validation dataset IDs on the plot.}
+\item{show_labels}{Boolean. If \code{TRUE}, show validation dataset IDs on the plot.}
 
 \item{group_filter}{Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
 This string is passed to \code{dplyr::filter()} internally.}
 
-\item{...}{Note used.}
+\item{...}{Not used.}
 }
 \value{
 A plot of the outer-loop nested cross-validation windows of class 'ggplot'.
@@ -29,11 +29,11 @@ Plot validation datasets across time.
 # Sampled Seatbelts data from the R package datasets.
 data("data_seatbelts", package = "forecastML")
 
-# Example - Training data for 12 horizon-specific models w/ common lags per predictor.
-horizons <- 1:12
+# Example - Training data for 3 horizon-specific models w/ common lags per predictor.
+horizons <- c(1, 6, 12)
 lookback <- 1:15
 
-data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_cols = 1,
+data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_col = 1,
                                lookback = lookback, horizon = horizons)
 
 windows <- create_windows(data_train, window_length = 12)

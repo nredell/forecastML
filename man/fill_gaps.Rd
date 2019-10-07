@@ -4,7 +4,7 @@
 \alias{fill_gaps}
 \title{Prepare a dataset for modeling by filling in temporal gaps in data collection}
 \usage{
-fill_gaps(data, date_col = 1, frequency, groups = NULL,
+fill_gaps(data, date_col = 1L, frequency, groups = NULL,
   static_features = NULL)
 }
 \arguments{

@@ -9,6 +9,10 @@
 
 * This is a new release.
 
+* 10-8-2019
+    + Reduced DESCRIPTION from 103 to 72 words.
+    +
+
 * 10-2-2019
     + Reduced build time by several minutes (< 5 min w/ devtools::check())
     + Removed donttest{} in all examples
