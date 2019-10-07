@@ -15,6 +15,7 @@
     methods (~20). The checks include various missing(), is.null(), and argument type checks.
     + Minor changes in help docs for language consistency and to clarify required arguments and 
     argument types.
+    + Added new unit tests; package has ~30% code coverage.
 
 * 10-2-2019
     + Reduced build time by several minutes (< 5 min w/ devtools::check())
