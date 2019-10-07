@@ -42,3 +42,27 @@ test_that("fill_gaps with grouped data is correct", {
                                              frequency = frequency, groups = groups,
                                              static_features = static_features))
 })
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+
+test_that("fill_gaps column fills are correct", {
+
+  data("data_buoy_gaps", package = "forecastML")
+
+  frequency <- "1 day"
+  groups <- c("buoy_id")
+  static_features <- c("lat", "lon")
+  dynamic_features <- c("day", "year")
+
+  data_test <- forecastML::fill_gaps(data_buoy_gaps, date_col = 1,
+                                             frequency = frequency, groups = groups,
+                                             static_features = static_features)
+
+  all(
+    sum(is.na(data_test$date)) == 0,                # dates should not be missing
+    sum(is.na(data_test[, dynamic_features])) > 0,  # dynamic features should be missing
+    sum(is.na(data_test[, groups])) == 0,           # grouping features should not be missing
+    sum(is.na(data_test[, static_features])) == 0   # static features should not be missing
+    )
+})
+

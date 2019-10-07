@@ -80,4 +80,42 @@ test_that("lagged_df, forecasting data, non-grouped with dates is correct", {
 
   identical(data, data_out)
 })
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 
+test_that("lagged_df, forecasting data, dynamic features are missing", {
+
+  #------------------------------------------------------------------------------
+  # Create a simple data.frame with 1 feature.
+  dates <- seq(as.Date("2015-01-01"), as.Date("2020-12-01"), by = "1 month")
+
+  data <- data.frame(
+    "outcome" = 1:length(dates),
+    "feature" = 1:length(dates) * 2
+  )
+
+  data_test <- data
+  #------------------------------------------------------------------------------
+
+  data_out_no_groups <- forecastML::create_lagged_df(data = data_test, type = "forecast",
+                                                     outcome_col = 1, horizons = 3,
+                                                     lookback = 3,
+                                                     dynamic_features = "feature",
+                                                     dates = dates,
+                                                     frequency = "1 month")
+
+  data_test$group <- "A"
+
+  data_out_groups <- forecastML::create_lagged_df(data = data_test, type = "forecast",
+                                                  outcome_col = 1, horizons = 3,
+                                                  lookback = 3,
+                                                  dynamic_features = "feature",
+                                                  groups = "group",
+                                                  dates = dates,
+                                                  frequency = "1 month")
+
+  data_out_no_groups <- data.frame(data_out_no_groups$horizon_1)
+  data_out_groups <- data.frame(data_out_groups$horizon_1)
+
+  all(is.na(data_out_no_groups$feature), is.na(data_out_groups$feature))
+})
