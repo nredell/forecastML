@@ -191,7 +191,7 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
 #' data.frame of model features from \code{create_lagged_df()}--and return a 1- or 3-column data.frame
 #' of model predictions. If the prediction function returns a 1-column data.frame, point forecasts are assumed.
 #' If the prediction function returns a 3-column data.frame, lower and upper forecast bounds are assumed (the
-#' order of the 3 columns does not matter). See the example below for details.
+#' order and names of the 3 columns does not matter). See the example below for details.
 #' @param data If \code{data} is a training dataset from \code{create_lagged_df(..., type = "train")}, validation dataset
 #' predictions are returned; else, if \code{data} is a forecasting dataset from \code{create_lagged_df(..., type = "forecast")},
 #' forecasts from horizons 1:h are returned.
@@ -230,23 +230,23 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
 #'
 #' @example /R/examples/example_predict_train_model.R
 #' @export
-predict.forecast_model <- function(..., prediction_function = list(NULL), data = NULL) {
+predict.forecast_model <- function(..., prediction_function = list(NULL), data) {
 
   model_list <- list(...)
 
-  type <- attributes(data)$type
-
   if (!all(unlist(lapply(model_list, function(x) {class(x)[1]})) %in% "forecast_model")) {
-    stop("The 'model_results' argument takes a list of objects of class 'forecast_model' as input. Run train_model() first.")
+    stop("The '...' argument takes a list of 1 or more objects of class 'forecast_model' as input. Run train_model() first.")
   }
 
   if (length(model_list) != length(prediction_function)) {
     stop("The number of prediction functions does not equal the number of forecast models.")
   }
 
-  if (!type %in% c("train", "forecast")) {
-    stop("The 'data' argument takes an object of class 'lagged_df' from create_lagged_df().")
+  if (!methods::is(data, "lagged_df")) {
+    stop("The 'data' argument takes a training or forecasting dataset of class 'lagged_df' from create_lagged_df().")
   }
+
+  type <- attributes(data)$type
 
   outcome_col <- attributes(model_list[[1]])$outcome_col
   outcome_names <- attributes(model_list[[1]])$outcome_names
@@ -407,12 +407,12 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data =
 #' based on predictions on the validation datasets.
 #'
 #' @param x An object of class 'training_results' from \code{predict.forecast_mode()l}.
-#' @param type Plot type, default is "prediction", for hold-out sample predictions.
+#' @param type Plot type. The default plot is "prediction" for validation dataset predictions.
 #' @param models Optional. Filter results by user-defined model name from \code{train_model()}.
-#' @param horizons Optional. A numeric vector of model forecast horizons to filter results by horizon-specific model results.
-#' @param windows Optional. A numeric vector of windows to filter results by validation window number.
+#' @param horizons Optional. A numeric vector of model forecast horizons to filter results by horizon-specific model.
+#' @param windows Optional. A numeric vector of window numbers to filter results.
 #' @param valid_indices Optional. A numeric or date vector to filter results by validation row indices or dates.
-#' @param group_filter Optional. A string for filtering plot results for grouped time-series
+#' @param group_filter Optional. A string for filtering plot results for grouped time series
 #' (e.g., \code{"group_col_1 == 'A'"}). The results are passed to \code{dplyr::filter()} internally.
 #' @param ... Not used.
 #' @return Diagnostic plots of class 'ggplot'.
@@ -440,14 +440,12 @@ plot.training_results <- function(x,
     stop("Only 'prediction' and 'residual' plots are currently available for grouped models")
 
   }
-  #----------------------------------------------------------------------------
 
   outcome_col <- attributes(data)$outcome_col
   outcome_names <- attributes(data)$outcome_names
   date_indices <- attributes(data)$date_indices
   frequency <- attributes(data)$frequency
   groups <- attributes(data)$group
-  n_outcomes <- length(outcome_col)
 
   forecast_stability_plot_windows <- windows
 
@@ -685,7 +683,7 @@ plot.training_results <- function(x,
 #'
 #' @param x An object of class 'forecast_results' from \code{predict.forecast_model()}.
 #' @param data_actual A data.frame containing the target/outcome name and any grouping columns.
-#' @param actual_indices Required if 'data_actual' is given. A vector or 1-column data.frame
+#' @param actual_indices Required if \code{data_actual} is given. A vector or 1-column data.frame
 #' of numeric row indices or dates (class 'Date') with length \code{nrow(data_actual)}.
 #' The data can be historical and/or holdout/test data, forecasts and actuals are matched by \code{row.names()}.
 #' @param models Optional. Filter results by user-defined model name from \code{train_model()}.
@@ -704,11 +702,15 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
                                   facet_plot = c("model", "model_forecast_horizon"),
                                   group_filter = NULL, ...) {
 
-  data_forecast <- x
-
-  if (!methods::is(data_forecast, "forecast_results")) {
+  if (!methods::is(x, "forecast_results")) {
     stop("The 'forecast_results' argument takes an object of class 'forecast_results' as input. Run predict() on a 'forecast_model' object first.")
   }
+
+  if(xor(is.null(data_actual), is.null(actual_indices))) {
+    stop("If plotting a hold-out or comparison dataset, both 'data_actual' and 'actual_indices' need to be specified.")
+  }
+
+  data_forecast <- x
 
   type <- "forecast"  # Only one plot option at present.
 
@@ -716,7 +718,6 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
   outcome_names <- attributes(data_forecast)$outcome_names
   date_indices <- attributes(data_forecast)$date_indices
   groups <- attributes(data_forecast)$group
-  n_outcomes <- length(outcome_col)
 
   if (!is.null(data_actual)) {
 

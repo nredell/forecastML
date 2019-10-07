@@ -11,14 +11,12 @@
 #' @param outcome_col The column index--an integer--of the target to be forecasted. Forecasting only one outcome column is allowed at present, however,
 #' groups of time-series can be forecasted if they are stacked vertically in a long dataset and the \code{groups}, \code{dates},
 #' and \code{frequency} arguments are specified.
-#' @param horizons A numeric vector of one or more forecast horizons, h, measured in input dataset rows. For each horizons, 1:h
+#' @param horizons A numeric vector of one or more forecast horizons, h, measured in input dataset rows. For each horizon, 1:h
 #' forecasts are returned (e.g., \code{horizons = 12} trains a model to minimize 1 to 12-step-ahead error and returns forecasts
-#' for 1:12 steps into the future). If \code{dates} are given, a horizons of 1, for example, would equal 1 * \code{frequency} in calendar time.
-#' @param lookback A numeric vector giving the lags--in dataset rows--for creating the lagged features. All non-grouping and
-#' non-static features in the input dataset, \code{data}, are lagged by the same values which, for
-#' non-grouped time-series, will produce an input dataset with dimensions
-#' nrow(\code{data}) by (n_features * \code{length(lookback))}. Lags that don't support direct forecasting for a given horizons
-#' are silently dropped. Either \code{lookback} or \code{lookback_control} need to be specified.
+#' for 1:12 steps into the future). If \code{dates} are given, a horizon of 1, for example, would equal 1 * \code{frequency} in calendar time.
+#' @param lookback A numeric vector giving the lags--in dataset rows--for creating the lagged features. All non-grouping,
+#' non-static, and non-dynamic features in the input dataset, \code{data}, are lagged by the same values. Lags that don't
+#' support direct forecasting for a given horizon are silently dropped. Either \code{lookback} or \code{lookback_control} need to be specified.
 #' @param lookback_control A list of numeric vectors, specifying potentially unique lags for each feature. The length
 #' of the list should equal \code{ncol(data)} and be ordered the same as the columns in \code{data}. For grouped time-series, lags for the grouping column(s)
 #' and static feature columns should have a \code{lookback_control} value of 0. \code{list(NULL)} \code{lookback_control} values drop columns
@@ -32,7 +30,7 @@
 #' If \code{type = "forecast"}, these features will receive \code{NA} values; though, they can be filled in by the user after running this function.
 #' @param groups A character vector of column names that identify the groups/hierarchies when multiple time-series are present. These columns are used as model features but
 #' are not lagged. Note that combining feature lags with grouped time series will result in \code{NA} values throughout the data.
-#' @param static_features For grouped time-series only. A character vector of column names that identify features that do not change through time.
+#' @param static_features For grouped time series only. A character vector of column names that identify features that do not change through time.
 #' These columns are not lagged. If \code{type = "forecast"}, these features will be filled forward using the most recent value for the group.
 #' @param use_future Boolean. If \code{TRUE}, the \code{future} package is used for creating lagged data.frames.
 #' \code{multisession} or \code{multicore} futures are especially useful for (a) grouped time series with many groups and
@@ -41,21 +39,21 @@
 #' @return An S3 object of class 'lagged_df' or 'grouped_lagged_df': A list of data.frames with new columns for the lagged/non-lagged features.
 #' The length of the returned list is equal to the number of forecast horizons and is in the order of
 #' horizons supplied to the \code{horizons} argument. Horizon-specific datasets can be accessed with
-#' \code{my_lagged_df$horizon_h} where 'h' gives the forecast horizons.
+#' \code{my_lagged_df$horizon_h} where 'h' gives the forecast horizon.
 #'
-#' The contents of the returned data.frame(s) are as follows:
+#' The contents of the returned data.frames are as follows:
 #'
 #' \describe{
-#'   \item{\strong{type = 'train', non-grouped:}}{A data.frame of lagged features with the first \code{1:max(lookback)} rows removed.}
-#'   \item{\strong{type = 'train', grouped:}}{A data.frame of unlagged grouping columns followed by lagged and static features.}
+#'   \item{\strong{type = 'train', non-grouped:}}{A data.frame with the outcome and lagged features with the first \code{1:max(lookback)} rows removed.}
+#'   \item{\strong{type = 'train', grouped:}}{A data.frame with the outcome and unlagged grouping columns followed by lagged, dynamic, and static features.}
 #'   \item{\strong{type = 'forecast', non-grouped:}}{(1) An 'index' column giving the row index or date of the
-#'   forecast periods (e.g., a 100 row non-date-based training dataset would start with an index of 101). (2) A 'horizons' column
+#'   forecast periods (e.g., a 100 row non-date-based training dataset would start with an index of 101). (2) A 'horizon' column
 #'   that indicates the forecast period from \code{1:max(horizons)}. (3) Lagged features identical to the
 #'   'train', non-grouped dataset.}
 #'   \item{\strong{type = 'forecast', grouped:}}{(1) An 'index' column giving the date of the
 #'   forecast periods. The first forecast date for each group is the maximum date from the \code{dates} argument
-#'   + 1 * \code{frequency} which is the user-supplied date frequency.(2) A 'horizons' column that indicates
-#'   the forecast period from \code{1:max(horizons)}. (3) Lagged and static features identical to the 'train', grouped dataset.}
+#'   + 1 * \code{frequency} which is the user-supplied date frequency.(2) A 'horizon' column that indicates
+#'   the forecast period from \code{1:max(horizons)}. (3) Lagged, static, and dynamic features identical to the 'train', grouped dataset.}
 #' }
 #' @section Attributes:
 #'
@@ -181,7 +179,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
   }
 
   if (!is.null(frequency) && !grepl("day|week|month|quarter|year", frequency)) {
-    stop("The 'frequency' argument should be a character string containing one of 'day', 'week',
+    stop("The 'frequency' argument should be a string containing one of 'day', 'week',
          'month', 'quarter', or 'year'. This can optionally be preceded by a positive integer and a space
          and/or followed by an 's'.")
   }
@@ -616,7 +614,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
         }
 
         data_x
-      })  # End loop 'j', the creation of lagged features for a given forecast model horizons.
+      })  # End loop 'j', the creation of lagged features for a given forecast model horizon.
       #------------------------------------------------------------------------
 
       # Merge all feature-level lags into 1 data.frame.
@@ -711,20 +709,20 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
 #------------------------------------------------------------------------------
 #' Return a summary of a lagged_df object
 #'
-#' @param object An object of class 'lagged_df' from \code{create_lagged_df}.
+#' @param object An object of class 'lagged_df' from \code{create_lagged_df()}.
 #' @param ... Not used.
 #' @return A printed summary of the contents of the lagged_df object.
 #' @export
 summary.lagged_df <- function(object, ...) {
 
+  if (!methods::is(object, "lagged_df")) {
+    stop("This method takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
+  }
+
   data <- object
 
   n_predictors_at_each_horizon <- unlist(lapply(data, function(x) {ncol(x) - 1}))
   horizons <- attributes(data)$horizons
-
-  if (!methods::is(data, "lagged_df")) {
-    stop("This method takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
-  }
 
   cat(paste0(
     "Number of forecast horizons: ", length(data), " \n",
@@ -738,9 +736,9 @@ summary.lagged_df <- function(object, ...) {
 }
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
-#' Plot datasets with lagged predictors
+#' Plot datasets with lagged features
 #'
-#' Plot datasets with lagged predictors to view your direct forecasting setup across horizons.
+#' Plot datasets with lagged features to view ther direct forecasting setup across horizons.
 #'
 #' @param x An object of class 'lagged_df' from \code{create_lagged_df()}.
 #' @param ... Not used.
@@ -750,15 +748,15 @@ summary.lagged_df <- function(object, ...) {
 #' @export
 plot.lagged_df <- function(x, ...) {
 
-  data <- x
-
-  if (!methods::is(data, "lagged_df")) {
+  if (!methods::is(x, "lagged_df")) {
     stop("This method takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
   }
 
+  data <- x
+
   horizons <- attributes(data)$horizons
 
-  # Within a given horizons, an indicator for different lag vectors for each predictor.
+  # Within a given horizons, an indicator for different lag vectors for each feature.
   if (methods::is(attributes(data[[1]])$lookback, "list")) {
     lookback_per_predictor <- TRUE
   } else {
@@ -888,5 +886,3 @@ plot.lagged_df <- function(x, ...) {
     })
   }
 }
-#------------------------------------------------------------------------------
-#------------------------------------------------------------------------------

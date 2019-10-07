@@ -7,7 +7,7 @@
 \method{summary}{lagged_df}(object, ...)
 }
 \arguments{
-\item{object}{An object of class 'lagged_df' from \code{create_lagged_df}.}
+\item{object}{An object of class 'lagged_df' from \code{create_lagged_df()}.}
 
 \item{...}{Not used.}
 }

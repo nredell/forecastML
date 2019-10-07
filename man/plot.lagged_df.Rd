@@ -2,7 +2,7 @@
 % Please edit documentation in R/lagged_df.R
 \name{plot.lagged_df}
 \alias{plot.lagged_df}
-\title{Plot datasets with lagged predictors}
+\title{Plot datasets with lagged features}
 \usage{
 \method{plot}{lagged_df}(x, ...)
 }
@@ -16,7 +16,7 @@ A single plot of class 'ggplot' if \code{lookback} was specified in \code{create
 a list of plots, one per feature, of class 'ggplot' if \code{lookback_control} was specified.
 }
 \description{
-Plot datasets with lagged predictors to view your direct forecasting setup across horizons.
+Plot datasets with lagged features to view ther direct forecasting setup across horizons.
 }
 \examples{
 # Sampled Seatbelts data from the R package datasets.

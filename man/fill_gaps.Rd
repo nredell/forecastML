@@ -8,20 +8,19 @@ fill_gaps(data, date_col = 1L, frequency, groups = NULL,
   static_features = NULL)
 }
 \arguments{
-\item{data}{A data.frame with, minimally, dates and the outcome being forecasted.}
+\item{data}{A data.frame or object coercible to a data.frame with, minimally, dates and the outcome being forecasted.}
 
 \item{date_col}{The column index--an integer--of the date index. This column should have class 'Date'.}
 
 \item{frequency}{Date frequency. A string taking the same input as \code{base::seq.Date(..., by = "frequency")} e.g., '1 month', '7 days', '10 years' etc.
 The highest frequency supported at present is '1 day'.}
 
-\item{groups}{A character vector or column names that identify the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but are not lagged.
-Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.}
+\item{groups}{Optional. A character vector or column names that identify the groups/hierarchies when multiple time series are present.}
 
-\item{static_features}{For grouped time series only (optional). A character vector of column names that identify features that do not change through time.
+\item{static_features}{Optional. For grouped time series only. A character vector of column names that identify features that do not change through time.
 These columns are expected to be used as model features but are not lagged (e.g., a ZIP code column). The most recent values for each
 static feature for each group are used to fill in the resulting missing data in static features when new rows are
-added to the dataset to fill gaps in data collection.}
+added to the dataset.}
 }
 \value{
 An object of class 'data.frame': The returned data.frame has the same number of columns and column order but
@@ -32,11 +31,11 @@ imputed prior to \code{create_lagged_df()} or filtered out in the user-supplied 
 }
 \description{
 In order to create a modeling dataset with feature lags that are temporally correct, the entry
-function in \code{forecastML}, \code{\link{create_lagged_df}}, needs evenly-spaced time-series with no
+function in \code{forecastML}, \code{\link{create_lagged_df}}, needs evenly-spaced time series with no
 gaps in data collection. \code{fill_gaps()} can help here.
 This function takes a \code{data.frame} with (a) dates, (b) the outcome being forecasted, and, optionally,
-(c) dynamic features that change through time, (d) group columns for multiple time-series modeling,
-and (e) static or non-dynamic features for multiple time-series modeling and returns a \code{data.frame}
+(c) dynamic features that change through time, (d) group columns for multiple time series modeling,
+and (e) static or non-dynamic features for multiple time series modeling and returns a \code{data.frame}
 with rows evenly spaced in time. Specifically, this function adds rows to the input dataset
 while filling in (a) dates, (b) grouping information, and (c) static features. The (a) outcome and (b)
 dynamic features will be \code{NA} for any missing time periods; these \code{NA} values can be left

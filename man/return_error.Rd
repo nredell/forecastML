@@ -12,7 +12,7 @@ return_error(data_results, data_test = NULL, test_indices = NULL,
 \item{data_results}{An object of class 'training_results' or 'forecast_results' from running
 \code{\link[=predict.forecast_model]{predict}} on a trained model.}
 
-\item{data_test}{Optional. If \code{data_results} is an object of class 'forecast_results', a data.frame used to
+\item{data_test}{Optional for validation dataset results. If \code{data_results} is an object of class 'forecast_results', a data.frame used to
 assess the accuracy of a 'forecast_results' object. \code{data_test} should have the outcome/target columns
 and any grouping columns.}
 
@@ -22,7 +22,7 @@ row indices or dates (class 'Date') with length nrow(data_test).}
 \item{metrics}{Common forecast error metrics. See the Error Metrics section below for details. The
 default behavior is to return all metrics.}
 
-\item{models}{Optional. A vector of user-defined model name supplied to \code{train_model()}.}
+\item{models}{Optional. A character vector of user-defined model names supplied to \code{train_model()}.}
 
 \item{horizons}{Optional. A numeric vector to filter results by horizon.}
 

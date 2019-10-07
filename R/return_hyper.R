@@ -20,33 +20,31 @@
 return_hyper <- function(forecast_model, hyper_function) {
 
   if(missing(forecast_model) || !methods::is(forecast_model, "forecast_model")) {
-    stop("The 'model_results' argument takes an object of class 'forecast_model' as input. Run train_model() first.")
+    stop("The 'forecast_model' argument takes an object of class 'forecast_model' as input. Run train_model() first.")
   }
 
   if(missing(hyper_function) | !is.function(hyper_function)) {
     stop("The 'hyper_function' argument should be a user-defined function that returns a data.frame of hyperparameter results.")
   }
 
-  model_results <- forecast_model
-
-  outcome_col <- attributes(model_results)$outcome_col
-  outcome_names <- attributes(model_results)$outcome_names
-  horizon <- attributes(model_results)$horizons
+  outcome_col <- attributes(forecast_model)$outcome_col
+  outcome_names <- attributes(forecast_model)$outcome_names
+  horizon <- attributes(forecast_model)$horizons
 
   # Defined here to catch (from '<<-' below) the user-defined hyperparameter names in hyper_function.
   hyper_names <- NULL
 
   # Seq along horizon > window_number
-  data_out <- lapply(seq_along(model_results), function(i) {
+  data_out <- lapply(seq_along(forecast_model), function(i) {
 
-    data_plot <- lapply(seq_along(model_results[[i]]), function(j) {
+    data_plot <- lapply(seq_along(forecast_model[[i]]), function(j) {
 
-      data_results <- model_results[[i]][[j]]
+      data_results <- forecast_model[[i]][[j]]
 
       data_hyper <- hyper_function(data_results$model)
       hyper_names <<- names(data_hyper)
 
-      data_plot <- data.frame("model" = attributes(model_results)$model_name,
+      data_plot <- data.frame("model" = attributes(forecast_model)$model_name,
                               "horizon" = horizon[i],
                               "window_length" = data_results$window,
                               "window_number" = j,
@@ -77,14 +75,14 @@ return_hyper <- function(forecast_model, hyper_function) {
 
 #' Plot hyperparameters
 #'
-#' Plot hyperparameter stability and relationship with error metrics across validation datasets.
+#' Plot hyperparameter stability and relationship with error metrics across validation datasets and horizons.
 #'
 #' @param x An object of class 'forecast_model_hyper' from \code{return_hyper()}.
 #' @param data_results An object of class 'training_results' from
-#' \code{predict.forecast_model(..., data_forecast = NULL)}.
+#' \code{predict.forecast_model()}.
 #' @param data_error An object of class 'validation_error' from
-#' \code{return_error(..., data_test = NULL)}.
-#' @param type Select plot type; 'stability' is the default plot.
+#' \code{return_error()}.
+#' @param type Select plot type; 'stability' is the default.
 #' @param horizons Optional. A numeric vector to filter results by horizon.
 #' @param windows Optional. A numeric vector to filter results by validation window number.
 #' @param ... Not used.
@@ -96,19 +94,19 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
                                       horizons = NULL,
                                       windows = NULL, ...) {
 
-  data_hyper <- x
-
-  if(!methods::is(data_hyper, "forecast_model_hyper")) {
-    stop("The 'data_hyper' argument takes an object of class 'forecast_model_hyper' as input. Run return_hyper() first.")
+  if(!methods::is(x, "forecast_model_hyper")) {
+    stop("The 'x' argument takes an object of class 'forecast_model_hyper' as input. Run return_hyper() first.")
   }
 
   if(!methods::is(data_results, "training_results")) {
-    stop("The 'data_results' argument takes an object of class 'training_results' as input. Run predict.forecast_model(..., data_forecast = NULL) first.")
+    stop("The 'data_results' argument takes an object of class 'training_results' as input. Run predict.forecast_model() first.")
   }
 
   if(!methods::is(data_error, "validation_error")) {
-    stop("The 'data_error' argument takes an object of class 'validation_error' as input. Run return_error(..., data_test = NULL) first.")
+    stop("The 'data_error' argument takes an object of class 'validation_error' as input. Run return_error() first.")
   }
+
+  data_hyper <- x
 
   type <- type[1]
 

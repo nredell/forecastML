@@ -12,17 +12,17 @@
 \arguments{
 \item{x}{An object of class 'training_results' from \code{predict.forecast_mode()l}.}
 
-\item{type}{Plot type, default is "prediction", for hold-out sample predictions.}
+\item{type}{Plot type. The default plot is "prediction" for validation dataset predictions.}
 
 \item{models}{Optional. Filter results by user-defined model name from \code{train_model()}.}
 
-\item{horizons}{Optional. A numeric vector of model forecast horizons to filter results by horizon-specific model results.}
+\item{horizons}{Optional. A numeric vector of model forecast horizons to filter results by horizon-specific model.}
 
-\item{windows}{Optional. A numeric vector of windows to filter results by validation window number.}
+\item{windows}{Optional. A numeric vector of window numbers to filter results.}
 
 \item{valid_indices}{Optional. A numeric or date vector to filter results by validation row indices or dates.}
 
-\item{group_filter}{Optional. A string for filtering plot results for grouped time-series
+\item{group_filter}{Optional. A string for filtering plot results for grouped time series
 (e.g., \code{"group_col_1 == 'A'"}). The results are passed to \code{dplyr::filter()} internally.}
 
 \item{...}{Not used.}

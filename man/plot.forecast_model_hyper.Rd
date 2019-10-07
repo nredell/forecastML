@@ -12,12 +12,12 @@
 \item{x}{An object of class 'forecast_model_hyper' from \code{return_hyper()}.}
 
 \item{data_results}{An object of class 'training_results' from
-\code{predict.forecast_model(..., data_forecast = NULL)}.}
+\code{predict.forecast_model()}.}
 
 \item{data_error}{An object of class 'validation_error' from
-\code{return_error(..., data_test = NULL)}.}
+\code{return_error()}.}
 
-\item{type}{Select plot type; 'stability' is the default plot.}
+\item{type}{Select plot type; 'stability' is the default.}
 
 \item{horizons}{Optional. A numeric vector to filter results by horizon.}
 
@@ -29,7 +29,7 @@
 Hyperparameter plots of class 'ggplot'.
 }
 \description{
-Plot hyperparameter stability and relationship with error metrics across validation datasets.
+Plot hyperparameter stability and relationship with error metrics across validation datasets and horizons.
 }
 \examples{
 # Sampled Seatbelts data from the R package datasets.

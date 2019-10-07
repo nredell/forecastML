@@ -1,26 +1,25 @@
 #' Prepare a dataset for modeling by filling in temporal gaps in data collection
 #'
 #' In order to create a modeling dataset with feature lags that are temporally correct, the entry
-#' function in \code{forecastML}, \code{\link{create_lagged_df}}, needs evenly-spaced time-series with no
+#' function in \code{forecastML}, \code{\link{create_lagged_df}}, needs evenly-spaced time series with no
 #' gaps in data collection. \code{fill_gaps()} can help here.
 #' This function takes a \code{data.frame} with (a) dates, (b) the outcome being forecasted, and, optionally,
-#' (c) dynamic features that change through time, (d) group columns for multiple time-series modeling,
-#' and (e) static or non-dynamic features for multiple time-series modeling and returns a \code{data.frame}
+#' (c) dynamic features that change through time, (d) group columns for multiple time series modeling,
+#' and (e) static or non-dynamic features for multiple time series modeling and returns a \code{data.frame}
 #' with rows evenly spaced in time. Specifically, this function adds rows to the input dataset
 #' while filling in (a) dates, (b) grouping information, and (c) static features. The (a) outcome and (b)
 #' dynamic features will be \code{NA} for any missing time periods; these \code{NA} values can be left
 #' as-is, user-imputed, or removed from modeling in the user-supplied modeling wrapper function for \code{\link{train_model}}.
 #'
-#' @param data A data.frame with, minimally, dates and the outcome being forecasted.
+#' @param data A data.frame or object coercible to a data.frame with, minimally, dates and the outcome being forecasted.
 #' @param date_col The column index--an integer--of the date index. This column should have class 'Date'.
 #' @param frequency Date frequency. A string taking the same input as \code{base::seq.Date(..., by = "frequency")} e.g., '1 month', '7 days', '10 years' etc.
 #' The highest frequency supported at present is '1 day'.
-#' @param groups A character vector or column names that identify the groups/hierarchies when multiple time-series are present. These columns are used as model predictors but are not lagged.
-#' Note that combining feature lags with grouped time-series will result in \code{NA} values throughout the data.
-#' @param static_features For grouped time series only (optional). A character vector of column names that identify features that do not change through time.
+#' @param groups Optional. A character vector or column names that identify the groups/hierarchies when multiple time series are present.
+#' @param static_features Optional. For grouped time series only. A character vector of column names that identify features that do not change through time.
 #' These columns are expected to be used as model features but are not lagged (e.g., a ZIP code column). The most recent values for each
 #' static feature for each group are used to fill in the resulting missing data in static features when new rows are
-#' added to the dataset to fill gaps in data collection.
+#' added to the dataset.
 #' @return An object of class 'data.frame': The returned data.frame has the same number of columns and column order but
 #' with additional rows to account for gaps in data collection. For grouped data, any new rows added to the returned data.frame will appear
 #' between the minimum--or oldest--date for that group and the maximum--or most recent--date across all groups. If the user-supplied
@@ -47,7 +46,7 @@ fill_gaps <- function(data, date_col = 1L, frequency, groups = NULL,
 
   data <- as.data.frame(data)
 
-  if (length(date_col) != 1) {
+  if (length(date_col) != 1 || date_col > ncol(data)) {
     stop("The 'data_col' argument should be an integer giving the column location of the date index.")
   }
 
@@ -56,7 +55,7 @@ fill_gaps <- function(data, date_col = 1L, frequency, groups = NULL,
   }
 
   if (any(is.na(data[, date_col, drop = TRUE]))) {
-    stop("The date column identified by the 'data_col' argument has missing or 'NA' dates; remove them prior to running this function.")
+    stop("The date column identified by the 'date_col' argument has missing or 'NA' dates; remove them prior to running this function.")
   }
 
   if (missing(frequency)) {
@@ -64,8 +63,14 @@ fill_gaps <- function(data, date_col = 1L, frequency, groups = NULL,
          see base::seq.Date() for valid date frequencies.")
   }
 
+  if (!grepl("day|week|month|quarter|year", frequency)) {
+    stop("The 'frequency' argument should be a string containing one of 'day', 'week',
+         'month', 'quarter', or 'year'. This can optionally be preceded by a positive integer and a space
+         and/or followed by an 's'.")
+  }
+
   if (is.null(groups) && !is.null(static_features)) {
-    stop("Static features--those that do not change through time--should only be modeled with grouped time-series.")
+    stop("Static features--those that do not change through time--should only be modeled with grouped time series.")
   }
 
   # Used to re-order the returned dataset to match the input dataset.

@@ -4,14 +4,14 @@
 #'
 #' @param data_results An object of class 'training_results' or 'forecast_results' from running
 #' \code{\link[=predict.forecast_model]{predict}} on a trained model.
-#' @param data_test Optional. If \code{data_results} is an object of class 'forecast_results', a data.frame used to
+#' @param data_test Required only for forecast results. If \code{data_results} is an object of class 'forecast_results', a data.frame used to
 #' assess the accuracy of a 'forecast_results' object. \code{data_test} should have the outcome/target columns
 #' and any grouping columns.
 #' @param test_indices Required if \code{data_test} is given. A vector or 1-column data.frame of numeric
 #' row indices or dates (class 'Date') with length nrow(data_test).
 #' @param metrics Common forecast error metrics. See the Error Metrics section below for details. The
 #' default behavior is to return all metrics.
-#' @param models Optional. A vector of user-defined model name supplied to \code{train_model()}.
+#' @param models Optional. A character vector of user-defined model names supplied to \code{train_model()}.
 #' @param horizons Optional. A numeric vector to filter results by horizon.
 #' @param windows Optional. A numeric vector to filter results by validation window number.
 #' @param group_filter Optional. A string for filtering plot results for grouped time-series
@@ -41,7 +41,7 @@
 #' The output of \code{return_error()} has the following generic S3 methods
 #'
 #' \itemize{
-#'   \item \code{\link[=plot.validation_error]{plot}} from \code{return_error(data_test = NULL)}
+#'   \item \code{\link[=plot.validation_error]{plot}} from \code{return_error()}
 #' }
 #' @example /R/examples/example_return_error.R
 #' @export
@@ -49,23 +49,23 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
                          metrics = c("mae", "mape", "mdape", "smape"),
                          models = NULL, horizons = NULL, windows = NULL, group_filter = NULL) {
 
-  data <- data_results
-
-  if (!(methods::is(data, "training_results") || methods::is(data, "forecast_results"))) {
-    stop("The 'data' argument takes an object of class 'training_results' or 'forecast_results' as input. Run predict() on a 'forecast_model' object first.")
+  if (!(methods::is(data_results, "training_results") || methods::is(data_results, "forecast_results"))) {
+    stop("The 'data_results' argument takes an object of class 'training_results' or 'forecast_results' as input. Run predict() on a 'forecast_model' object first.")
   }
 
-  if (methods::is(data, "training_results") && !is.null(data_test)) {
+  if (methods::is(data_results, "training_results") && !is.null(data_test)) {
     stop("The 'data_test' argument should be NULL when assessing validation error.")
   }
 
-  if (methods::is(data, "forecast_results") && is.null(data_test)) {
+  if (methods::is(data_results, "forecast_results") && is.null(data_test)) {
     stop("Computing forecast error metrics requires a data.frame input to the 'data_test' argument.")
   }
 
   if (xor(is.null(data_test), is.null(test_indices))) {
-    stop("If you would like to use a test dataset to assess forecast error, both 'data_test' and 'test_indices' should be specified.")
+    stop("If using a test dataset to assess forecast error, both 'data_test' and 'test_indices' need to be specified.")
   }
+
+  data <- data_results
 
   outcome_col <- attributes(data)$outcome_col
   outcome_names <- attributes(data)$outcome_names

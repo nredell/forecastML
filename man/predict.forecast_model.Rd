@@ -5,7 +5,7 @@
 \title{Predict on validation datasets or forecast}
 \usage{
 \method{predict}{forecast_model}(..., prediction_function = list(NULL),
-  data = NULL)
+  data)
 }
 \arguments{
 \item{...}{One or more trained models from \code{train_model()}.}
@@ -16,7 +16,7 @@ take 2 required positional arguments--(1) a 'forecast_model' object from \code{t
 data.frame of model features from \code{create_lagged_df()}--and return a 1- or 3-column data.frame
 of model predictions. If the prediction function returns a 1-column data.frame, point forecasts are assumed.
 If the prediction function returns a 3-column data.frame, lower and upper forecast bounds are assumed (the
-order of the 3 columns does not matter). See the example below for details.}
+order and names of the 3 columns does not matter). See the example below for details.}
 
 \item{data}{If \code{data} is a training dataset from \code{create_lagged_df(..., type = "train")}, validation dataset
 predictions are returned; else, if \code{data} is a forecasting dataset from \code{create_lagged_df(..., type = "forecast")},
