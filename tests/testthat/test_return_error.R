@@ -2,21 +2,22 @@
 # Test that return_error() works correctly.
 library(forecastML)
 library(dplyr)
-library(glmnet)
 
 test_that("return_error produces correct mae and mape across aggregations", {
 
-  # Sampled Seatbelts data from the R package datasets.
   data("data_seatbelts", package = "forecastML")
 
-  # Example - Training data for 2 horizon-specific models w/ common lags per predictor.
-  horizons <- c(12)
-  lookback <- 1:15
+  data_seatbelts <- data_seatbelts[, 1:2]
+
+  horizons <- 3
+  lookback <- 6
 
   data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_col = 1,
-                                 lookback = lookback, horizon = horizons)
+                                 lookback = lookback, horizons = horizons)
 
-  windows <- create_windows(data_train, window_length = 12)
+  windows <- create_windows(data_train, window_length = 0)
+
+  data = data_seatbelts
 
   model_function <- function(data, my_outcome_col) {
 
@@ -25,19 +26,19 @@ test_that("return_error produces correct mae and mape across aggregations", {
     x <- as.matrix(x, ncol = ncol(x))
     y <- as.matrix(y, ncol = ncol(y))
 
-    model <- glmnet::cv.glmnet(x, y, nfolds = 3)
+    model <- lm(y ~ x)
     return(model)
   }
 
-  # my_outcome_col = 1 is passed in ... but could have been defined in model_function().
+  set.seed(224)
   model_results <- train_model(data_train, windows, model_name = "LASSO", model_function,
                                my_outcome_col = 1)
 
   prediction_function <- function(model, data_features) {
 
-    x <- as.matrix(data_features, ncol = ncol(data_features))
+    x <- data_features
 
-    data_pred <- data.frame("y_pred" = predict(model, x, s = "lambda.min"))
+    data_pred <- data.frame("y_pred" = predict(model, x))
     return(data_pred)
   }
 
