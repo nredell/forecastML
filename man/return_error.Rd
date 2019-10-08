@@ -12,7 +12,7 @@ return_error(data_results, data_test = NULL, test_indices = NULL,
 \item{data_results}{An object of class 'training_results' or 'forecast_results' from running
 \code{\link[=predict.forecast_model]{predict}} on a trained model.}
 
-\item{data_test}{Optional for validation dataset results. If \code{data_results} is an object of class 'forecast_results', a data.frame used to
+\item{data_test}{Required for forecast results only. If \code{data_results} is an object of class 'forecast_results', a data.frame used to
 assess the accuracy of a 'forecast_results' object. \code{data_test} should have the outcome/target columns
 and any grouping columns.}
 
@@ -64,7 +64,7 @@ Compute forecast error metrics on the validation datasets or a test dataset.
 The output of \code{return_error()} has the following generic S3 methods
 
 \itemize{
-  \item \code{\link[=plot.validation_error]{plot}} from \code{return_error(data_test = NULL)}
+  \item \code{\link[=plot.validation_error]{plot}} from \code{return_error()}
 }
 }
 

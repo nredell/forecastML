@@ -10,3 +10,6 @@ coverage:
       default:
         target: auto
         threshold: 1%
+  range: 0..100
+  round: down
+  precision: 2

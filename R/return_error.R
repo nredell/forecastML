@@ -4,7 +4,7 @@
 #'
 #' @param data_results An object of class 'training_results' or 'forecast_results' from running
 #' \code{\link[=predict.forecast_model]{predict}} on a trained model.
-#' @param data_test Required only for forecast results. If \code{data_results} is an object of class 'forecast_results', a data.frame used to
+#' @param data_test Required for forecast results only. If \code{data_results} is an object of class 'forecast_results', a data.frame used to
 #' assess the accuracy of a 'forecast_results' object. \code{data_test} should have the outcome/target columns
 #' and any grouping columns.
 #' @param test_indices Required if \code{data_test} is given. A vector or 1-column data.frame of numeric
@@ -237,6 +237,7 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
   }
 
   data_error <- x
+  #data_results <- data_pred_cv
 
   if(!methods::is(data_results, "training_results")) {
     stop("The 'data_results' argument takes an object of class 'training_results' as input. Run predict.forecast_model() first.")
@@ -253,7 +254,7 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
   data_plot <- data_error$error_by_window
 
   models <- if (is.null(models)) {unique(data_results$model)} else {models}
-  horizons <- if (is.null(horizons)) {unique(data_results$horizon)} else {horizons}
+  horizons <- if (is.null(horizons)) {unique(data_results$model_forecast_horizon)} else {horizons}
   windows <- if (is.null(windows)) {unique(data_results$window_number)} else {windows}
 
   #----------------------------------------------------------------------------
@@ -296,7 +297,7 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
     p <- p + scale_color_viridis_d()
     p <- p + facet_grid(error_metric ~ horizon, scales = "free")
     p <- p + theme_bw()
-    p <- p + xlab("Dataset row / index") + ylab("Forecast error metric") + labs(color = "Model") +
+    p <- p + xlab("Dataset index") + ylab("Forecast error metric") + labs(color = "Model") +
       ggtitle("Forecast Error by Validation Window - Faceted by horizon and metric")
     return(p)
   }
@@ -371,9 +372,13 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
 
     # If groups exist, fill the bars the same color by groups across models; otherwise, fill the bars by model.
     if (!is.null(groups)) {
+
       data_plot$ggplot_fill_group <- apply(data_plot[, c(groups), drop = FALSE], 1, paste, collapse = "-")
-      data_plot$ggplot_fill_group <- ordered(data_plot$ggplot_fill_group)
+      data_plot$ggplot_fill_group <- factor(data_plot$ggplot_fill_group, levels = unique(data_plot$ggplot_fill_group),
+                                            ordered = TRUE)
+
     } else {
+
       data_plot$ggplot_fill_group <- apply(data_plot[, c("model", groups), drop = FALSE], 1, paste, collapse = "-")
       data_plot$ggplot_fill_group <- ordered(data_plot$ggplot_fill_group)
     }
