@@ -7,12 +7,14 @@
 
 0 errors | 0 warnings | 0 notes
 
-* This is a new release.
+## Submission history
+
+* This is a resubmission of a new-to-CRAN release. Changes include:
 
 * 10-8-2019
-    + Reduced DESCRIPTION from 103 to 72 words.
+    + Reduced DESCRIPTION from 103 to 74 words.
     + Added a number of stop("message") checks on the input arguments for all functions and 
-    methods (~20). The checks include various missing(), is.null(), and argument type checks.
+    methods (~15 additional). The checks include various missing(), is.null(), and argument type checks.
     + Minor changes in help docs for language consistency and to clarify required arguments and 
     argument types.
     + Added new unit tests; package has ~40% code coverage.
