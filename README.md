@@ -1,3 +1,4 @@
+[![CRAN](https://www.r-pkg.org/badges/version/forecastML)](https://cran.r-project.org/package=forecastML)
 [![lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/#maturing)
 [![Travis Build
 Status](https://travis-ci.org/nredell/forecastML.svg?branch=master)](https://travis-ci.org/nredell/forecastML) 
@@ -28,6 +29,15 @@ The following quote from Bergmeir et al.'s article nicely sums up the aim of thi
 > irrelevant, and CV can and should be used without modification, as in the independent case."
 
 ## Install
+
+* CRAN
+
+``` r
+install.packages("forecastML")
+library(forecastML)
+```
+
+* Development
 
 ``` r
 devtools::install_github("nredell/forecastML")
@@ -200,6 +210,5 @@ plot(data_forecasts, data_actual = data_seatbelts[-(1:150), ],
 
 ## Roadmap
 
-* The following outlines what I'd like to improve leading up to an eventual CRAN release.
-    + Additional testing with `R` package `testthat`.
+* Refactor to incorporate `tsibble` time series datasets and principles.
     
