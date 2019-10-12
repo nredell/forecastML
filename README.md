@@ -66,11 +66,9 @@ The main functions covered in each vignette are shown below as `function()`.
 * **[Customizing the user-defined wrapper functions](https://nredell.github.io/forecastML/doc/custom_functions.html)**. 
 `train()` and `predict()`
 
-## Cheat Sheet
+## Cheat Sheets
 
 ![](./tools/forecastML_cheat_sheet.png)
-
-## Key functions
 
 1. **`fill_gaps`:** Optional if no temporal gaps/missing rows in data collection. Fill gaps in data collection and 
 prepare a dataset of evenly-spaced time series for modeling with lagged features. Returns a 'data.frame' with 
@@ -87,6 +85,8 @@ capabilities of the user-specified model.
 5. **`return_error`:** Compute forecast error across forecast horizons and validation datasets.
 
 6. **`return_hyper`:** Return user-defined model hyperparameters across validation datasets.
+
+![](./tools/forecastML_cheat_sheet_2.png)
 
 ## FAQ
 
