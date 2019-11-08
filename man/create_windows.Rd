@@ -15,11 +15,15 @@ If dates were given in \code{create_lagged_df()}, the validation window is 'wind
 Setting \code{window_length = 0} trains the model on the entire dataset--used for re-training after examining
 the cross-validation results.}
 
-\item{window_start}{Optional. An index or date identifying the row/date to start creating contiguous validation datasets.}
+\item{window_start}{Optional. An index or date identifying the row/date to start creating contiguous validation datasets. A
+vector of start rows/dates can be supplied for greater control. The length and order of \code{window_start} should match \code{window_stop}.
+If length(window_start) > 1, \code{window_length}, \code{skip}, and \code{include_partial_window} are ignored.}
 
-\item{window_stop}{Optional. An index or date identifying the row to stop creating contiguous validation datasets.}
+\item{window_stop}{Optional. An index or date identifying the row/date to stop creating contiguous validation datasets. A
+vector of start rows/dates can be supplied for greater control. The length and order of \code{window_start} should match \code{window_stop}.
+If length(window_stop) > 1, \code{window_length}, \code{skip}, and \code{include_partial_window} are ignored.}
 
-\item{skip}{An integer giving a fixed number of dataset rows/time to skip between validation datasets. If dates were given
+\item{skip}{An integer giving a fixed number of dataset rows/dates to skip between validation datasets. If dates were given
 in \code{create_lagged_df}, the time between validation windows is \code{skip} * 'date frequency'.}
 
 \item{include_partial_window}{Boolean. If \code{TRUE}, keep validation datasets that are shorter than \code{window_length}.}

@@ -36,6 +36,8 @@
 #' \code{multisession} or \code{multicore} futures are especially useful for (a) grouped time series with many groups and
 #' (b) high-dimensional datasets with many lags per feature. Run \code{future::plan(future::multiprocess)} prior to this
 #' function to set up multissession or multicore parallel dataset creation.
+#' @param keep_rows Boolean. For non-grouped time series, keep the \code{1:max(lookback)} rows at the beginning of the time series. These rows will
+#' contain missing values for lagged features that look back before the start of the dataset.
 #' @return An S3 object of class 'lagged_df' or 'grouped_lagged_df': A list of data.frames with new columns for the lagged/non-lagged features.
 #' The length of the returned list is equal to the number of forecast horizons and is in the order of
 #' horizons supplied to the \code{horizons} argument. Horizon-specific datasets can be accessed with
@@ -44,7 +46,7 @@
 #' The contents of the returned data.frames are as follows:
 #'
 #' \describe{
-#'   \item{\strong{type = 'train', non-grouped:}}{A data.frame with the outcome and lagged features with the first \code{1:max(lookback)} rows removed.}
+#'   \item{\strong{type = 'train', non-grouped:}}{A data.frame with the outcome and lagged features.}
 #'   \item{\strong{type = 'train', grouped:}}{A data.frame with the outcome and unlagged grouping columns followed by lagged, dynamic, and static features.}
 #'   \item{\strong{type = 'forecast', non-grouped:}}{(1) An 'index' column giving the row index or date of the
 #'   forecast periods (e.g., a 100 row non-date-based training dataset would start with an index of 101). (2) A 'horizon' column
@@ -101,7 +103,7 @@
 #' @export
 create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 1L, horizons, lookback = NULL,
                              lookback_control = NULL, dates = NULL, frequency = NULL, dynamic_features = NULL,
-                             groups = NULL, static_features = NULL, use_future = FALSE) {
+                             groups = NULL, static_features = NULL, use_future = FALSE, keep_rows = FALSE) {
 
   if (!methods::is(data, c("data.frame"))) {
     stop("The 'data' argument takes an object of class 'data.frame'.")
@@ -120,7 +122,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
   }
 
   if (!all(horizons < nrow(data))) {
-    stop("The forecast horizons needs to be less than nrow(data).")
+    stop("The forecast horizons need to be less than nrow(data).")
   }
 
   if (all(is.null(lookback), is.null(lookback_control))) {
@@ -280,13 +282,12 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
     })  # Impossible lags for lagged features have been removed.
   }  # Impossible lags in 'lookback_control' have been removed.
   #--------------------------------------------------------------------------
-
   # This will be used to remove the rows with NAs in our new lagged predictor dataset--rows 1:lookback_max at the begnning of the dataset.
   # This is only used for non-grouped datasets and allows easy forecasting with methods that can't handle NA values.
   if (!is.null(lookback)) {
     lookback_max <- max(lookback, na.rm = TRUE)
   } else {
-    # TO-do: Greater flexibility could be added in the case of different horizons having different max lags. At present, the lags for longer forecast
+    # TO-DO: Greater flexibility could be added in the case of different horizons having different max lags. At present, the lags for longer forecast
     # horizons are also used to remove dataset rows from input datasets with shorter forecast horizons, which may only use shorter lags. This amounts
     # to unnecessarily discarding training data for short-term forecast horizons when these models are trained alongside long-term models.
     lookback_max <- max(unlist(lookback_control), na.rm = TRUE)
@@ -423,7 +424,10 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
       # If the forecast is grouped, leave the NAs in the dataset for the user because the ML model used for these
       # cases will likely handle NA values.
       if (is.null(groups)) {
-        data_out <- data_out[-(1:lookback_max), ]  # To-do: make this more flexible for multiple forecast model horizons.
+
+        if (isFALSE(keep_rows)) {
+          data_out <- data_out[-(1:lookback_max), ]  # Remove the first rows with NAs in lagged features.
+        }
       }
 
       attr(data_out, "horizons") <- forecast_horizon

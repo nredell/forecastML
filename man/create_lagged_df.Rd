@@ -7,7 +7,7 @@
 create_lagged_df(data, type = c("train", "forecast"), outcome_col = 1L,
   horizons, lookback = NULL, lookback_control = NULL, dates = NULL,
   frequency = NULL, dynamic_features = NULL, groups = NULL,
-  static_features = NULL, use_future = FALSE)
+  static_features = NULL, use_future = FALSE, keep_rows = FALSE)
 }
 \arguments{
 \item{data}{A data.frame with the (a) target to be forecasted and (b) features/predictors. An optional date column can be given in the
@@ -54,6 +54,9 @@ These columns are not lagged. If \code{type = "forecast"}, these features will b
 \code{multisession} or \code{multicore} futures are especially useful for (a) grouped time series with many groups and
 (b) high-dimensional datasets with many lags per feature. Run \code{future::plan(future::multiprocess)} prior to this
 function to set up multissession or multicore parallel dataset creation.}
+
+\item{keep_rows}{Boolean. For non-grouped time series, keep the \code{1:max(lookback)} rows at the beginning of the time series. These rows will
+contain missing values for lagged features that look back before the start of the dataset.}
 }
 \value{
 An S3 object of class 'lagged_df' or 'grouped_lagged_df': A list of data.frames with new columns for the lagged/non-lagged features.
@@ -64,7 +67,7 @@ horizons supplied to the \code{horizons} argument. Horizon-specific datasets can
 The contents of the returned data.frames are as follows:
 
 \describe{
-  \item{\strong{type = 'train', non-grouped:}}{A data.frame with the outcome and lagged features with the first \code{1:max(lookback)} rows removed.}
+  \item{\strong{type = 'train', non-grouped:}}{A data.frame with the outcome and lagged features.}
   \item{\strong{type = 'train', grouped:}}{A data.frame with the outcome and unlagged grouping columns followed by lagged, dynamic, and static features.}
   \item{\strong{type = 'forecast', non-grouped:}}{(1) An 'index' column giving the row index or date of the
   forecast periods (e.g., a 100 row non-date-based training dataset would start with an index of 101). (2) A 'horizon' column
