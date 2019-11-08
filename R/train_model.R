@@ -703,7 +703,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
                                   group_filter = NULL, ...) {
 
   if (!methods::is(x, "forecast_results")) {
-    stop("The 'forecast_results' argument takes an object of class 'forecast_results' as input. Run predict() on a 'forecast_model' object first.")
+    stop("The 'x' argument takes an object of class 'forecast_results' as input. Run predict() on a 'forecast_model' object first.")
   }
 
   if(xor(is.null(data_actual), is.null(actual_indices))) {
@@ -711,6 +711,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
   }
 
   data_forecast <- x
+  rm(x)
 
   type <- "forecast"  # Only one plot option at present.
 
