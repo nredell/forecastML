@@ -427,6 +427,7 @@ plot.training_results <- function(x,
   }
 
   data <- x
+  rm(x)
 
   type <- type[1]
 
