@@ -447,6 +447,7 @@ plot.training_results <- function(x,
   date_indices <- attributes(data)$date_indices
   frequency <- attributes(data)$frequency
   groups <- attributes(data)$group
+  window_custom <- all(data$window_length == "custom")
 
   forecast_stability_plot_windows <- windows
 
@@ -464,7 +465,7 @@ plot.training_results <- function(x,
   data_plot$model_forecast_horizon <- NULL
 
   data_plot <- data_plot[data_plot$model %in% models & data_plot$horizon %in% horizons &
-                         data_plot$window_number %in% windows, ]
+                           data_plot$window_number %in% windows, ]
 
   if (methods::is(valid_indices, "Date")) {
 
@@ -492,7 +493,11 @@ plot.training_results <- function(x,
   }
   #----------------------------------------------------------------------------
   # Create different line segments in ggplot with `color = ggplot_color_group`.
-  data_plot$ggplot_color_group <- apply(data_plot[,  c("model", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+  if (isFALSE(window_custom)) {
+    data_plot$ggplot_color_group <- apply(data_plot[,  c("model", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+  } else {
+    data_plot$ggplot_color_group <- apply(data_plot[,  c("model", "window_number", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+  }
 
   data_plot$ggplot_color_group <- ordered(data_plot$ggplot_color_group, levels = unique(data_plot$ggplot_color_group))
   #----------------------------------------------------------------------------
@@ -575,13 +580,13 @@ plot.training_results <- function(x,
     p <- p + scale_color_viridis_d()
     p <- p + facet_grid(horizon ~ ., drop = TRUE)
     p <- p + theme_bw()
-      if (type == "prediction") {
-        p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Model") +
+    if (type == "prediction") {
+      p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Model") +
         ggtitle("Forecasts vs. Actuals Through Time - Faceted by horizon")
-      } else if (type == "residual") {
-        p <- p + xlab("Dataset index") + ylab("Residual") + labs(color = "Model") +
+    } else if (type == "residual") {
+      p <- p + xlab("Dataset index") + ylab("Residual") + labs(color = "Model") +
         ggtitle("Forecast Error Through Time - Faceted by forecast horizon")
-      }
+    }
     return(p)
   }
   #----------------------------------------------------------------------------
@@ -603,25 +608,25 @@ plot.training_results <- function(x,
 
     data_outcome <- data_outcome[rep(1:nrow(data_outcome), length(unique(data_plot$valid_indices))), ]
 
-      p <- ggplot()
-      if (max(data_plot$horizon) != 1) {
-        p <- p + geom_line(data = data_plot, aes(x = .data$forecast_origin,
-                                                 y = eval(parse(text = paste0(outcome_names, "_pred"))),
-                                                 color = factor(.data$model)), size = 1, linetype = 1, show.legend = FALSE)
-      }
-      p <- p + geom_point(data = data_plot, aes(x = .data$forecast_origin,
-                                                y = eval(parse(text = paste0(outcome_names, "_pred"))),
-                                                color = factor(.data$model)))
-      p <- p + geom_point(data = data_plot, aes(x = .data$valid_indices,
-                                                y = eval(parse(text = outcome_names)), fill = "Actual"))
-      p <- p + scale_color_viridis_d()
-      p <- p + facet_wrap(~ valid_indices)
+    p <- ggplot()
+    if (max(data_plot$horizon) != 1) {
+      p <- p + geom_line(data = data_plot, aes(x = .data$forecast_origin,
+                                               y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                                               color = factor(.data$model)), size = 1, linetype = 1, show.legend = FALSE)
+    }
+    p <- p + geom_point(data = data_plot, aes(x = .data$forecast_origin,
+                                              y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                                              color = factor(.data$model)))
+    p <- p + geom_point(data = data_plot, aes(x = .data$valid_indices,
+                                              y = eval(parse(text = outcome_names)), fill = "Actual"))
+    p <- p + scale_color_viridis_d()
+    p <- p + facet_wrap(~ valid_indices)
 
-      p <- p + geom_line(data = data_outcome, aes(x = .data$index,
-                                                  y = eval(parse(text = outcome_names))), color = "gray50")
-      p <- p + theme_bw()
-      p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Model") + labs(fill = NULL) +
-        ggtitle("Rolling Origin Forecast Stability - Faceted by dataset index/row")
+    p <- p + geom_line(data = data_outcome, aes(x = .data$index,
+                                                y = eval(parse(text = outcome_names))), color = "gray50")
+    p <- p + theme_bw()
+    p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Model") + labs(fill = NULL) +
+      ggtitle("Rolling Origin Forecast Stability - Faceted by dataset index/row")
     return(p)
   }
   #----------------------------------------------------------------------------
