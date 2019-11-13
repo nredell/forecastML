@@ -683,12 +683,20 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
   if (is.null(groups)) {
     attr(data_out, "row_indices") <- row_names[-(1:lookback_max)]
     if (is.null(dates)) {
-      attr(data_out, "data_start") <- lookback_max + 1  # Removes NAs at the beginning of the dataset
+      if (isFALSE(keep_rows)) {
+        attr(data_out, "data_start") <- lookback_max + 1  # Removes NAs at the beginning of the dataset
+      } else {
+        attr(data_out, "data_start") <- min(row_names, na.rm = TRUE)  # Keep NAs at the beginning of the dataset
+      }
       attr(data_out, "data_stop") <- max(row_names, na.rm = TRUE)
     } else {
       attr(data_out, "date_indices") <- dates
       attr(data_out, "frequency") <- frequency
-      attr(data_out, "data_start") <- min(dates[lookback_max + 1], na.rm = TRUE)  # Removes NAs at the beginning of the dataset
+      if (isFALSE(keep_rows)) {
+        attr(data_out, "data_start") <- min(dates[lookback_max + 1], na.rm = TRUE)  # Removes NAs at the beginning of the dataset
+      } else {
+        attr(data_out, "data_start") <- min(dates, na.rm = TRUE)  # Keep NAs at the beginning of the dataset
+      }
       attr(data_out, "data_stop") <- max(dates, na.rm = TRUE)
     }
   } else {  # Grouped data requires a 'dates' argument.
