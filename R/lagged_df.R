@@ -681,7 +681,11 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
   attr(data_out, "static_features") <- static_features
 
   if (is.null(groups)) {
-    attr(data_out, "row_indices") <- row_names[-(1:lookback_max)]
+    if (isFALSE(keep_rows)) {
+      attr(data_out, "row_indices") <- row_names[-(1:lookback_max)]
+    } else {
+      attr(data_out, "row_indices") <- row_names
+    }
     if (is.null(dates)) {
       if (isFALSE(keep_rows)) {
         attr(data_out, "data_start") <- lookback_max + 1  # Removes NAs at the beginning of the dataset
