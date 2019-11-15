@@ -626,7 +626,7 @@ plot.training_results <- function(x,
                                                 y = eval(parse(text = outcome_names))), color = "gray50")
     p <- p + theme_bw()
     p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Model") + labs(fill = NULL) +
-      ggtitle("Rolling Origin Forecast Stability - Faceted by dataset index/row")
+      ggtitle("Rolling Origin Forecast Stability - Faceted by dataset index")
     return(p)
   }
   #----------------------------------------------------------------------------

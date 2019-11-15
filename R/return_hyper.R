@@ -107,7 +107,7 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
     stop("The 'data_error' argument takes an object of class 'validation_error' as input. Run return_error() first.")
   }
 
-  data_hyper <- x
+  data_plot <- x
 
   type <- type[1]
 
@@ -115,25 +115,20 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
   data_results$horizon <- data_results$model_forecast_horizon
   data_results$model_forecast_horizon <- NULL
 
-  data_results <- dplyr::distinct(data_results, .data$valid_indices, .keep_all = TRUE)
+  outcome_col <- attributes(data_plot)$outcome_col
+  outcome_names <- attributes(data_plot)$outcome_names
+  hyper_names <- attributes(data_plot)$hyper_names
 
-  outcome_col <- attributes(data_hyper)$outcome_col
-  outcome_names <- attributes(data_hyper)$outcome_names
-  hyper_names <- attributes(data_hyper)$hyper_names
-
-  hyper_num <- unlist(lapply(data_hyper[, hyper_names], function(x) {inherits(x, c("numeric", "double", "integer"))}))
+  hyper_num <- unlist(lapply(data_plot[, hyper_names], function(x) {inherits(x, c("numeric", "double", "integer"))}))
   hyper_num <- hyper_names[hyper_num]
 
-  hyper_cat <- unlist(lapply(data_hyper[, hyper_names], function(x) {inherits(x, c("factor", "character"))}))
+  hyper_cat <- unlist(lapply(data_plot[, hyper_names], function(x) {inherits(x, c("factor", "character"))}))
   hyper_cat <- hyper_names[hyper_cat]
-
-  data_plot <- data_hyper
 
   horizons <- if (is.null(horizons)) {unique(data_plot$horizon)} else {horizons}
   windows <- if (is.null(windows)) {unique(data_plot$window_number)} else {windows}
 
-  data_plot <- data_plot[data_plot$horizon %in% horizons &
-                         data_plot$window_number %in% windows, ]
+  data_plot <- data_plot[data_plot$horizon %in% horizons & data_plot$window_number %in% windows, ]
 
   data_plot$group <- paste0("00", data_plot$horizon)
   data_plot$group <- substr(data_plot$group, nchar(data_plot$group) - 2, nchar(data_plot$group))
@@ -150,6 +145,7 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
                                     -!!names(data_plot)[!names(data_plot) %in% hyper_cat])
   }
 
+  #----------------------------------------------------------------------------
   if (type == "stability") {
     p <- ggplot()
     if (length(hyper_num) > 0) {
@@ -177,6 +173,7 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
     return(p)
   }
 
+  #----------------------------------------------------------------------------
   if (type == "error") {
 
     error_metrics <- attributes(data_error)$error_metrics
@@ -194,8 +191,8 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
       data_hyper_num$model <- as.character(data_hyper_num$model)
       data_hyper_num <- dplyr::inner_join(data_error_merge, data_hyper_num, by = c("model", "horizon", "window_number"))
       data_hyper_num <- tidyr::gather(data_hyper_num, "error_metric", "error",
-                    -!!names(data_hyper_num)[!names(data_hyper_num) %in% error_metrics])
-      }
+                                      -!!names(data_hyper_num)[!names(data_hyper_num) %in% error_metrics])
+    }
 
     if (length(hyper_cat) > 0) {
       data_hyper_cat$model <- as.character(data_hyper_cat$model)
@@ -210,25 +207,46 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
         p <- p + geom_line(data = data_hyper_num,
                            aes(x = .data$value,
                                y = .data$error,
-                               color = factor(.data$horizon)),
-                           alpha = .5, show.legend = FALSE)
+                               color = ordered(.data$horizon)), alpha = .5, show.legend = FALSE)
       }
       p <- p + geom_point(data = data_hyper_num,
                           aes(x = .data$value,
                               y = .data$error,
-                              color = factor(.data$horizon)), alpha = .5)
-    }
+                              color = ordered(.data$horizon)), alpha = .5)
+
+      p <- p + scale_color_viridis_d()
+      p <- p + scale_fill_viridis_d()
+      p <- p + facet_grid(error_metric ~ hyper, scales = "free")
+      p <- p + theme_bw()
+      p <- p + xlab("Hyperparameter value") + ylab("Error metric") +
+        labs(color = "Horizon") + ggtitle("Forecast Error and Hyperparameter Values")
+    }  # End numeric hyperparameter plot.
+
     if (length(hyper_cat) > 0) {
-      p <- p + geom_bar(data = data_hyper_cat,
-                        aes(x = ordered(.data$value),
-                            fill = ordered(.data$horizon)),
-                        position = position_dodge(), alpha = .5)
+      p_cat <- ggplot()
+      p_cat <- p_cat + geom_col(data = data_hyper_cat,
+                                aes(x = ordered(.data$value), y = .data$error,
+                                    fill = ordered(.data$group)
+                                ),
+                                position = position_dodge())
+      p_cat <- p_cat + scale_fill_viridis_d()
+      p_cat <- p_cat + facet_grid(error_metric ~ hyper, scales = "free")
+      p_cat <- p_cat + theme_bw()
+      p_cat <- p_cat + xlab("Hyperparameter value") + ylab("Error metric") +
+        labs(fill = "Horizon + validation window") + ggtitle("Forecast Error and Hyperparameter Values")
+    }  # End categorical hyperparameter plot.
+
+    if (length(hyper_num) > 0 && length(hyper_cat) > 0) {
+
+      return(list(p, p_cat))
+
+    } else if (length(hyper_num) > 0) {
+
+      return(p)
+
+    } else if (length(hyper_cat) > 0) {
+
+      return(p_cat)
     }
-    p <- p + scale_color_viridis_d()
-    p <- p + facet_grid(error_metric ~ hyper, scales = "free")
-    p <- p + theme_bw()
-    p <- p + xlab("Hyperparameter value") + ylab("Error metric") +
-      labs(color = "Horizon") + ggtitle("Forecast Error and Hyperparameter Values")
-    return(p)
   }
 }
