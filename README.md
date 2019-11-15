@@ -63,8 +63,6 @@ The main functions covered in each vignette are shown below as `function()`.
 
 ![](./tools/forecastML_cheat_sheet.png)
 
-## Key functions
-
 1. **`fill_gaps`:** Optional if no temporal gaps/missing rows in data collection. Fill gaps in data collection and 
 prepare a dataset of evenly-spaced time series for modeling with lagged features. Returns a 'data.frame' with 
 missing rows added in so that you can either (a) impute, remove, or ignore `NA`s prior to the `forecastML` pipeline 
@@ -80,8 +78,6 @@ capabilities of the user-specified model.
 5. **`return_error`:** Compute forecast error across forecast horizons and validation datasets.
 
 6. **`return_hyper`:** Return user-defined model hyperparameters across validation datasets.
-
-<br>
 
 ![](./tools/forecastML_cheat_sheet_data.png)
 
