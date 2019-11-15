@@ -43,13 +43,6 @@ library(forecastML)
 devtools::install_github("nredell/forecastML")
 library(forecastML)
 ```
-
-* Setting the following `R` environment parameter may be needed to compile the vignettes.
-
-``` r
-base::Sys.setenv(LC_ALL = "en_US.UTF-8")
-```
-
 ## Vignettes
 
 The main functions covered in each vignette are shown below as `function()`.
@@ -66,7 +59,7 @@ The main functions covered in each vignette are shown below as `function()`.
 * **[Customizing the user-defined wrapper functions](https://nredell.github.io/forecastML/doc/custom_functions.html)**. 
 `train()` and `predict()`
 
-## Cheat Sheet
+## Cheat Sheets
 
 ![](./tools/forecastML_cheat_sheet.png)
 
@@ -87,6 +80,14 @@ capabilities of the user-specified model.
 5. **`return_error`:** Compute forecast error across forecast horizons and validation datasets.
 
 6. **`return_hyper`:** Return user-defined model hyperparameters across validation datasets.
+
+<br>
+
+![](./tools/forecastML_cheat_sheet_data.png)
+
+<br>
+
+![](./tools/forecastML_cheat_sheet_model.png)
 
 ## FAQ
 

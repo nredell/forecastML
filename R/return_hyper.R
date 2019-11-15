@@ -24,7 +24,7 @@ return_hyper <- function(forecast_model, hyper_function) {
   }
 
   if(missing(hyper_function) | !is.function(hyper_function)) {
-    stop("The 'hyper_function' argument should be a user-defined function that returns a data.frame of hyperparameter results.")
+    stop("The 'hyper_function' argument should be a user-defined function that returns a 1-row data.frame of hyperparameter results.")
   }
 
   outcome_col <- attributes(forecast_model)$outcome_col
@@ -32,9 +32,10 @@ return_hyper <- function(forecast_model, hyper_function) {
   horizon <- attributes(forecast_model)$horizons
 
   # Defined here to catch (from '<<-' below) the user-defined hyperparameter names in hyper_function.
+  # This will be an attribute in the function return.
   hyper_names <- NULL
 
-  # Seq along horizon > window_number
+  # Seq along model forecast horizon > window_number.
   data_out <- lapply(seq_along(forecast_model), function(i) {
 
     data_plot <- lapply(seq_along(forecast_model[[i]]), function(j) {
@@ -55,11 +56,11 @@ return_hyper <- function(forecast_model, hyper_function) {
       data_plot <- cbind(data_plot, data_hyper)
 
       return(data_plot)
-    })
+    })  # End loop across validation windows.
     data_plot <- dplyr::bind_rows(data_plot)
 
     return(data_plot)
-  })
+  })  # End loop across model forecast horizon.
   data_out <- dplyr::bind_rows(data_out)
 
   attr(data_out, "outcome_col") <- outcome_col
