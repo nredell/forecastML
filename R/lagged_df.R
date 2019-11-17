@@ -141,7 +141,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
     stop("The highest lookback needs to be >= the shortest forecast horizons to allow for direct forecasting with lagged features.")
   }
 
-  if (length(horizons) == 1 && !is.null(lookback_control)) {  # A 1-horizons, non-nested lookback_control of feature lags.
+  if (length(horizons) == 1 && !is.null(lookback_control)) {  # A 1-horizon, non-nested lookback_control of feature lags.
 
     # Check if there is one list location for each feature in the dataset.
     if (length(lookback_control) != ncol(data)) {
@@ -168,6 +168,10 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
   } else {
 
     dates
+  }
+
+  if (!is.null(dates) && !methods::is(dates, "Date")) {
+    stop("The 'dates' argument should be an object of class 'Date'.")
   }
 
   if (!is.null(dates) && !methods::is(dates, "Date") && length(dates) != nrow(data)) {
