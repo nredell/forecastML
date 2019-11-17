@@ -1,6 +1,6 @@
 #------------------------------------------------------------------------------
 # Test that create_lagged_df() produces correct lags for training and forecasting
-# datasets that have dates and are ungrouped.
+# datasets with custom feature lags in lookback_control.
 library(forecastML)
 library(dplyr)
 

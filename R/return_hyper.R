@@ -23,7 +23,7 @@ return_hyper <- function(forecast_model, hyper_function) {
     stop("The 'forecast_model' argument takes an object of class 'forecast_model' as input. Run train_model() first.")
   }
 
-  if(missing(hyper_function) | !is.function(hyper_function)) {
+  if(missing(hyper_function) || !is.function(hyper_function)) {
     stop("The 'hyper_function' argument should be a user-defined function that returns a 1-row data.frame of hyperparameter results.")
   }
 
@@ -47,7 +47,7 @@ return_hyper <- function(forecast_model, hyper_function) {
 
       data_plot <- data.frame("model" = attributes(forecast_model)$model_name,
                               "horizon" = horizon[i],
-                              "window_length" = data_results$window,
+                              "window_length" = data_results$window_length,
                               "window_number" = j,
                               "valid_window_start" = min(data_results$valid_indices),
                               "valid_window_stop" = max(data_results$valid_indices),
