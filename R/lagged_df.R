@@ -766,7 +766,7 @@ summary.lagged_df <- function(object, ...) {
 #' a list of plots, one per feature, of class 'ggplot' if \code{lookback_control} was specified.
 #' @example /R/examples/example_plot_lagged_df.R
 #' @export
-plot.lagged_df <- function(x, ...) {
+plot.lagged_df <- function(x, ...) { # nocov start
 
   if (!methods::is(x, "lagged_df")) {
     stop("This method takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
@@ -905,4 +905,4 @@ plot.lagged_df <- function(x, ...) {
         labs(fill = NULL) + ggtitle(paste0("Map of Feature Lags: ", predictor_names[i]))
     })
   }
-}
+} # nocov end

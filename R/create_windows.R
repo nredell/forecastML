@@ -191,7 +191,7 @@ create_windows <- function(lagged_df, window_length = 12L,
 #' @return A plot of the outer-loop nested cross-validation windows of class 'ggplot'.
 #' @example /R/examples/example_plot_windows.R
 #' @export
-plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, ...) {
+plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, ...) { # nocov start
 
   if (!methods::is(x, "windows")) {
     stop("The 'x' argument takes an object of class 'windows' as input. Run create_windows() first.")
@@ -307,4 +307,4 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
 
   p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Groups") + ggtitle("Validation Windows")
   return(p)
-}
+} # nocov end
