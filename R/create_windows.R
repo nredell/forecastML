@@ -216,17 +216,11 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
   # If there are multiple horizons in the lagged_df, select the first dataset and columns for plotting.
   data_plot <- dplyr::select(data[[1]], outcome_names, groups)
 
-  if (is.null(date_indices)) {  # index-based x-axis in plot.
+  if (is.null(date_indices)) {  # Index-based x-axis in plot.
 
     data_plot$index <- row_names
 
-  } else {  # date-based x-axis in plot.
-
-    if (is.null(groups)) {
-
-      data_plot$index <- date_indices[row_names]  # Removes the dates from the beginning of a dataset; right now dates are for all dates given and indices are not.
-
-    } else {
+    } else {  # Date-based x-axis in plot.
 
       data_plot$index <- date_indices
     }
