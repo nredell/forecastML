@@ -114,7 +114,10 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
 
       } else {
 
-        valid_indices <- which(date_indices >= windows[i, "start"] & date_indices <= windows[i, "stop"])
+        # When create_lagged_df(..., keep_rows = FALSE) the validation indices need an offset to account for the fact that
+        # validation windows are selected where row_indices %in% valid_indices which maps back to the input dataset which will
+        # have 1:max(lookback) more rows than the dataset that comes out of create_lagged_df(..., keep_rows = FALSE).
+        valid_indices <- min(row_indices) - 1 + which(date_indices >= windows[i, "start"] & date_indices <= windows[i, "stop"])
         valid_indices_date <- date_indices[date_indices >= windows[i, "start"] & date_indices <= windows[i, "stop"]]
       }
 
