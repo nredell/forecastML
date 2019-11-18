@@ -420,7 +420,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 plot.training_results <- function(x,
                                   type = c("prediction", "residual", "forecast_stability", "forecast_variability"),
                                   models = NULL, horizons = NULL,
-                                  windows = NULL, valid_indices = NULL, group_filter = NULL, ...) {
+                                  windows = NULL, valid_indices = NULL, group_filter = NULL, ...) { # nocov start
 
   if (!methods::is(x, "training_results")) {
     stop("The 'x' argument takes an object of class 'training_results' as input. Run predict() on a 'forecast_model' object first.")
@@ -679,7 +679,7 @@ plot.training_results <- function(x,
       ggtitle("Forecast Variability Across Forecast Horizons")
     return(p)
   }
-}
+} # nocov end
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
@@ -706,7 +706,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
                                   models = NULL, horizons = NULL,
                                   windows = NULL,
                                   facet_plot = c("model", "model_forecast_horizon"),
-                                  group_filter = NULL, ...) {
+                                  group_filter = NULL, ...) { # nocov start
 
   if (!methods::is(x, "forecast_results")) {
     stop("The 'x' argument takes an object of class 'forecast_results' as input. Run predict() on a 'forecast_model' object first.")
@@ -846,4 +846,4 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
       ggtitle("H-Step-Ahead Model Forecasts")
     return(p)
   }
-}
+} # nocov end

@@ -93,7 +93,7 @@ return_hyper <- function(forecast_model, hyper_function) {
 plot.forecast_model_hyper <- function(x, data_results, data_error,
                                       type = c("stability", "error"),
                                       horizons = NULL,
-                                      windows = NULL, ...) {
+                                      windows = NULL, ...) { # nocov start
 
   if(!methods::is(x, "forecast_model_hyper")) {
     stop("The 'x' argument takes an object of class 'forecast_model_hyper' as input. Run return_hyper() first.")
@@ -249,4 +249,4 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
       return(p_cat)
     }
   }
-}
+} # nocov end

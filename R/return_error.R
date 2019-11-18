@@ -230,14 +230,13 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 #' @return Forecast error plots of class 'ggplot'.
 #' @export
 plot.validation_error <- function(x, data_results, type = c("time", "horizon", "global"),
-                                  models = NULL, horizons = NULL, windows = NULL, group_filter = NULL, ...) {
+                                  models = NULL, horizons = NULL, windows = NULL, group_filter = NULL, ...) { # nocov start
 
   if(!methods::is(x, "validation_error")) {
     stop("The 'x' argument takes an object of class 'validation_error' as input. Run return_error() first.")
   }
 
   data_error <- x
-  #data_results <- data_pred_cv
 
   if(!methods::is(data_results, "training_results")) {
     stop("The 'data_results' argument takes an object of class 'training_results' as input. Run predict.forecast_model() first.")
@@ -406,4 +405,4 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
       ggtitle("Forecast Error - Faceted by metric")
     return(p)
   }
-}
+} # nocov end
