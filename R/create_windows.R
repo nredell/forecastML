@@ -224,7 +224,6 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
 
       data_plot$index <- date_indices
     }
-  }
 
   if (!is.null(group_filter)) {
 
