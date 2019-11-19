@@ -11,7 +11,6 @@ Encoding: UTF-8
 LazyData: true
 Imports: 
     tidyr (>= 0.8.1),
-    dplyr (>= 0.8.3),
     rlang (>= 0.4.0),
     magrittr (>= 1.5),
     lubridate (>= 1.7.4),
@@ -32,8 +31,10 @@ Collate:
     'data_seatbelts.R'
     'data_buoy.R'
     'data_buoy_gaps.R'
+    'zzz.R'
 Depends: 
-    R (>= 3.4.0)
+    R (>= 3.4.0),
+    dplyr (>= 0.8.3)
 Suggests: 
     glmnet (>= 2.0.16),
     DT (>= 0.5),

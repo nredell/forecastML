@@ -1,3 +1,5 @@
 # nocov start
-x <- rnorm(7)
+.onLoad <- function(...) {
+  requireNamespace("dplyr")
+}
 # nocov end
