@@ -15,7 +15,7 @@ fill_gaps(data, date_col = 1L, frequency, groups = NULL,
 \item{frequency}{Date frequency. A string taking the same input as \code{base::seq.Date(..., by = "frequency")} e.g., '1 month', '7 days', '10 years' etc.
 The highest frequency supported at present is '1 day'.}
 
-\item{groups}{Optional. A character vector or column names that identify the groups/hierarchies when multiple time series are present.}
+\item{groups}{Optional. A character vector of column names that identify the groups/hierarchies when multiple time series are present.}
 
 \item{static_features}{Optional. For grouped time series only. A character vector of column names that identify features that do not change through time.
 These columns are expected to be used as model features but are not lagged (e.g., a ZIP code column). The most recent values for each
