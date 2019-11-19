@@ -93,6 +93,7 @@
 #' }
 #' @example /R/examples/example_create_lagged_df.R
 #'
+#' @import dplyr
 #' @import ggplot2
 #' @importFrom stats as.formula complete.cases cov sd
 #' @importFrom magrittr %>%
@@ -397,7 +398,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
                 data_dt <- dtplyr::lazy_dt(data[, var_names[j], drop = FALSE])
 
                 data_x <- data_dt %>%
-                  dplyr::mutate_at(dplyr::vars(var_names[j]), .funs = lag_functions) %>%
+                  dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions) %>%
                   dplyr::as_tibble()
                 data_x <- data_x[, (ncol(data_x) - length(lag_functions) + 1):ncol(data_x), drop = FALSE]  # Keep only the lagged feature columns.
               }
@@ -618,7 +619,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
                 dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions) %>%
                 dplyr::mutate("max_row_number" = max(.data$row_number, na.rm = TRUE),
                               "horizon" = .data$max_row_number - .data$row_number + 1) %>%
-                dplyr::filter(horizon <= forecast_horizon) %>%
+                dplyr::filter(.data$horizon <= forecast_horizon) %>%
                 dplyr::mutate("horizon" = rev(.data$horizon),
                               "row_number" = .data$max_row_number + .data$horizon) %>%
                 dplyr::select(.data$row_number, .data$horizon, groups, names(lag_functions)) %>%
