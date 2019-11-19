@@ -99,6 +99,7 @@
 #' @importFrom lubridate %m-%
 #' @importFrom rlang .data
 #' @importFrom purrr map2
+#' @importFrom data.table :=
 #'
 #' @export
 create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 1L, horizons, lookback = NULL,
@@ -375,9 +376,12 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
 
               } else {  # This feature is not a grouping/dynamic/static feature and we'll compute lagged versions.
 
-                data_x <- data[, c(groups, var_names[j]), drop = FALSE] %>%
+                data_dt <- dtplyr::lazy_dt(data[, c(groups, var_names[j]), drop = FALSE])
+
+                data_x <- data_dt %>%
                   dplyr::group_by_at(dplyr::vars(groups)) %>%
-                  dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions)
+                  dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions) %>%
+                  dplyr::as_tibble()
                 data_x <- data_x[, (ncol(data_x) - length(lag_functions) + 1):ncol(data_x), drop = FALSE]  # Keep only the lagged feature columns.
               }
 
@@ -390,8 +394,11 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
 
               } else {
 
-                data_x <- data[, var_names[j], drop = FALSE] %>%
-                  dplyr::mutate_at(dplyr::vars(var_names[j]), .funs = lag_functions)
+                data_dt <- dtplyr::lazy_dt(data[, var_names[j], drop = FALSE])
+
+                data_x <- data_dt %>%
+                  dplyr::mutate_at(dplyr::vars(var_names[j]), .funs = lag_functions) %>%
+                  dplyr::as_tibble()
                 data_x <- data_x[, (ncol(data_x) - length(lag_functions) + 1):ncol(data_x), drop = FALSE]  # Keep only the lagged feature columns.
               }
             }  # End feature-level lag creation across `lookback_over_horizon`.
@@ -519,13 +526,17 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
               # Now that we know the column is a grouping column, is it the first grouping column?
               if (j == min(group_cols)) {
 
+                #data_dt <- dtplyr::lazy_dt(data[, c(groups, static_features), drop = FALSE])
+                #data_dt <- data[, c(groups, static_features), drop = FALSE]
+
                 data_x <- data[, c(groups, static_features), drop = FALSE] %>%
                   dplyr::group_by_at(dplyr::vars(groups)) %>%
                   dplyr::mutate("row_number" = 1:dplyr::n(),
                                 "max_row_number" = max(.data$row_number, na.rm = TRUE)) %>%
                   dplyr::filter(.data$row_number == .data$max_row_number) %>%
                   dplyr::ungroup() %>%
-                  dplyr::select(!!groups, !!static_features, .data$max_row_number)
+                  dplyr::select(!!groups, !!static_features, .data$max_row_number) %>%
+                  dplyr::as_tibble()
 
                 # Create the same, static dataset for forecasting into the future, the only difference
                 # being an index which indicates the forecast horizons.
@@ -553,6 +564,9 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
 
               if (!var_names[j] %in% c(dynamic_features)) {  # Lagged, non-dynamic features
 
+                #data_dt <- dtplyr::lazy_dt(data_x)
+                #data_dt <- data_x
+
                 data_x <- data_x %>%
                   dplyr::group_by_at(dplyr::vars(groups)) %>%
                   dplyr::mutate("row_number" = 1:dplyr::n()) %>%
@@ -563,9 +577,13 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
                   dplyr::mutate("horizon" = rev(.data$horizon),
                                 "row_number" = .data$max_row_number + .data$horizon) %>%
                   dplyr::ungroup() %>%
-                  dplyr::select(.data$row_number, .data$horizon, groups, names(lag_functions))
+                  dplyr::select(.data$row_number, .data$horizon, groups, names(lag_functions)) %>%
+                  dplyr::as_tibble()
 
               } else {  # Assign NA values to all future dynamic features. There's some unnecessary computation here.
+
+                #data_dt <- dtplyr::lazy_dt(data_x)
+                #data_dt <- data_x
 
                 data_x <- data_x %>%
                   dplyr::group_by_at(dplyr::vars(groups)) %>%
@@ -576,7 +594,8 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
                   dplyr::mutate("horizon" = rev(.data$horizon),
                                 "row_number" = .data$max_row_number + .data$horizon) %>%
                   dplyr::ungroup() %>%
-                  dplyr::select(.data$row_number, .data$horizon, groups)
+                  dplyr::select(.data$row_number, .data$horizon, groups) %>%
+                  dplyr::as_tibble()
 
                 data_x[[var_names[j]]] <- NA
               }
@@ -591,17 +610,24 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
 
             if (!var_names[j] %in% c(dynamic_features)) {  # Lagged, non-dynamic features.
 
+              #data_dt <- dtplyr::lazy_dt(data[, var_names[j], drop = FALSE])
+              #data_dt <- data[, var_names[j], drop = FALSE]
+
               data_x <- data[, var_names[j], drop = FALSE] %>%
                 dplyr::mutate("row_number" = 1:dplyr::n()) %>%
                 dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions) %>%
                 dplyr::mutate("max_row_number" = max(.data$row_number, na.rm = TRUE),
                               "horizon" = .data$max_row_number - .data$row_number + 1) %>%
-                dplyr::filter(.data$horizon <= forecast_horizon) %>%
+                dplyr::filter(horizon <= forecast_horizon) %>%
                 dplyr::mutate("horizon" = rev(.data$horizon),
                               "row_number" = .data$max_row_number + .data$horizon) %>%
-                dplyr::select(.data$row_number, .data$horizon, groups, names(lag_functions))
+                dplyr::select(.data$row_number, .data$horizon, groups, names(lag_functions)) %>%
+                dplyr::as_tibble()
 
             } else {  # Assign NA values to all future dynamic features. There's some unnecessary computation here.
+
+              #data_dt <- dtplyr::lazy_dt(data[, var_names[j], drop = FALSE])
+              #data_dt <- data[, var_names[j], drop = FALSE]
 
               data_x <- data[, var_names[j], drop = FALSE] %>%
                 dplyr::mutate("row_number" = 1:dplyr::n()) %>%
