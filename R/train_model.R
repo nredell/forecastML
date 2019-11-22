@@ -472,7 +472,7 @@ plot.training_results <- function(x,
   data_plot <- data_plot[data_plot$model %in% models & data_plot$horizon %in% horizons &
                            data_plot$window_number %in% windows, ]
 
-  if (methods::is(valid_indices, "Date")) {
+  if (methods::is(valid_indices, "Date") || methods::is(valid_indices, "POSIXt")) {
 
     data_plot <- data_plot[data_plot$date_indices %in% valid_indices, ]  # Filter plots by dates.
     data_plot$index <- data_plot$date_indices
@@ -527,7 +527,9 @@ plot.training_results <- function(x,
     data_plot_point$ggplot_color_group <- factor(data_plot_point$ggplot_color_group, ordered = TRUE, levels(data_plot$ggplot_color_group))
 
     data_plot <- data_plot[data_plot$date_indices %in% date_indices[valid_indices], ]
-    data_plot_point <- data_plot_point[data_plot_point$date_indices %in% date_indices[valid_indices], ]
+    # This may be an empty data.frame if every time series has 2 or more contiguous records, and
+    # suppressWarnings() suppresses a forcats warning.
+    data_plot_point <- suppressWarnings(data_plot_point[data_plot_point$date_indices %in% date_indices[valid_indices], ])
 
   }
   #----------------------------------------------------------------------------
