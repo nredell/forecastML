@@ -101,9 +101,9 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
   #----------------------------------------------------------------------------
 
   # Seq along model forecast horizon > cross-validation windows.
-  data_out <- lapply_across_horizons(lagged_df, function(data, ...) {  # model forecast horizon.
+  data_out <- lapply_across_horizons(lagged_df, function(data, future.seed, ...) {  # model forecast horizon.
 
-    model_plus_valid_data <- lapply_across_val_windows(1:nrow(windows), function(i, ...) {  # validation windows within model forecast horizon.
+    model_plus_valid_data <- lapply_across_val_windows(1:nrow(windows), function(i, future.seed, ...) {  # validation windows within model forecast horizon.
 
       window_length <- windows[i, "window_length"]
 
@@ -156,12 +156,12 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
 
       list("model" = model, "window" = i, "window_length" = window_length, "valid_indices" = valid_indices,
            "date_indices" = valid_indices_date)
-    })  # End model training across nested cross-validation windows for the horizon in "data".
+    }, future.seed = 1)  # End model training across nested cross-validation windows for the horizon in "data".
 
     names(model_plus_valid_data) <- paste0("window_", 1:nrow(windows))
     attr(model_plus_valid_data, "horizon") <- attributes(data)$horizon
     model_plus_valid_data
-  })  # End training across horizons.
+  }, future.seed = 1)  # End training across horizons.
 
   attr(data_out, "model_name") <- model_name
   attr(data_out, "horizons") <- horizons

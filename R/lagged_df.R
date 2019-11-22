@@ -328,7 +328,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
         lookback_over_horizon <- lookback[lookback >= forecast_horizon]
       }
 
-      data_x <- lapply_function(1:ncol(data), function(j) {
+      data_x <- lapply_function(1:ncol(data), function(j, future.packages, future.seed) {
         # Only create lagged features that allow direct forecasting to max(i)--unique lags for each feature.
         if (!is.null(lookback_control)) {
           # As a convenience to the user, a single-horizons forecast that uses a custom lookback doesn't need to be a nested list.
@@ -425,7 +425,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
         }
 
         data_x
-      })  # End loop 'j', the creation of lagged features for a given forecast model horizons.
+      }, future.packages = "dplyr", future.seed = 1)  # End loop 'j', the creation of lagged features for a given forecast model horizons.
 
       data_x <- dplyr::bind_cols(data_x)  # A single data.frame of lags for all features at a given forecast model horizons.
 
@@ -472,8 +472,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
         lookback_over_horizon <- lookback[lookback >= forecast_horizon]
       }
 
-      data_x <- lapply_function(1:ncol(data), function(j) {
-
+      data_x <- lapply_function(1:ncol(data), function(j, future.packages, future.seed) {
         # Only create lagged features that allow direct forecasting to max(i)--unique lags for each feature.
         if (!is.null(lookback_control)) {
           # As a convenience to the user a single-horizons forecast that uses a custom lookback doesn't need to be a nested list.
@@ -653,7 +652,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
         }
 
         data_x
-      })  # End loop 'j', the creation of lagged features for a given forecast model horizon.
+      }, future.packages = "dplyr", future.seed = 1)  # End loop 'j', the creation of lagged features for a given forecast model horizon.
       #------------------------------------------------------------------------
 
       # Merge all feature-level lags into 1 data.frame.
