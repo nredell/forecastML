@@ -69,7 +69,7 @@ missing rows added in so that you can either (a) impute, remove, or ignore `NA`s
 or (b) impute, remove, or ignore them in the user-defined modeling function--depending on the `NA` handling 
 capabilities of the user-specified model.
 
-2. **`create_lagged_df`:** Create model training and forecasting datasets with lagged, grouped, and static features.
+2. **`create_lagged_df`:** Create model training and forecasting datasets with lagged, grouped, dynamic, and static features.
 
 3. **`create_windows`:** Create time-contiguous validation datasets for model evaluation.
 
@@ -251,13 +251,15 @@ data_train <- forecastML::create_lagged_df(data_seatbelts, type = "train", outco
 # the multiple validation windows is to assess expected forecast accuracy for specific
 # time periods while supporting an investigation of the hyperparameter stability for
 # models trained on different time periods. Validation windows can overlap.
-window_start <- c(as.Date("1983-01-01"), as.Date("1983-12-01"))
-window_stop <- c(as.Date("1984-01-01"), as.Date("1984-12-01"))
+window_start <- c(as.Date("1983-01-01"), as.Date("1984-01-01"))
+window_stop <- c(as.Date("1983-12-01"), as.Date("1984-12-01"))
 
 windows <- forecastML::create_windows(data_train, window_start = window_start, window_stop = window_stop)
 ```
 
 <br>
+
+#### modeling_script.py
 
 * Let's look at the content of our `Python` modeling file that we source()'d above. The `Python` wrapper function inputs 
 and returns for `py_model_function()` and `py_prediction_function()` are the same as their `R` counterparts. Just 
@@ -281,7 +283,6 @@ def py_model_function(data):
   model_lasso.fit(X = X, y = y)
   
   return(model_lasso)
-
 
 # User-defined prediction function.
 # The predict() wrapper function takes 2 positional arguments. First,
@@ -318,10 +319,10 @@ plot(data_valid, horizons = c(1, 12))
 
 <br>
 
-* Forecast with the same imported `Python` wrapper functions. The final wrapper functions will eventually have 
+* Forecast with the same imported `Python` wrapper functions. The final wrapper functions may eventually have 
 fixed hyperparameters or complicated model ensembles based on repeated model training and investigation.
 
-``` python
+``` r
 # Forward-looking forecast data.frame.
 data_forecast <- forecastML::create_lagged_df(data_seatbelts, type = "forecast", outcome_col = 1,
                                               lookback = lookback, horizon = horizons,
