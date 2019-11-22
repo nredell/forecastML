@@ -10,7 +10,7 @@
   group_filter = NULL, ...)
 }
 \arguments{
-\item{x}{An object of class 'training_results' from \code{predict.forecast_mode()l}.}
+\item{x}{An object of class 'training_results' from \code{predict.forecast_model()}.}
 
 \item{type}{Plot type. The default plot is "prediction" for validation dataset predictions.}
 

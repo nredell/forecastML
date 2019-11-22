@@ -238,7 +238,9 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
   model_list <- list(...)
 
   if (!all(unlist(lapply(model_list, function(x) {class(x)[1]})) %in% "forecast_model")) {
-    stop("The '...' argument takes a list of 1 or more objects of class 'forecast_model' as input. Run train_model() first.")
+    stop("The '...' argument takes 1 or more objects of class 'forecast_model' as input. Run train_model() first.
+         Also, the arguments 'prediction_function' and 'data' need to be named and not positional becase they
+         follow '...'.")
   }
 
   if (length(model_list) != length(prediction_function)) {
@@ -409,7 +411,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 #' Several diagnostic plots can be returned to assess the quality of the forecasts
 #' based on predictions on the validation datasets.
 #'
-#' @param x An object of class 'training_results' from \code{predict.forecast_mode()l}.
+#' @param x An object of class 'training_results' from \code{predict.forecast_model()}.
 #' @param type Plot type. The default plot is "prediction" for validation dataset predictions.
 #' @param models Optional. Filter results by user-defined model name from \code{train_model()}.
 #' @param horizons Optional. A numeric vector of model forecast horizons to filter results by horizon-specific model.
@@ -692,9 +694,10 @@ plot.training_results <- function(x,
 #'
 #' @param x An object of class 'forecast_results' from \code{predict.forecast_model()}.
 #' @param data_actual A data.frame containing the target/outcome name and any grouping columns.
+#' The data can be historical actuals and/or holdout/test data.
 #' @param actual_indices Required if \code{data_actual} is given. A vector or 1-column data.frame
-#' of numeric row indices or dates (class 'Date') with length \code{nrow(data_actual)}.
-#' The data can be historical and/or holdout/test data, forecasts and actuals are matched by \code{row.names()}.
+#' of numeric row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_actual)}.
+#' The data can be historical actuals and/or holdout/test data.
 #' @param models Optional. Filter results by user-defined model name from \code{train_model()}.
 #' @param horizons Optional. Filter results by horizon.
 #' @param windows Optional. Filter results by validation window number.
@@ -753,8 +756,6 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
 
   if (!is.null(group_filter)) {
 
-    data_forecast$index <- as.numeric(row.names(data_forecast))
-
     data_forecast <- dplyr::filter(data_forecast, eval(parse(text = group_filter)))
   }
 
@@ -780,7 +781,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
     }
 
     # For dimensions that aren't facets, create a grouping variable for ggplot.
-    plot_group <- c(possible_plot_facets[!possible_plot_facets %in% facet_plot], "window_number", groups)
+    plot_group <- c(possible_plot_facets[!possible_plot_facets %in% facet_plot], groups)
 
     data_forecast$plot_group <- apply(data_forecast[, plot_group, drop = FALSE], 1, paste, collapse = " + ")
     data_forecast$plot_group <- ordered(data_forecast$plot_group, levels = unique(data_forecast$plot_group))

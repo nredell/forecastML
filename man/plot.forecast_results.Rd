@@ -12,11 +12,12 @@
 \arguments{
 \item{x}{An object of class 'forecast_results' from \code{predict.forecast_model()}.}
 
-\item{data_actual}{A data.frame containing the target/outcome name and any grouping columns.}
+\item{data_actual}{A data.frame containing the target/outcome name and any grouping columns.
+The data can be historical actuals and/or holdout/test data.}
 
 \item{actual_indices}{Required if \code{data_actual} is given. A vector or 1-column data.frame
-of numeric row indices or dates (class 'Date') with length \code{nrow(data_actual)}.
-The data can be historical and/or holdout/test data, forecasts and actuals are matched by \code{row.names()}.}
+of numeric row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_actual)}.
+The data can be historical actuals and/or holdout/test data.}
 
 \item{models}{Optional. Filter results by user-defined model name from \code{train_model()}.}
 
