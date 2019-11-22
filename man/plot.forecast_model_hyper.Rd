@@ -42,7 +42,8 @@ lookback <- 1:15
 data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_col = 1,
                                lookback = lookback, horizon = horizons)
 
-windows <- create_windows(data_train, window_length = 12)
+# One custom validation window at the end of the dataset.
+windows <- create_windows(data_train, window_start = 181, window_stop = 192)
 
 # User-define model - LASSO
 # A user-defined wrapper function for model training that takes the following
@@ -101,6 +102,5 @@ data_error <- return_error(data_valid)
 
 data_hyper <- return_hyper(model_results, hyper_function)
 
-plot(data_hyper, data_valid, data_error, type = "stability",
-     horizons = c(1, 12))
+plot(data_hyper, data_valid, data_error, type = "stability", horizons = c(1, 12))
 }

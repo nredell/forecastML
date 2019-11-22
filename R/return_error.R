@@ -1,6 +1,6 @@
 #' Compute forecast error
 #'
-#' Compute forecast error metrics on the validation datasets or a test dataset.
+#' Compute forecast error metrics on the validation datasets or a new test dataset.
 #'
 #' @param data_results An object of class 'training_results' or 'forecast_results' from running
 #' \code{\link[=predict.forecast_model]{predict}} on a trained model.
@@ -8,14 +8,14 @@
 #' assess the accuracy of a 'forecast_results' object. \code{data_test} should have the outcome/target columns
 #' and any grouping columns.
 #' @param test_indices Required if \code{data_test} is given. A vector or 1-column data.frame of numeric
-#' row indices or dates (class 'Date') with length nrow(data_test).
+#' row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_test)}.
 #' @param metrics Common forecast error metrics. See the Error Metrics section below for details. The
 #' default behavior is to return all metrics.
 #' @param models Optional. A character vector of user-defined model names supplied to \code{train_model()}.
 #' @param horizons Optional. A numeric vector to filter results by horizon.
 #' @param windows Optional. A numeric vector to filter results by validation window number.
 #' @param group_filter Optional. A string for filtering plot results for grouped time-series
-#' (e.g., \code{"group_col_1 == 'A'"}). The results are passed to \code{dplyr::filter()} internally.
+#' (e.g., \code{"group_col_1 == 'A'"}). \code{group_filter} is passed to \code{dplyr::filter()} internally.
 #'
 #' @return An S3 object of class 'validation_error' or 'forecast_error': A list of data.frames
 #' of error metrics for the validation datasets or forecast dataset depending
@@ -66,6 +66,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
   }
 
   data <- data_results
+  rm(data_results)
 
   outcome_col <- attributes(data)$outcome_col
   outcome_names <- attributes(data)$outcome_names
@@ -86,7 +87,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
   }
 
   if (methods::is(data, "training_results")) {
-    # Change the name of "horizon", which, although it makes sense from a naming perspective, will reduce the amount of code below.
+    # Change the forecast horizon name to "horizon", which, although it makes sense from a naming perspective, will reduce the amount of code below.
     data$horizon <- data$model_forecast_horizon
     data$model_forecast_horizon <- NULL
   }
@@ -123,14 +124,14 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
       dplyr::summarise("window_start" = min(.data$valid_indices, na.rm = TRUE),
                        "window_stop" = max(.data$valid_indices, na.rm = TRUE),
                        "window_midpoint" = base::mean(.data$valid_indices, na.rm = TRUE),
-                       "mae" = base::mean(abs(.data$residual), na.rm = TRUE),
-                       "mape" = base::mean(abs(.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
-                       "mdape" = stats::median(abs(.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
-                       "smape" = base::mean(2 * abs(.data$residual) /
+                       "mae" = base::mean(base::abs(.data$residual), na.rm = TRUE),
+                       "mape" = base::mean(base::abs(.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                       "mdape" = stats::median(base::abs(.data$residual) / base::abs((eval(parse(text = outcome_names)))), na.rm = TRUE) * 100,
+                       "smape" = base::mean(2 * base::abs(.data$residual) /
                                         (base::abs((eval(parse(text = outcome_names)))) + base::abs(eval(parse(text = paste0(outcome_names, "_pred"))))),
                                       na.rm = TRUE) * 100)
     data_1$mape <- with(data_1, ifelse(is.infinite(mape), NA, mape))
-    data_1$mape <- with(data_1, ifelse(is.infinite(mdape), NA, mdape))
+    data_1$mdape <- with(data_1, ifelse(is.infinite(mdape), NA, mdape))
 
     # Compute error metric by horizon and window length across all validation windows.
     data_2 <- data %>%

@@ -11,16 +11,16 @@
 #' @param model_function A user-defined wrapper function for model training that takes the following
 #' arguments: (1) a horizon-specific data.frame made with \code{create_lagged_df(..., type = "train")}
 #' (i.e., the datasets stored in \code{lagged_df}) and, optionally, (2) any number of additional named arguments
-#' which are passed as \code{...} in this function.
+#' which can be passed in \code{...} in this function.
 #' @param ... Optional. Named arguments passed into the user-defined \code{model_function}.
 #' @param use_future Boolean. If \code{TRUE}, the \code{future} package is used for training models in parallel.
-#' The model will train in parallel across either (1) model forecast horizons or (b) validation windows,
+#' The models will train in parallel across either (1) model forecast horizons or (b) validation windows,
 #' whichever is longer (i.e., \code{length(create_lagged_df())} or \code{nrow(create_windows())}). The user
 #' should run \code{future::plan(future::multiprocess)} or similar prior to this function to train these models
 #' in parallel.
 #' @return An S3 object of class 'forecast_model': A nested list of trained models. Models can be accessed with
 #' \code{my_trained_model$horizon_h$window_w$model} where 'h' gives the forecast horizon and 'w' gives
-#' the validation dataset window number from \code{create_windows}.
+#' the validation dataset window number from \code{create_windows()}.
 #'
 #' @section Methods and related functions:
 #'

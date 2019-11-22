@@ -12,10 +12,12 @@
 #' as-is, user-imputed, or removed from modeling in the user-supplied modeling wrapper function for \code{\link{train_model}}.
 #'
 #' @param data A data.frame or object coercible to a data.frame with, minimally, dates and the outcome being forecasted.
-#' @param date_col The column index--an integer--of the date index. This column should have class 'Date'.
-#' @param frequency Date frequency. A string taking the same input as \code{base::seq.Date(..., by = "frequency")} e.g., '1 month', '7 days', '10 years' etc.
-#' The highest frequency supported at present is '1 day'.
-#' @param groups Optional. A character vector of column names that identify the groups/hierarchies when multiple time series are present.
+#' @param date_col The column index--an integer--of the date index. This column should have class 'Date' or 'POSIXt'.
+#' @param frequency Date/time frequency. A string taking the same input as \code{base::seq.Date(..., by = "frequency")}
+#' or \code{base::seq.POSIXt..., by = "frequency")} e.g., '1 hour', '1 month', '7 days', '10 years' etc.
+#' The highest frequency supported at present is '1 sec'.
+#' @param groups Optional. A character vector of column names that identify the unique time series (i.e., groups/hierarchies)
+#' when multiple time series are present.
 #' @param static_features Optional. For grouped time series only. A character vector of column names that identify features that do not change through time.
 #' These columns are expected to be used as model features but are not lagged (e.g., a ZIP code column). The most recent values for each
 #' static feature for each group are used to fill in the resulting missing data in static features when new rows are
@@ -50,8 +52,8 @@ fill_gaps <- function(data, date_col = 1L, frequency, groups = NULL,
     stop("The 'data_col' argument should be an integer giving the column location of the date index.")
   }
 
-  if (!methods::is(data[, date_col], "Date")) {
-    stop("The date column identified by the 'data_col' argument should be an object of class 'Date'.")
+  if (!methods::is(data[, date_col], "Date") && !methods::is(data[, date_col], c("POSIXt"))) {
+    stop("The date column identified by the 'data_col' argument should be an object of class 'Date' or 'POSIXt'.")
   }
 
   if (any(is.na(data[, date_col, drop = TRUE]))) {
@@ -59,18 +61,18 @@ fill_gaps <- function(data, date_col = 1L, frequency, groups = NULL,
   }
 
   if (missing(frequency)) {
-    stop("The 'frequency' argument is required to set the expected frequency of data collection e.g., '1 day', '3 months', '10 years' etc.;
-         see base::seq.Date() for valid date frequencies.")
+    stop("The 'frequency' argument is required to set the expected frequency of data/time collection e.g., '1 hour', '1 day', '3 months', '10 years' etc.;
+         see base::seq.Date() or base::seq.POSIXt() for valid date/time frequencies.")
   }
 
-  if (!grepl("day|week|month|quarter|year", frequency)) {
-    stop("The 'frequency' argument should be a string containing one of 'day', 'week',
+  if (!grepl("sec|min|hour|day|week|month|quarter|year", frequency)) {
+    stop("The 'frequency' argument should be a string containing one of 'sec', 'min', 'hour', 'day', 'week',
          'month', 'quarter', or 'year'. This can optionally be preceded by a positive integer and a space
          and/or followed by an 's'.")
   }
 
   if (is.null(groups) && !is.null(static_features)) {
-    stop("Static features--those that do not change through time--should only be modeled with grouped time series.")
+    stop("To avoid 0 variance features, static features--those that do not change through time--should only be modeled with grouped time series.")
   }
 
   # Used to re-order the returned dataset to match the input dataset.

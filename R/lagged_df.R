@@ -4,31 +4,34 @@
 #' specified forecast horizons and (b) forecast into the future with a trained ML model.
 #'
 #' @param data A data.frame with the (a) target to be forecasted and (b) features/predictors. An optional date column can be given in the
-#' \code{dates} argument (required for grouped time-series). Note that forecastML only works with regularly spaced time/date intervals and that missing
+#' \code{dates} argument (required for grouped time series). Note that forecastML only works with regularly spaced date/time intervals and that missing
 #' rows--usually due to periods when no data was collected--will result in poorly trained models due to incorrect feature lags.
 #' Use \code{\link{fill_gaps}} to fill in any missing rows/data prior to running this function.
 #' @param type The type of dataset to return--(a) model training or (b) forecast prediction. The default is \code{train}.
 #' @param outcome_col The column index--an integer--of the target to be forecasted. Forecasting only one outcome column is allowed at present, however,
-#' groups of time-series can be forecasted if they are stacked vertically in a long dataset and the \code{groups}, \code{dates},
+#' groups of time series can be forecasted if they are stacked vertically in a long dataset and the \code{groups}, \code{dates},
 #' and \code{frequency} arguments are specified.
 #' @param horizons A numeric vector of one or more forecast horizons, h, measured in input dataset rows. For each horizon, 1:h
 #' forecasts are returned (e.g., \code{horizons = 12} trains a model to minimize 1 to 12-step-ahead error and returns forecasts
 #' for 1:12 steps into the future). If \code{dates} are given, a horizon of 1, for example, would equal 1 * \code{frequency} in calendar time.
 #' @param lookback A numeric vector giving the lags--in dataset rows--for creating the lagged features. All non-grouping,
-#' non-static, and non-dynamic features in the input dataset, \code{data}, are lagged by the same values. Lags that don't
-#' support direct forecasting for a given horizon are silently dropped. Either \code{lookback} or \code{lookback_control} need to be specified.
+#' non-static, and non-dynamic features in the input dataset, \code{data}, are lagged by the same values.
+#' For lagged features, lag values that don't support direct forecasting for a given forecast horizon
+#' (e.g, a lookback of 3 for a 4-step-ahead horizon) are silently dropped from the data.frame.
+#' Either \code{lookback} or \code{lookback_control} need to be specified.
 #' @param lookback_control A list of numeric vectors, specifying potentially unique lags for each feature. The length
-#' of the list should equal \code{ncol(data)} and be ordered the same as the columns in \code{data}. For grouped time-series, lags for the grouping column(s)
-#' and static feature columns should have a \code{lookback_control} value of 0. \code{list(NULL)} \code{lookback_control} values drop columns
-#' from the input dataset. Lags that don't support direct forecasting for a given horizons
-#' are silently dropped. Either \code{lookback} or \code{lookback_control} need to be specified.
-#' @param dates A vector or 1-column data.frame of dates with class 'Date'. The length of dates should equal \code{nrow(data)}. Required if \code{groups}
-#' are given.
-#' @param frequency Date frequency. A string taking the same input as \code{base::seq.Date(..., by = "frequency")} e.g., '1 month', '7 days', '10 years' etc.
-#' The highest frequency supported at present is '1 day'. Required if \code{dates} are given.
+#' of the list should equal \code{ncol(data)} and be ordered the same as the columns in \code{data}. Lag values for any grouping,
+#' static, or dynamic feature columns are automatically coerced to 0 nd not lagged. \code{list(NULL)} \code{lookback_control} values drop columns
+#' from the input dataset. For lagged features, lag values that don't support direct forecasting for a given forecast horizon
+#' are silently dropped from the data.frame. Either \code{lookback} or \code{lookback_control} need to be specified.
+#' @param dates A vector or 1-column data.frame of dates/times with class 'Date' or 'POSIXt'. The length
+#' of 'dates' should equal \code{nrow(data)}. Required if \code{groups} are given.
+#' @param frequency Date/time frequency. Required if \code{dates} are given. A string taking the same input as \code{base::seq.Date(..., by = "frequency")} or
+#' \code{base::seq.POSIXt(..., by = "frequency")} e.g., '1 hour', '1 month', '7 days', '10 years' etc.
+#' The highest frequency supported at present is '1 sec'.
 #' @param dynamic_features A character vector of column names that identify features that change through time but which are not lagged (e.g., weekday or year).
 #' If \code{type = "forecast"}, these features will receive \code{NA} values; though, they can be filled in by the user after running this function.
-#' @param groups A character vector of column names that identify the groups/hierarchies when multiple time-series are present. These columns are used as model features but
+#' @param groups A character vector of column names that identify the groups/hierarchies when multiple time series are present. These columns are used as model features but
 #' are not lagged. Note that combining feature lags with grouped time series will result in \code{NA} values throughout the data.
 #' @param static_features For grouped time series only. A character vector of column names that identify features that do not change through time.
 #' These columns are not lagged. If \code{type = "forecast"}, these features will be filled forward using the most recent value for the group.
@@ -37,7 +40,7 @@
 #' (b) high-dimensional datasets with many lags per feature. Run \code{future::plan(future::multiprocess)} prior to this
 #' function to set up multissession or multicore parallel dataset creation.
 #' @param keep_rows Boolean. For non-grouped time series, keep the \code{1:max(lookback)} rows at the beginning of the time series. These rows will
-#' contain missing values for lagged features that look back before the start of the dataset.
+#' contain missing values for lagged features that "look back" before the start of the dataset.
 #' @return An S3 object of class 'lagged_df' or 'grouped_lagged_df': A list of data.frames with new columns for the lagged/non-lagged features.
 #' The length of the returned list is equal to the number of forecast horizons and is in the order of
 #' horizons supplied to the \code{horizons} argument. Horizon-specific datasets can be accessed with
@@ -46,7 +49,7 @@
 #' The contents of the returned data.frames are as follows:
 #'
 #' \describe{
-#'   \item{\strong{type = 'train', non-grouped:}}{A data.frame with the outcome and lagged features.}
+#'   \item{\strong{type = 'train', non-grouped:}}{A data.frame with the outcome and lagged/dynamic features.}
 #'   \item{\strong{type = 'train', grouped:}}{A data.frame with the outcome and unlagged grouping columns followed by lagged, dynamic, and static features.}
 #'   \item{\strong{type = 'forecast', non-grouped:}}{(1) An 'index' column giving the row index or date of the
 #'   forecast periods (e.g., a 100 row non-date-based training dataset would start with an index of 101). (2) A 'horizon' column
@@ -54,7 +57,7 @@
 #'   'train', non-grouped dataset.}
 #'   \item{\strong{type = 'forecast', grouped:}}{(1) An 'index' column giving the date of the
 #'   forecast periods. The first forecast date for each group is the maximum date from the \code{dates} argument
-#'   + 1 * \code{frequency} which is the user-supplied date frequency.(2) A 'horizon' column that indicates
+#'   + 1 * \code{frequency} which is the user-supplied date/time frequency.(2) A 'horizon' column that indicates
 #'   the forecast period from \code{1:max(horizons)}. (3) Lagged, static, and dynamic features identical to the 'train', grouped dataset.}
 #' }
 #' @section Attributes:
@@ -172,22 +175,23 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
     dates
   }
 
-  if (!is.null(dates) && !methods::is(dates, "Date")) {
-    stop("The 'dates' argument should be an object of class 'Date'.")
+  if (!is.null(dates) && !methods::is(dates, "Date") && !methods::is(dates, c("POSIXt"))) {
+    stop("The 'dates' argument should be an object of class 'Date' or 'POSIXt'.")
   }
 
-  if (!is.null(dates) && !methods::is(dates, "Date") && length(dates) != nrow(data)) {
-    stop("The 'dates' argument needs to be a vector or 1 column data.frame of length nrow(data)
-         of dates with class `Date`.")
+  if (!is.null(dates) && length(dates) != nrow(data)) {
+    stop("The 'dates' argument needs to be a vector or 1-column data.frame of length nrow(data)
+         of dates with class 'Date' or 'POSIXt'.")
   }
 
   if (!is.null(dates) && is.null(frequency)) {
-    stop("The 'frequency' argument needs to be specified along with the `dates` argument.
-         It takes the same input as `base::seq.Date()` e.g., '1 month', '7 days', etc.")
+    stop("The 'frequency' argument needs to be specified along with the 'dates' argument.
+         See base::seq.Date() or base::seq.POSIXt() for valid date/time frequencies e.g., '1 hour',
+         '1 day', '3 months', '10 years' etc.")
   }
 
-  if (!is.null(frequency) && !grepl("day|week|month|quarter|year", frequency)) {
-    stop("The 'frequency' argument should be a string containing one of 'day', 'week',
+  if (!is.null(frequency) && !grepl("sec|min|hour|day|week|month|quarter|year", frequency)) {
+    stop("The 'frequency' argument should be a string containing one of 'sec', 'min', 'hour', 'day', 'week',
          'month', 'quarter', or 'year'. This can optionally be preceded by a positive integer and a space
          and/or followed by an 's'.")
   }
@@ -804,6 +808,7 @@ plot.lagged_df <- function(x, ...) { # nocov start
   }
 
   data <- x
+  rm(x)
 
   horizons <- attributes(data)$horizons
 

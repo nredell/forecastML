@@ -17,7 +17,7 @@ assess the accuracy of a 'forecast_results' object. \code{data_test} should have
 and any grouping columns.}
 
 \item{test_indices}{Required if \code{data_test} is given. A vector or 1-column data.frame of numeric
-row indices or dates (class 'Date') with length nrow(data_test).}
+row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_test)}.}
 
 \item{metrics}{Common forecast error metrics. See the Error Metrics section below for details. The
 default behavior is to return all metrics.}
@@ -29,7 +29,7 @@ default behavior is to return all metrics.}
 \item{windows}{Optional. A numeric vector to filter results by validation window number.}
 
 \item{group_filter}{Optional. A string for filtering plot results for grouped time-series
-(e.g., \code{"group_col_1 == 'A'"}). The results are passed to \code{dplyr::filter()} internally.}
+(e.g., \code{"group_col_1 == 'A'"}). \code{group_filter} is passed to \code{dplyr::filter()} internally.}
 }
 \value{
 An S3 object of class 'validation_error' or 'forecast_error': A list of data.frames
@@ -45,7 +45,7 @@ A list containing: \cr
 }
 }
 \description{
-Compute forecast error metrics on the validation datasets or a test dataset.
+Compute forecast error metrics on the validation datasets or a new test dataset.
 }
 \section{Error Metrics}{
 
@@ -79,7 +79,8 @@ lookback <- 1:15
 data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_col = 1,
                                lookback = lookback, horizon = horizons)
 
-windows <- create_windows(data_train, window_length = 12)
+# One custom validation window at the end of the dataset.
+windows <- create_windows(data_train, window_start = 181, window_stop = 192)
 
 # User-define model - LASSO
 # A user-defined wrapper function for model training that takes the following

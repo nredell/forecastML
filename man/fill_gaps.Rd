@@ -10,12 +10,14 @@ fill_gaps(data, date_col = 1L, frequency, groups = NULL,
 \arguments{
 \item{data}{A data.frame or object coercible to a data.frame with, minimally, dates and the outcome being forecasted.}
 
-\item{date_col}{The column index--an integer--of the date index. This column should have class 'Date'.}
+\item{date_col}{The column index--an integer--of the date index. This column should have class 'Date' or 'POSIXt'.}
 
-\item{frequency}{Date frequency. A string taking the same input as \code{base::seq.Date(..., by = "frequency")} e.g., '1 month', '7 days', '10 years' etc.
-The highest frequency supported at present is '1 day'.}
+\item{frequency}{Date/time frequency. A string taking the same input as \code{base::seq.Date(..., by = "frequency")}
+or \code{base::seq.POSIXt..., by = "frequency")} e.g., '1 hour', '1 month', '7 days', '10 years' etc.
+The highest frequency supported at present is '1 sec'.}
 
-\item{groups}{Optional. A character vector of column names that identify the groups/hierarchies when multiple time series are present.}
+\item{groups}{Optional. A character vector of column names that identify the unique time series (i.e., groups/hierarchies)
+when multiple time series are present.}
 
 \item{static_features}{Optional. For grouped time series only. A character vector of column names that identify features that do not change through time.
 These columns are expected to be used as model features but are not lagged (e.g., a ZIP code column). The most recent values for each

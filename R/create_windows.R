@@ -8,15 +8,16 @@
 #' @param window_length An integer that defines the length of the contiguous validation dataset in dataset rows/dates.
 #' If dates were given in \code{create_lagged_df()}, the validation window is 'window_length' * 'date frequency' in calendar time.
 #' Setting \code{window_length = 0} trains the model on the entire dataset--used for re-training after examining
-#' the cross-validation results.
-#' @param window_start Optional. An index or date identifying the row/date to start creating contiguous validation datasets. A
+#' the cross-validation results. Specifying multiple \code{window_start} and \code{window_stop} values with a vector of
+#' length > 1 overrides \code{window_length}.
+#' @param window_start Optional. A row index or date identifying the row/date to start creating contiguous validation datasets. A
 #' vector of start rows/dates can be supplied for greater control. The length and order of \code{window_start} should match \code{window_stop}.
-#' If length(window_start) > 1, \code{window_length}, \code{skip}, and \code{include_partial_window} are ignored.
+#' If \code{length(window_start) > 1}, \code{window_length}, \code{skip}, and \code{include_partial_window} are ignored.
 #' @param window_stop Optional. An index or date identifying the row/date to stop creating contiguous validation datasets. A
 #' vector of start rows/dates can be supplied for greater control. The length and order of \code{window_start} should match \code{window_stop}.
-#' If length(window_stop) > 1, \code{window_length}, \code{skip}, and \code{include_partial_window} are ignored.
+#' If \code{length(window_stop) > 1}, \code{window_length}, \code{skip}, and \code{include_partial_window} are ignored.
 #' @param skip An integer giving a fixed number of dataset rows/dates to skip between validation datasets. If dates were given
-#' in \code{create_lagged_df}, the time between validation windows is \code{skip} * 'date frequency'.
+#' in \code{create_lagged_df()}, the time between validation windows is \code{skip} * 'date frequency'.
 #' @param include_partial_window Boolean. If \code{TRUE}, keep validation datasets that are shorter than \code{window_length}.
 #' @return An S3 object of class 'windows': A data.frame giving the indices for the validation datasets.
 #'
@@ -62,14 +63,14 @@ create_windows <- function(lagged_df, window_length = 12L,
   window_start <- if (is.null(window_start)) {data_start} else {window_start}
   window_stop <- if (is.null(window_stop)) {data_stop} else {window_stop}
 
-  if (!is.null(date_indices) && !methods::is(window_start, "Date")) {
-    stop("Dates were provided with the input dataset created with `create_lagged_df()`;
-         Enter a window start date as a length-1 vector of class `Date`.")
+  if (!is.null(date_indices) && !methods::is(window_start, "Date") && !methods::is(window_start, "POSIXt")) {
+    stop("Dates were provided with the input dataset created with 'create_lagged_df()';
+         Enter a vector of window start dates of class 'Date' or 'POSIXt'.")
   }
 
-  if (!is.null(date_indices) && !methods::is(window_stop, "Date")) {
-    stop("Dates were provided with the input dataset created with `create_lagged_df()`;
-         Enter a window stop date as a length-1 vector of class `Date`.")
+  if (!is.null(date_indices) && !methods::is(window_stop, "Date") && !methods::is(window_stop, "POSIXt")) {
+    stop("Dates were provided with the input dataset created with 'create_lagged_df()';
+         Enter a vector of window stop dates of class 'Date' or 'POSIXt'.")
   }
 
   if (length(window_start) == 1 && length(window_stop) == 1) {  # A single start and stop date.
@@ -209,7 +210,7 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
 
   outcome_col <- attributes(data)$outcome_col
   outcome_names <- attributes(data)$outcome_names
-  row_names <- as.numeric(row.names(data[[1]]))  # To-do: for index-based lagged_dfs, adjust for first row differences across variable lookbacks.
+  row_indices <- attributes(data)$row_indices
   date_indices <- attributes(data)$date_indices
   groups <- attributes(data)$groups
 
@@ -218,7 +219,7 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
 
   if (is.null(date_indices)) {  # Index-based x-axis in plot.
 
-    data_plot$index <- row_names
+    data_plot$index <- row_indices
 
     } else {  # Date-based x-axis in plot.
 

@@ -13,18 +13,19 @@ create_windows(lagged_df, window_length = 12L, window_start = NULL,
 \item{window_length}{An integer that defines the length of the contiguous validation dataset in dataset rows/dates.
 If dates were given in \code{create_lagged_df()}, the validation window is 'window_length' * 'date frequency' in calendar time.
 Setting \code{window_length = 0} trains the model on the entire dataset--used for re-training after examining
-the cross-validation results.}
+the cross-validation results. Specifying multiple \code{window_start} and \code{window_stop} values with a vector of
+length > 1 overrides \code{window_length}.}
 
-\item{window_start}{Optional. An index or date identifying the row/date to start creating contiguous validation datasets. A
+\item{window_start}{Optional. A row index or date identifying the row/date to start creating contiguous validation datasets. A
 vector of start rows/dates can be supplied for greater control. The length and order of \code{window_start} should match \code{window_stop}.
-If length(window_start) > 1, \code{window_length}, \code{skip}, and \code{include_partial_window} are ignored.}
+If \code{length(window_start) > 1}, \code{window_length}, \code{skip}, and \code{include_partial_window} are ignored.}
 
 \item{window_stop}{Optional. An index or date identifying the row/date to stop creating contiguous validation datasets. A
 vector of start rows/dates can be supplied for greater control. The length and order of \code{window_start} should match \code{window_stop}.
-If length(window_stop) > 1, \code{window_length}, \code{skip}, and \code{include_partial_window} are ignored.}
+If \code{length(window_stop) > 1}, \code{window_length}, \code{skip}, and \code{include_partial_window} are ignored.}
 
 \item{skip}{An integer giving a fixed number of dataset rows/dates to skip between validation datasets. If dates were given
-in \code{create_lagged_df}, the time between validation windows is \code{skip} * 'date frequency'.}
+in \code{create_lagged_df()}, the time between validation windows is \code{skip} * 'date frequency'.}
 
 \item{include_partial_window}{Boolean. If \code{TRUE}, keep validation datasets that are shorter than \code{window_length}.}
 }
@@ -56,12 +57,18 @@ and has the following generic S3 methods
 # Sampled Seatbelts data from the R package datasets.
 data("data_seatbelts", package = "forecastML")
 
-# Example - Training data for 12 horizon-specific models w/ common lags per predictor.
-horizons <- 1:12
+# Example - Training data for 2 horizon-specific models w/ common lags per feature.
+horizons <- c(1, 12)
 lookback <- 1:15
 
 data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_col = 1,
                                lookback = lookback, horizon = horizons)
 
-create_windows(data_train, window_length = 12)
+# All historical window lengths of 12 plus any partial windows at the end of the dataset.
+windows <- create_windows(data_train, window_length = 12)
+windows
+
+# Two custom validation windows with different lengths.
+windows <- create_windows(data_train, window_start = c(20, 80), window_stop = c(30, 100))
+windows
 }
