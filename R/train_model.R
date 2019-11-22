@@ -781,7 +781,11 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
     }
 
     # For dimensions that aren't facets, create a grouping variable for ggplot.
-    plot_group <- c(possible_plot_facets[!possible_plot_facets %in% facet_plot], groups)
+    if (length(unique(data_forecast$window_number)) == 1) {
+      plot_group <- c(possible_plot_facets[!possible_plot_facets %in% facet_plot], groups)
+    } else {
+      plot_group <- c(possible_plot_facets[!possible_plot_facets %in% facet_plot], "window_number", groups)
+    }
 
     data_forecast$plot_group <- apply(data_forecast[, plot_group, drop = FALSE], 1, paste, collapse = " + ")
     data_forecast$plot_group <- ordered(data_forecast$plot_group, levels = unique(data_forecast$plot_group))
