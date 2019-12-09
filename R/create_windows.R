@@ -235,18 +235,23 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
   # Create different line segments in ggplot with `color = ggplot_color_group`.
   data_plot$ggplot_color_group <- apply(data_plot[, groups, drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
 
-  data_windows <- windows
-  data_windows$window <- 1:nrow(data_windows)
+  windows$window <- 1:nrow(windows)
 
-  # Find the x and y coordinates for the plot labels.
+  # Find the x and y coordinates for the plot labels. The labels for factor outcomes are calculated
+  # in the gglot2 code.
   if (isTRUE(show_labels) || missing(show_labels)) {
 
-    data_plot_group <- data_windows %>%
+    data_plot_group <- windows %>%
       dplyr::group_by(.data$window_length, .data$window) %>%
       dplyr::summarise("index" = .data$start + ((.data$stop - .data$start) / 2))  # Window midpoint for plot label.
-    data_plot_group$label_height <- ifelse(min(data_plot[, 1], na.rm = TRUE) < 0,
-                                           (max(data_plot[, 1], na.rm = TRUE) - base::abs(min(data_plot[, 1], na.rm = TRUE))) / 2,
-                                           (max(data_plot[, 1], na.rm = TRUE) + base::abs(min(data_plot[, 1], na.rm = TRUE))) / 2)
+
+    if (methods::is(data_plot[, outcome_col], "numeric")) {
+
+      data_plot_group$label_height <- ifelse(min(data_plot[, 1], na.rm = TRUE) < 0,
+                                             (max(data_plot[, 1], na.rm = TRUE) - base::abs(min(data_plot[, 1], na.rm = TRUE))) / 2,
+                                             (max(data_plot[, 1], na.rm = TRUE) + base::abs(min(data_plot[, 1], na.rm = TRUE))) / 2)
+      }
+
     data_plot_group <- data_plot_group[!is.na(data_plot_group$window), ]
   }
   #----------------------------------------------------------------------------
@@ -270,7 +275,9 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
       dplyr::filter(is.na(.data$lag) & is.na(.data$lead))
 
     data_plot_point$ggplot_color_group <- factor(data_plot_point$ggplot_color_group, ordered = TRUE, levels(data_plot$ggplot_color_group))
+
   } else {
+
     data_plot$ggplot_color_group <- ordered(data_plot$ggplot_color_group)
   }
   #----------------------------------------------------------------------------
@@ -278,10 +285,19 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
   p <- ggplot()
   p <- p + geom_rect(data = windows, aes(xmin = .data$start, xmax = .data$stop,
                                          ymin = -Inf, ymax = Inf), fill = "grey85", show.legend = FALSE)
-  p <- p + geom_line(data = data_plot, aes(x = .data$index, y = eval(parse(text = outcome_names)),
-                                           color = .data$ggplot_color_group), size = 1.05)
 
-  if (!is.null(groups)) {
+  if (methods::is(data_plot[, outcome_names], "numeric")) {
+
+    p <- p + geom_line(data = data_plot, aes(x = .data$index, y = eval(parse(text = outcome_names)),
+                                             color = .data$ggplot_color_group), size = 1.05)
+
+  } else if (methods::is(data_plot[, outcome_names], "factor")) {
+
+    p <- p + geom_tile(data = data_plot, aes(x = .data$index, y = ordered(.data$ggplot_color_group),
+                                             fill = ordered(eval(parse(text = outcome_names)))))
+  }
+
+  if (!is.null(groups) && methods::is(data_plot[, outcome_names], "numeric")) {
     if (nrow(data_plot_point) >= 1) {
       p <- p + geom_point(data = data_plot_point, aes(x = .data$index, y = eval(parse(text = outcome_names)),
                                                       color = .data$ggplot_color_group), show.legend = FALSE)
@@ -289,16 +305,42 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
   }
 
   if (isTRUE(show_labels) || missing(show_labels)) {
-    p <- p + geom_label(data = data_plot_group, aes(x = .data$index, y = .data$label_height,
-                                                    label = .data$window), color = "black", size = 4)
+
+    if (methods::is(data_plot[, outcome_names], "numeric")) {
+
+      p <- p + geom_label(data = data_plot_group, aes(x = .data$index, y = .data$label_height,
+                                                      label = .data$window), color = "black", size = 4)
+
+    } else if (methods::is(data_plot[, outcome_names], "factor")) {
+
+      data_plot_group$label_height <- ordered(levels(ordered(data_plot$ggplot_color_group))[1])
+
+      p <- p + geom_label(data = data_plot_group, aes(x = .data$index, y = .data$label_height,
+                                                      label = .data$window), color = "black", size = 4)
+    }
   }
 
   p <- p + theme_bw()
 
-  if (is.null(groups)) {
+  if (is.null(groups) && methods::is(data_plot[, outcome_col], "numeric")) {
+
     p <- p + theme(legend.position = "none")
   }
 
-  p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Groups") + ggtitle("Validation Windows")
+  if (methods::is(data_plot[, outcome_col], "numeric")) {
+
+    p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Groups") + ggtitle("Validation Windows")
+
+  } else {
+
+    if (length(levels(data_plot$ggplot_color_group)) == 1) {
+
+      p <- p + xlab("Dataset index") + ylab("Outcome") + labs(fill = "Outcome") + ggtitle("Validation Windows")
+
+    } else {
+
+      p <- p + xlab("Dataset index") + ylab("Groups") + labs(fill = "Outcome") + ggtitle("Validation Windows")
+    }
+  }
   return(p)
 } # nocov end

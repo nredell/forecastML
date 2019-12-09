@@ -79,6 +79,8 @@ capabilities of the user-specified model.
 
 6. **`return_hyper`:** Return user-defined model hyperparameters across validation datasets.
 
+7. **`combine_forecasts`:** Coming soon.
+
 ![](./tools/forecastML_cheat_sheet_data.png)
 
 <br>
@@ -343,4 +345,6 @@ plot(data_forecasts, data_actual = data_seatbelts[-(1:150), ],
 ## Roadmap
 
 * Refactor to incorporate `tsibble` time series datasets and principles.
+
+* Add support for forecasting factors similar to sequence analysis.
     
