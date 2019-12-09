@@ -7,14 +7,14 @@
 #' @param lagged_df An object of class 'lagged_df' or 'grouped_lagged_df' from \code{\link{create_lagged_df}}.
 #' @param window_length An integer that defines the length of the contiguous validation dataset in dataset rows/dates.
 #' If dates were given in \code{create_lagged_df()}, the validation window is 'window_length' * 'date frequency' in calendar time.
-#' Setting \code{window_length = 0} trains the model on the entire dataset--used for re-training after examining
-#' the cross-validation results. Specifying multiple \code{window_start} and \code{window_stop} values with a vector of
+#' Setting \code{window_length = 0} trains the model on (a) the entire dataset or (b) between a single \code{window_start} and
+#' \code{window_stop} value. Specifying multiple \code{window_start} and \code{window_stop} values with vectors of
 #' length > 1 overrides \code{window_length}.
 #' @param window_start Optional. A row index or date identifying the row/date to start creating contiguous validation datasets. A
 #' vector of start rows/dates can be supplied for greater control. The length and order of \code{window_start} should match \code{window_stop}.
 #' If \code{length(window_start) > 1}, \code{window_length}, \code{skip}, and \code{include_partial_window} are ignored.
 #' @param window_stop Optional. An index or date identifying the row/date to stop creating contiguous validation datasets. A
-#' vector of start rows/dates can be supplied for greater control. The length and order of \code{window_start} should match \code{window_stop}.
+#' vector of start rows/dates can be supplied for greater control. The length and order of \code{window_stop} should match \code{window_start}.
 #' If \code{length(window_stop) > 1}, \code{window_length}, \code{skip}, and \code{include_partial_window} are ignored.
 #' @param skip An integer giving a fixed number of dataset rows/dates to skip between validation datasets. If dates were given
 #' in \code{create_lagged_df()}, the time between validation windows is \code{skip} * 'date frequency'.
@@ -75,8 +75,16 @@ create_windows <- function(lagged_df, window_length = 12L,
 
   if (length(window_start) == 1 && length(window_stop) == 1) {  # A single start and stop date.
 
-    if (!window_stop >= data_stop) {
+    if (!window_start >= data_start) {
+      stop(paste0("The start of all validation windows needs to occur on or after row/date ", data_start, " which is the beginning of the dataset."))
+    }
+
+    if (!window_stop <= data_stop) {
       stop(paste0("The end of all validation windows needs to occur on or before row/date ", data_stop, " which is the end of the dataset."))
+    }
+
+    if (is.null(date_indices) && window_length > (as.numeric(window_stop - window_start) + 1)) {
+      stop(paste0("The window length is wider than 'window_stop - window_start'. Set 'window_length = 0' to get 1 validation window for this period."))
     }
 
   } else {  # A vector of multiple start and stop dates.
@@ -86,7 +94,7 @@ create_windows <- function(lagged_df, window_length = 12L,
     }
 
     if (!all(window_stop >= window_start)) {
-      stop(paste0("window_stop needs to be greater than window_start for all validation windows"))
+      stop(paste0("'window_stop' needs to be greater than 'window_start' for all validation windows"))
     }
   }
 
@@ -126,7 +134,6 @@ create_windows <- function(lagged_df, window_length = 12L,
           }
           window_matrix
         })
-
         window_matrices <- as.data.frame(window_matrices[[1]])
       }
 
