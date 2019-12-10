@@ -221,6 +221,16 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
 
   # Outcome data.
   data_y <- data[, outcome_col, drop = FALSE]
+
+  # If the outcome is a factor, save the levels out as an attribute.
+  if (methods::is(data[, outcome_col], "factor")) {
+
+    outcome_levels <- levels(data[, outcome_col])
+
+  } else {
+
+    outcome_levels <- NULL
+  }
   #----------------------------------------------------------------------------
 
   if (length(horizons) == 1 && !is.null(lookback_control)) {
@@ -710,6 +720,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), outcome_col = 
   attr(data_out, "horizons") <- horizons
   attr(data_out, "outcome_col") <- outcome_col
   attr(data_out, "outcome_names") <- names(data)[outcome_col]
+  attr(data_out, "outcome_levels") <- outcome_levels
   attr(data_out, "predictor_names") <- var_names
   attr(data_out, "dynamic_features") <- dynamic_features
   attr(data_out, "static_features") <- static_features

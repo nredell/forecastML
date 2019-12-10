@@ -43,7 +43,7 @@
 train_model <- function(lagged_df, windows, model_name, model_function, ..., use_future = FALSE) {
 
   if (missing(lagged_df) || !methods::is(lagged_df, "lagged_df")) {
-    stop("The 'data' argument takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
+    stop("The 'lagged_df' argument takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
   }
 
   if (missing(windows) || !methods::is(windows, "windows")) {
@@ -167,6 +167,7 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
   attr(data_out, "horizons") <- horizons
   attr(data_out, "outcome_col") <- attributes(lagged_df)$outcome_col
   attr(data_out, "outcome_names") <- attributes(lagged_df)$outcome_names
+  attr(data_out, "outcome_levels") <- attributes(lagged_df)$outcome_levels
   attr(data_out, "row_indices") <- row_indices
   attr(data_out, "date_indices") <- date_indices
   attr(data_out, "frequency") <- attributes(lagged_df)$frequency
@@ -389,6 +390,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 
   attr(data_out, "outcome_col") <- outcome_col
   attr(data_out, "outcome_names") <- outcome_names
+  attr(data_out, "outcome_levels") <- attributes(model_list[[1]])$outcome_levels
   attr(data_out, "row_indices") <- row_indices
   attr(data_out, "date_indices") <- date_indices
   attr(data_out, "frequency") <- attributes(model_list[[1]])$frequency
@@ -443,12 +445,16 @@ plot.training_results <- function(x,
   }
 
   if (!is.null(attributes(data)$group) & !type %in% c("prediction", "residual")) {
-    stop("Only 'prediction' and 'residual' plots are currently available for grouped models")
+    stop("Only 'prediction' and 'residual' plots are currently available for grouped models.")
+  }
 
+  if (!is.null(attributes(data)$outcome_levels) & !type %in% c("prediction", "residual")) {
+    stop("Only 'prediction' and 'residual' plots are currently available for models with factors as outcomes.")
   }
 
   outcome_col <- attributes(data)$outcome_col
   outcome_names <- attributes(data)$outcome_names
+  outcome_levels <- attributes(data)$outcome_levels
   date_indices <- attributes(data)$date_indices
   frequency <- attributes(data)$frequency
   groups <- attributes(data)$group
@@ -456,7 +462,15 @@ plot.training_results <- function(x,
 
   forecast_stability_plot_windows <- windows
 
-  data$residual <- data[, outcome_names] - data[, paste0(outcome_names, "_pred")]
+  if (methods::is(data[, outcome_names], "numeric")) {
+
+    data$residual <- data[, outcome_names] - data[, paste0(outcome_names, "_pred")]
+
+  } else if (methods::is(data[, outcome_names], "factor")) {
+
+    # Binary accuracy/residual.
+    data$residual <- ifelse(data[, outcome_names] != data[, paste0(outcome_names, "_pred")], 1, 0)
+  }
 
   models <- if (is.null(models)) {unique(data$model)} else {models}
   horizons <- if (is.null(horizons)) {unique(data$model_forecast_horizon)} else {horizons}
@@ -470,7 +484,7 @@ plot.training_results <- function(x,
   data_plot$model_forecast_horizon <- NULL
 
   data_plot <- data_plot[data_plot$model %in% models & data_plot$horizon %in% horizons &
-                           data_plot$window_number %in% windows, ]
+                         data_plot$window_number %in% windows, ]
 
   if (methods::is(valid_indices, "Date") || methods::is(valid_indices, "POSIXt")) {
 
@@ -488,7 +502,6 @@ plot.training_results <- function(x,
     } else {
 
       data_plot$index <- data_plot$valid_indices
-
     }
   }
 
@@ -499,8 +512,17 @@ plot.training_results <- function(x,
   #----------------------------------------------------------------------------
   # Create different line segments in ggplot with `color = ggplot_color_group`.
   if (isFALSE(window_custom)) {
+
+    if (!is.null(groups)) {
+      data_plot <- dplyr::arrange(data_plot, model, eval(parse(text = groups)))
+    }
+
     data_plot$ggplot_color_group <- apply(data_plot[,  c("model", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+
   } else {
+
+    data_plot <- dplyr::arrange(data_plot, model, window_number)
+
     data_plot$ggplot_color_group <- apply(data_plot[,  c("model", "window_number", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
   }
 
@@ -530,7 +552,6 @@ plot.training_results <- function(x,
     # This may be an empty data.frame if every time series has 2 or more contiguous records, and
     # suppressWarnings() suppresses a forcats warning.
     data_plot_point <- suppressWarnings(data_plot_point[data_plot_point$date_indices %in% date_indices[valid_indices], ])
-
   }
   #----------------------------------------------------------------------------
 
@@ -540,6 +561,8 @@ plot.training_results <- function(x,
     data_plot <- tidyr::gather(data_plot, "outcome", "value",
                                -!!names(data_plot)[!names(data_plot) %in% c(outcome_names, paste0(outcome_names, "_pred"))])
 
+    data_plot$value <- factor(data_plot$value, levels = outcome_levels, ordered = TRUE)
+
     # If date indices exist, plot with them.
     if (!is.null(date_indices)) {
       data_plot$index <- data_plot$date_indices
@@ -547,14 +570,45 @@ plot.training_results <- function(x,
 
     if (type == "prediction") {
 
-      p <- ggplot(data_plot[data_plot$outcome != outcome_names, ],
-                  aes(x = .data$index, y = .data$value,
-                      group = .data$ggplot_color_group, color = .data$ggplot_color_group))
+      p <- ggplot()
 
-      p <- p + geom_line(size = 1.05, linetype = 1)
+      if (methods::is(data_plot$value, "numeric")) {
+
+        # Plot historical predictions.
+        p <- p + geom_line(data = data_plot[data_plot$outcome != outcome_names, ],
+                           aes(x = .data$index, y = .data$value, group = .data$ggplot_color_group, color = .data$ggplot_color_group),
+                           size = 1.05, linetype = 1)
+
+      } else if (methods::is(data_plot$value, "factor")) {
+
+        if (is.null(groups)) {
+
+          data_plot$ggplot_color_group <- factor(as.character(data_plot$ggplot_color_group), ordered = TRUE,
+                                                 levels = c(unique(as.character(data_plot$ggplot_color_group)), "Actual"))
+
+          data_plot$ggplot_color_group[data_plot$outcome == outcome_names] <- "Actual"
+
+        } else {
+
+          levels_actuals <- paste0("Actuals - ", levels(data_plot$ggplot_color_group))
+
+          levels_plot <- as.vector(rbind(levels(data_plot$ggplot_color_group), levels_actuals))
+
+          data_plot$ggplot_color_group <- as.character(data_plot$ggplot_color_group)
+
+          data_plot$ggplot_color_group[data_plot$outcome == outcome_names] <- paste0("Actuals - ", data_plot$ggplot_color_group[data_plot$outcome == outcome_names])
+
+          levels(data_plot$ggplot_color_group) <- levels_plot
+          data_plot$ggplot_color_group <- factor(data_plot$ggplot_color_group, levels = levels(data_plot$ggplot_color_group), ordered = TRUE)
+        }
+
+        # Plot actuals and historical predictions.
+        p <- p + geom_tile(data = data_plot, aes(x = .data$index, y = .data$ggplot_color_group,
+                                                 fill = .data$value))
+      }
 
       # If the plotting data.frame has both lower and upper forecasts plot these bounds.
-      if (c(all(any(grepl("_pred_lower", names(data_plot))), any(grepl("_pred_upper", names(data_plot)))))) {
+      if (all(methods::is(data_plot$value, "numeric"), any(grepl("_pred_lower", names(data_plot))), any(grepl("_pred_upper", names(data_plot))))) {
 
         p <- p + geom_ribbon(data = data_plot[data_plot$outcome == outcome_names, ],
                              aes(x = .data$index, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
@@ -562,12 +616,12 @@ plot.training_results <- function(x,
                                  fill = .data$ggplot_color_group, color = NULL), alpha = .25, show.legend = FALSE)
       }
 
-      if (is.null(groups)) {
+      if (methods::is(data_plot$value, "numeric") && is.null(groups)) {
 
         p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
                            aes(x = .data$index, y = .data$value), color = "grey50")
 
-      } else {
+      } else if (methods::is(data_plot$value, "numeric")) {
 
         p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
                            aes(x = .data$index, y = .data$value,
@@ -577,25 +631,81 @@ plot.training_results <- function(x,
 
     } else if (type == "residual") {
 
-      p <- ggplot(data_plot[data_plot$outcome != outcome_names, ],
-                  aes(x = .data$index, y = .data$residual,
-                      group = .data$ggplot_color_group, color = .data$ggplot_color_group))
-      p <- p + geom_line(size = 1.05, linetype = 1)
-      p <- p + geom_hline(yintercept = 0)
+      if (methods::is(data_plot$value, "numeric")) {
+
+        # Plot historical predictions.
+        p <- ggplot(data_plot[data_plot$outcome != outcome_names, ],
+                    aes(x = .data$index, y = .data$residual,
+                        group = .data$ggplot_color_group, color = .data$ggplot_color_group))
+
+        p <- p + geom_line(size = 1.05, linetype = 1)
+        p <- p + geom_hline(yintercept = 0)
+
+      } else if (methods::is(data_plot$value, "factor")) {
+
+        if (is.null(groups)) {
+
+          data_plot$ggplot_color_group <- factor(as.character(data_plot$ggplot_color_group), ordered = TRUE,
+                                                 levels = c(unique(as.character(data_plot$ggplot_color_group)), "Actual"))
+
+          data_plot$ggplot_color_group[data_plot$outcome == outcome_names] <- "Actual"
+
+        } else {
+
+          # data_plot$ggplot_color_group <- as.character(data_plot$ggplot_color_group)
+          #
+          # data_plot$ggplot_color_group <- factor(data_plot$ggplot_color_group, levels = levels(data_plot$ggplot_color_group), ordered = TRUE)
+        }
+
+        p <- ggplot()
+
+        # Plot predictions to avoid duplicate residuals in plots.
+        p <- p + geom_tile(data = data_plot[data_plot$outcome != outcome_names, ], aes(x = .data$index, y = .data$ggplot_color_group,
+                                                 fill = ordered(.data$residual)))
+      }
     }
 
     p <- p + scale_color_viridis_d()
     p <- p + facet_grid(horizon ~ ., drop = TRUE)
     p <- p + theme_bw()
+
     if (type == "prediction") {
-      p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Model") +
-        ggtitle("Forecasts vs. Actuals Through Time - Faceted by horizon")
+
+      if (is.null(outcome_levels)) {
+
+        p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Model") +
+          ggtitle("Forecasts vs. Actuals Through Time - Faceted by horizon")
+
+      } else {
+
+        p <- p + xlab("Dataset index") + ylab("Outcome and model") + labs(fill = "Outcome") +
+          ggtitle("Forecasts vs. Actuals Through Time - Faceted by horizon")
+      }
+
     } else if (type == "residual") {
-      p <- p + xlab("Dataset index") + ylab("Residual") + labs(color = "Model") +
-        ggtitle("Forecast Error Through Time - Faceted by forecast horizon")
+
+      if (is.null(outcome_levels)) {
+
+        p <- p + xlab("Dataset index") + ylab("Residual") + labs(color = "Model") +
+          ggtitle("Forecast Error Through Time - Faceted by forecast horizon")
+
+      } else {
+
+        if (is.null(groups)) {
+
+          p <- p + xlab("Dataset index") + ylab("Residual and model") + labs(fill = "Residual") +
+            ggtitle("Forecast Error Through Time - Faceted by forecast horizon")
+
+        } else {
+
+          p <- p + xlab("Dataset index") + ylab("Residual, model, and group") + labs(fill = "Residual") +
+            ggtitle("Forecast Error Through Time - Faceted by forecast horizon")
+        }
+      }
     }
     return(p)
   }
+
   #----------------------------------------------------------------------------
 
   if (type %in% c("forecast_stability")) {
