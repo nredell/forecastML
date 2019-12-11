@@ -650,11 +650,6 @@ plot.training_results <- function(x,
 
           data_plot$ggplot_color_group[data_plot$outcome == outcome_names] <- "Actual"
 
-        } else {
-
-          # data_plot$ggplot_color_group <- as.character(data_plot$ggplot_color_group)
-          #
-          # data_plot$ggplot_color_group <- factor(data_plot$ggplot_color_group, levels = levels(data_plot$ggplot_color_group), ordered = TRUE)
         }
 
         p <- ggplot()
