@@ -101,6 +101,7 @@ Here's a summary of the problem at hand:
     * `PetrolPrice` - the price of gas.
     * `law` - A binary indicator of the presence of a seatbelt law.
 * **Forecast:**
+    * Build a 12-month-ahead forecast model as a combination of short- and long-term horizon-specific ML models.
     * Model training - The first 15 years of the monthly dataset.
     * Model testing - The last year of the monthly dataset.
 
@@ -116,7 +117,7 @@ install.packages("forecastML")
 ```{r, warning = FALSE, message = FALSE}
 library(dplyr)
 library(ggplot2)
-#library(forecastML)
+library(forecastML)
 library(glmnet)
 library(randomForest)
 library(DT)
@@ -135,7 +136,7 @@ data <- data[, c("DriversKilled", "kms", "PetrolPrice", "law")]
 DT::datatable(head(data, 5))
 ```
 
-<br>
+***
 
 ### Train-test split
 
@@ -161,7 +162,7 @@ p
 
 #### forecastML::create_lagged_df
 
-We'll create a list of datasets, one for each forecast horizon.
+We'll create a list of datasets for model training, one for each forecast horizon.
 
 ```{r}
 outcome_col <- 1  # The column index of our DriversKilled outcome.
@@ -238,7 +239,8 @@ Assessing the differences between these models is a good way to determine the st
 modeling approach under various time series dynamics.
 
 After model training and exploration, it's entirely possible that a single multi-step-ahead forecast may 
-use entirely different ML algorithms to produce the short- and long-term forecasts.
+use different ML algorithms (e.g., a neural network for shorter horizons and linear regression for  
+longer horizons) to produce the short- and long-term forecasts.
 
 ```{r}
 plot(windows, data_list, show_labels = TRUE)
@@ -400,8 +402,6 @@ Below is a plot of the historical forecasts for each validation window at select
 
 ```{r}
 plot(data_results, type = "prediction", horizons = c(1, 6, 12))
-class(data_results)
-x <- data_results
 ```
 
 <br>
@@ -525,7 +525,7 @@ plot(data_hyper, data_results, data_error, type = "error", c(1, 6, 12))
 
 <br>
 
-### Forecast with nested cv models
+### Forecast with multiple models from nested CV
 
 #### forecastML::create_lagged_df
 
@@ -570,19 +570,21 @@ for (i in seq_along(data_forecast_list)) {
 }
 ```
 
+<br>
+
 #### Forecast results
 
 Running the predict method, `predict.forecast_model()`, on the dataset created 
 above--with `type = "forecast"`--and placing it in the `data` argument in `predict.forecast_model()` below, returns 
 a data.frame of forecasts with the following columns:
 
-* **model:** User-supplied model name in `train_model()`.
+* **model:** User-supplied model name in `forecastML::train_model()`.
 * **model_forecast_horizon:** The direct-forecasting time horizon that the model was trained on.
 * **horizon:** Forecast horizon, ranging from 1:model_forecast_horizon.
 * **window_length:** Validation window length measured in dataset rows.
 * **window_number:** Validation dataset number.
 * **forecast_period:** The dataset row/date for the forecast.
-* **"groups":** If given, the user-supplied groups in `create_lagged_df()`.
+* **"groups":** If given, the user-supplied groups in `forecastML::create_lagged_df()`.
 * **"outcome_name" pred:** The model forecasts.
 * **"outcome_name" pred_lower:** If given, the lower forecast bounds returned by the user-supplied prediction function.
 * **"outcome_name" pred_upper:** If given, the upper forecast bounds returned by the user-supplied prediction function.
@@ -619,6 +621,8 @@ plot(data_forecast, data_actual = data[-(1:150), ],
 
 ### Forecast error
 
+#### forecastML::return_error
+
 Finally, we'll look at our out-of-sample forecast error by forecast horizon for our two models by setting `data_test = data_test`.
 
 If the first argument of `forecastML::return_error()` is an object of class `forecast_results` and 
@@ -645,7 +649,7 @@ DT::datatable(head(data_error$error_by_horizon, 10), options = list(scrollX = TR
 
 ### Model Selection and Re-training
 
-Because our LASSO model is both stabler and more accurate, we'll re-train our model across 
+Because our LASSO model is both more stable and accurate, we'll re-train this model across 
 the entire training dataset to get our final `r length(horizons)` models--1 for each forecast horizon. 
 Note that for a real-world forecasting problem this is when we would do additional model tuning 
 to imrpove forecast accuracy across validation windows as well as narrow the hyperparameter search 
@@ -681,7 +685,7 @@ plot(windows, data_list, show_labels = TRUE)
 
 #### forecastML::train_model
 
-Without nested cross-validation and holdout windows, the prediction plot is essnetially a plot of model fit.
+Without nested cross-validation and holdout windows, the prediction plot is essentially a plot of model fit.
 
 ```{r}
 model_results <- forecastML::train_model(data_list, windows,  model_name = "LASSO", model_function)
@@ -694,7 +698,7 @@ plot(data_results, type = "prediction", horizons = c(1, 6, 12))
 
 <br>
 
-#### forecastML::return_error
+#### Training error with forecastML::return_error
 
 ```{r}
 data_error <- forecastML::return_error(data_results, metrics = c("mae", "mape", "mdape", "smape"),
@@ -708,7 +712,7 @@ plot(data_error, data_results, type = "horizon")
 
 <br>
 
-### Forecast
+### Forecast with 1 model per horizon
 
 ```{r}
 data_forecast_list <- forecastML::create_lagged_df(data_train,
@@ -735,7 +739,7 @@ plot(data_forecast, data_actual = data[-(1:150), ],
 
 <br>
 
-#### Forecast error
+#### Forecast error with forecastML::return_error
 
 ```{r}
 data_error <- forecastML::return_error(data_forecast, data_test = data_test, 
@@ -750,3 +754,4 @@ DT::datatable(data_error$error_by_horizon, options = list(scrollX = TRUE))
 DT::datatable(data_error$error_global, options = list(scrollX = TRUE))
 ```
 
+***
