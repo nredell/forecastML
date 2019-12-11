@@ -400,6 +400,8 @@ Below is a plot of the historical forecasts for each validation window at select
 
 ```{r}
 plot(data_results, type = "prediction", horizons = c(1, 6, 12))
+class(data_results)
+x <- data_results
 ```
 
 <br>

@@ -475,7 +475,11 @@ plot.training_results <- function(x,
   models <- if (is.null(models)) {unique(data$model)} else {models}
   horizons <- if (is.null(horizons)) {unique(data$model_forecast_horizon)} else {horizons}
   windows <- if (is.null(windows)) {unique(data$window_number)} else {windows}
-  valid_indices <- if (is.null(valid_indices)) {unique(data$valid_indices)} else {valid_indices}
+  if (is.null(date_indices)) {
+    valid_indices <- if (is.null(valid_indices)) {unique(data$valid_indices)} else {valid_indices}
+  } else {
+    valid_indices <- if (is.null(valid_indices)) {unique(data$date_indices)} else {date_indices}
+  }
 
   data_plot <- data
 
@@ -561,7 +565,9 @@ plot.training_results <- function(x,
     data_plot <- tidyr::gather(data_plot, "outcome", "value",
                                -!!names(data_plot)[!names(data_plot) %in% c(outcome_names, paste0(outcome_names, "_pred"))])
 
-    data_plot$value <- factor(data_plot$value, levels = outcome_levels, ordered = TRUE)
+    if (!is.null(outcome_levels)) {
+      data_plot$value <- factor(data_plot$value, levels = outcome_levels, ordered = TRUE)
+    }
 
     # If date indices exist, plot with them.
     if (!is.null(date_indices)) {
