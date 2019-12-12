@@ -43,7 +43,24 @@ library(forecastML)
 devtools::install_github("nredell/forecastML")
 library(forecastML)
 ```
-## Vignettes
+
+## README Contents
+
+* **[Vignettes](#vignettes)**
+
+* **[Cheat sheets](#cheat_sheets)**
+
+* **[FAQ](#faq)**
+
+* **Examples**
+    + **[Forecasting numeric outcomes](#examples_numeric)**
+    + **[Forecasting factor outcomes (forecasting sequences)](#examples_sequence)**
+<br>
+
+* **[Roadmap](#roadmap)**
+
+
+## Vignettes {#vignettes}
 
 The main functions covered in each vignette are shown below as `function()`.
 
@@ -59,7 +76,8 @@ The main functions covered in each vignette are shown below as `function()`.
 * **[Customizing the user-defined wrapper functions](https://nredell.github.io/forecastML/doc/custom_functions.html)**. 
 `train()` and `predict()`
 
-## Cheat Sheets
+
+## Cheat Sheets {#cheat_sheets}
 
 ![](./tools/forecastML_cheat_sheet.png)
 
@@ -87,7 +105,7 @@ capabilities of the user-specified model.
 
 ![](./tools/forecastML_cheat_sheet_model.png)
 
-## FAQ
+## FAQ {#faq}
 
 * **Q:** Where does `forecastML` fit in with respect to popular `R` machine learning packages like [mlr3](https://mlr3.mlr-org.com/) and [caret](https://github.com/topepo/caret)?
 * **A:** The idea is that `forecastML` takes care of the tedious parts of forecasting with ML methods: creating training and forecasting datasets with different 
@@ -96,7 +114,17 @@ That said, the workflow for packages like `mlr3` and `caret` would mostly occur 
 modeling function which is passed into `forecastML::train_model()`. Refer to the wrapper function customization 
 vignette for more details.
 
-## Examples - R & Python
+
+* **Q:** How do I get the model training and forecasting datasets as well as the trained models out of the 
+`forecastML` pipeline?
+* **A:** After running `forecastML::create_lagged_df()` with either `type = "train"` or `type = "forecast"`, 
+the `data.frame`s can be accessed with `my_lagged_df$horizon_h` where "h" is an integer marking the 
+horizon-specific dataset (e.g., the value(s) passed in `horizons = ...`). The trained models from 
+`forecastML::train_model()` can be accessed with `my_trained_model$horizon_h$window_w$model` where "w" is 
+the validation window number from `forecastML::create_windows()`.
+
+
+## Examples - Numeric Outcomes with R & Python {#examples_numeric}
 
 ### R
 
@@ -342,9 +370,20 @@ plot(data_forecasts, data_actual = data_seatbelts[-(1:150), ],
 
 ***
 
-## Roadmap
+
+## Examples - Factor Outcomes with R & Python (forecasting sequences) {#examples_sequence}
+
+* Coming soon.
+
+
+## Roadmap {#roadmap}
 
 * Refactor to incorporate `tsibble` time series datasets and principles.
 
 * Add support for forecasting factors similar to sequence analysis.
-    
+
+* Add more forecast error metrics.
+
+* Support forecast combinations across horizon-specific models.
+
+* Add confidence/credible forecast intervals based on validation window performance.
