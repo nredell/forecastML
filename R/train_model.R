@@ -836,14 +836,19 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
   }
 
   data_forecast <- x
-  rm(x)
+  #rm(x)
 
   type <- "forecast"  # Only one plot option at present.
 
   outcome_col <- attributes(data_forecast)$outcome_col
   outcome_names <- attributes(data_forecast)$outcome_names
+  outcome_levels <- attributes(data_forecast)$outcome_levels
   date_indices <- attributes(data_forecast)$date_indices
   groups <- attributes(data_forecast)$group
+
+  if (all(!is.null(outcome_levels), !is.null(groups))) {
+    stop("Forecast plots are not yet available for factor outcomes with multiple time series.")
+  }
 
   if (!is.null(data_actual)) {
 
@@ -905,39 +910,47 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
 
     p <- ggplot()
 
-    if (1 %in% horizons) {  # Use geom_point instead of geom_line to plot a 1-step-ahead forecast.
+    if (is.null(outcome_levels)) {  # The outcome is numeric.
 
-      # If the plotting data.frame has bother lower and upper forecasts plot these bounds.
-      if (all(any(grepl("_pred_lower", names(data_forecast))), any(grepl("_pred_upper", names(data_forecast))))) {
+      if (1 %in% horizons) {  # Use geom_point instead of geom_line to plot a 1-step-ahead forecast.
 
-        # geom_ribbon() does not work with a single data point when forecast bounds are plotted.
-        p <- p + geom_linerange(data = data_forecast[data_forecast$model_forecast_horizon == 1, ],
-                                aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
-                                    ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
-                                    color = .data$plot_group), alpha = .25, size = 3, show.legend = FALSE)
+        # If the plotting data.frame has both lower and upper forecasts plot these bounds.
+        if (all(any(grepl("_pred_lower", names(data_forecast))), any(grepl("_pred_upper", names(data_forecast))))) {
 
+          # geom_ribbon() does not work with a single data point when forecast bounds are plotted.
+          p <- p + geom_linerange(data = data_forecast[data_forecast$model_forecast_horizon == 1, ],
+                                  aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
+                                      ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
+                                      color = .data$plot_group), alpha = .25, size = 3, show.legend = FALSE)
+
+        }
+
+        p <- p + geom_point(data = data_forecast[data_forecast$model_forecast_horizon == 1, ],
+                            aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                                color = .data$plot_group, group = .data$plot_group), show.legend = FALSE)
       }
 
-      p <- p + geom_point(data = data_forecast[data_forecast$model_forecast_horizon == 1, ],
-                          aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
-                              color = .data$plot_group, group = .data$plot_group), show.legend = FALSE)
+      if (!all(horizons == 1)) {  # Plot forecasts for model forecast horizons > 1.
+
+        # If the plotting data.frame has bother lower and upper forecasts plot these bounds.
+        if (all(any(grepl("_pred_lower", names(data_forecast))), any(grepl("_pred_upper", names(data_forecast))))) {
+
+          p <- p + geom_ribbon(data = data_forecast[data_forecast$model_forecast_horizon != 1, ],
+                               aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
+                                   ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
+                                   fill = .data$plot_group, color = NULL), alpha = .25, show.legend = FALSE)
+        }
+
+        p <- p + geom_line(data = data_forecast[data_forecast$model_forecast_horizon != 1, ],
+                           aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                               color = .data$plot_group, group = .data$plot_group))
       }
 
-    if (!all(horizons == 1)) {  # Plot forecasts for model forecast horizons > 1.
+    } else {  # The outcome is a factor.
 
-      # If the plotting data.frame has bother lower and upper forecasts plot these bounds.
-      if (all(any(grepl("_pred_lower", names(data_forecast))), any(grepl("_pred_upper", names(data_forecast))))) {
-
-        p <- p + geom_ribbon(data = data_forecast[data_forecast$model_forecast_horizon != 1, ],
-                             aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
-                                 ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
-                                 fill = .data$plot_group, color = NULL), alpha = .25, show.legend = FALSE)
-      }
-
-      p <- p + geom_line(data = data_forecast[data_forecast$model_forecast_horizon != 1, ],
-                         aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
-                             color = .data$plot_group, group = .data$plot_group))
-      }
+      p <- p + geom_tile(data = data_forecast, aes(x = .data$forecast_period, y = .data$plot_group,
+                                               fill = eval(parse(text = paste0(outcome_names, "_pred")))))
+    }
 
     p <- p + geom_vline(xintercept = attributes(data_forecast)$data_stop, color = "red")
 
@@ -946,25 +959,96 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
       data_actual$plot_group <- apply(data_actual[, groups, drop = FALSE], 1, paste, collapse = " + ")
       data_actual$plot_group <- ordered(data_actual$plot_group, levels = unique(data_actual$plot_group))
 
-      if (is.null(groups)) {
-        p <- p + geom_line(data = data_actual, aes(x = .data$index,
-                                                   y = eval(parse(text = outcome_names))), color = "grey50")
-      } else {
-        p <- p + geom_line(data = data_actual, aes(x = .data$index,
-                                                   y = eval(parse(text = outcome_names)),
-                                                   color = .data$plot_group,
-                                                   group = .data$plot_group))
+      if (is.null(outcome_levels)) {  # The outcome is numeric.
+
+        if (is.null(groups)) {
+
+          p <- p + geom_line(data = data_actual, aes(x = .data$index,
+                                                     y = eval(parse(text = outcome_names))), color = "grey50")
+        } else {
+
+          p <- p + geom_line(data = data_actual, aes(x = .data$index,
+                                                     y = eval(parse(text = outcome_names)),
+                                                     color = .data$plot_group,
+                                                     group = .data$plot_group))
+        }
+
+      } else {  # The outcome is a factor.
+
+        if (is.null(groups)) {
+
+          # we'll concatenate the actuals and forecast dataset for easier plotting.
+          data_all <- data_actual
+          data_all$actual_or_forecast <- "actual"
+          data_all$historical_or_test <- with(data_all, ifelse(index <= attributes(data_forecast)$data_stop, "historical", "test"))
+
+          data_forecast_mod <- data_forecast
+          names(data_forecast_mod)[names(data_forecast_mod) == "forecast_period"] <- "index"
+          names(data_forecast_mod)[names(data_forecast_mod) == paste0(outcome_names, "_pred")] <- outcome_names
+          data_forecast_mod$actual_or_forecast <- "forecast"
+          data_forecast_mod$historical_or_test <- "neither"
+
+          data_forecast_mod$plot_group <- paste0(data_forecast_mod$model, " - ", data_forecast_mod$model_forecast_horizon,
+                                             " - ", data_forecast_mod$window_number)
+
+          data_all <- data_all[rep(1:nrow(data_all), length(unique(data_forecast_mod$plot_group))), ]
+
+          data_all$plot_group <- rep(unique(data_forecast_mod$plot_group), each = nrow(data_actual))
+
+          data_all <- suppressWarnings(dplyr::bind_rows(data_all, data_forecast_mod))
+
+          data_all$model <- as.character(data_all$model)
+          data_all$model_forecast_horizon <- as.integer(data_all$model_forecast_horizon)
+          data_all$window_number <- as.integer(data_all$window_number)
+
+          data_all <- dplyr::arrange(data_all, model, -model_forecast_horizon, -window_number)
+
+          data_all$plot_group <- factor(data_all$plot_group, levels = unique(data_all$plot_group), ordered = TRUE)
+
+          p <- ggplot()
+
+          # There is no test data provided and the forecast can be attached in-line to any historical data.
+          if (length(data_all$historical_or_test[data_all$historical_or_test == "test"]) == 0) {
+
+            p <- p + geom_tile(data = data_all, aes(x = .data$index, y = .data$plot_group,
+                                                    fill = eval(parse(text = paste0(outcome_names)))))
+
+            p
+
+          } else {  # Plot user-supplied test data above the forecast for comparison.
+
+            data_all$plot_group <- factor(data_all$plot_group, levels = c("Actuals", levels(data_all$plot_group)), ordered = TRUE)
+
+            data_all$plot_group[data_all$historical_or_test == "test"] <- "Actuals"
+
+            p <- p + geom_tile(data = data_all[data_all$actual_or_forecast == "actual", ],
+                               aes(x = .data$index, y = .data$plot_group,
+                                   fill = eval(parse(text = paste0(outcome_names)))))
+
+            p <- p + geom_tile(data = data_all[data_all$historical_or_test != "test", ],
+                               aes(x = .data$index, y =  .data$plot_group,
+                                                    fill = eval(parse(text = paste0(outcome_names)))))
+          }
+        }
+        p <- p + geom_vline(xintercept = attributes(data_forecast)$data_stop, color = "red")
       }
     }
 
     if (all(facet_plot != "")) {
-      p <- p + facet_grid(facet_formula)
+
+      if (is.null(outcome_levels)) {
+        p <- p + facet_grid(facet_formula)
+      }
     }
 
     p <- p + scale_color_viridis_d()
+    p <- p + scale_fill_viridis_d()
     p <- p + theme_bw()
-    p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = toupper(gsub("_", " ", paste(plot_group, collapse = " + \n")))) +
+    p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = toupper(gsub("_", " ", paste(plot_group, collapse = " + \n"))),
+                                                            fill = "Outcome") +
       ggtitle("H-Step-Ahead Model Forecasts")
+
+    p
     return(p)
   }
 } # nocov end
