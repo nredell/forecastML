@@ -47,20 +47,15 @@ library(forecastML)
 ## README Contents
 
 * **[Vignettes](#vignettes)**
-
-* **[Cheat sheets](#cheat_sheets)**
-
+* **[Cheat sheets](#cheat-sheets)**
 * **[FAQ](#faq)**
-
 * **Examples**
-    + **[Forecasting numeric outcomes](#examples_numeric)**
-    + **[Forecasting factor outcomes (forecasting sequences)](#examples_sequence)**
-<br>
-
+    + **[Forecasting numeric outcomes](#examples---numeric-outcomes-with-r-and-python)**
+    + **[Forecasting factor outcomes (forecasting sequences)](#examples---factor-outcomes-with-r-and-python)**
 * **[Roadmap](#roadmap)**
 
 
-## Vignettes {#vignettes}
+## Vignettes
 
 The main functions covered in each vignette are shown below as `function()`.
 
@@ -77,7 +72,7 @@ The main functions covered in each vignette are shown below as `function()`.
 `train()` and `predict()`
 
 
-## Cheat Sheets {#cheat_sheets}
+## Cheat Sheets
 
 ![](./tools/forecastML_cheat_sheet.png)
 
@@ -105,7 +100,7 @@ capabilities of the user-specified model.
 
 ![](./tools/forecastML_cheat_sheet_model.png)
 
-## FAQ {#faq}
+## FAQ
 
 * **Q:** Where does `forecastML` fit in with respect to popular `R` machine learning packages like [mlr3](https://mlr3.mlr-org.com/) and [caret](https://github.com/topepo/caret)?
 * **A:** The idea is that `forecastML` takes care of the tedious parts of forecasting with ML methods: creating training and forecasting datasets with different 
@@ -113,7 +108,6 @@ types of features--grouped, static, and dynamic--as well as simplifying validati
 That said, the workflow for packages like `mlr3` and `caret` would mostly occur inside of the user-supplied 
 modeling function which is passed into `forecastML::train_model()`. Refer to the wrapper function customization 
 vignette for more details.
-
 
 * **Q:** How do I get the model training and forecasting datasets as well as the trained models out of the 
 `forecastML` pipeline?
@@ -124,7 +118,7 @@ horizon-specific dataset (e.g., the value(s) passed in `horizons = ...`). The tr
 the validation window number from `forecastML::create_windows()`.
 
 
-## Examples - Numeric Outcomes with R & Python {#examples_numeric}
+## Examples - Numeric Outcomes with R and Python
 
 ### R
 
@@ -371,12 +365,12 @@ plot(data_forecasts, data_actual = data_seatbelts[-(1:150), ],
 ***
 
 
-## Examples - Factor Outcomes with R & Python (forecasting sequences) {#examples_sequence}
+## Examples - Factor Outcomes with R and Python
 
 * Coming soon.
 
 
-## Roadmap {#roadmap}
+## Roadmap
 
 * Refactor to incorporate `tsibble` time series datasets and principles.
 
