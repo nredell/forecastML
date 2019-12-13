@@ -13,10 +13,14 @@
 \item{prediction_function}{A list of user-defined prediction functions with length equal to
 the number of models supplied in \code{...}. The prediction functions
 take 2 required positional arguments--(1) a 'forecast_model' object from \code{train_model()} and (2) a
-data.frame of model features from \code{create_lagged_df()}--and return a 1- or 3-column data.frame
-of model predictions. If the prediction function returns a 1-column data.frame, point forecasts are assumed.
+data.frame of model features from \code{create_lagged_df()}. For numeric outcomes, the function should \code{return()}
+1- or 3-column data.frame of model predictions. If the prediction function returns a 1-column data.frame, point forecasts are assumed.
 If the prediction function returns a 3-column data.frame, lower and upper forecast bounds are assumed (the
-order and names of the 3 columns does not matter). See the example below for details.}
+order and names of the 3 columns does not matter). For factor oucomes, the function should \code{return()}
+(1) 1-column data.frame of the model-predicted factor level or (2) an L-column data.frame of class probabilities where
+'L' equals the number of levels in the outcome; columns should be ordered, from left to right, the same as
+\code{levels(data$outcome)} which is the default behavior for most \code{predict(..., type = "prob")} functions.
+Column names do not matter.}
 
 \item{data}{If \code{data} is a training dataset from \code{create_lagged_df(..., type = "train")}, validation dataset
 predictions are returned; else, if \code{data} is a forecasting dataset from \code{create_lagged_df(..., type = "forecast")},
@@ -60,7 +64,7 @@ If \code{data = create_lagged_df(..., type = "forecast")}, an S3 object of class
 Predict with a 'forecast_model' object from \code{train_model()}. If \code{data = create_lagged_df(..., type = "train")},
 predictions are returned for the outer-loop nested cross-validation datasets.
 If \code{data} is an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")},
-predictions are returned for the horizons specified in \code{create_lagged_df()}.
+predictions are returned for the horizons specified in \code{create_lagged_df(horizons = ...)}.
 }
 \examples{
 # Sampled Seatbelts data from the R package datasets.
