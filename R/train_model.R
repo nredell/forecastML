@@ -497,6 +497,10 @@ plot.training_results <- function(x,
   if (!is.null(outcome_levels)) {
     factor_level <- if (any(names(data) %in% paste0(outcome_names, "_pred"))) {TRUE} else {FALSE}
     factor_prob <- !factor_level
+
+    if (type == "residual" && factor_prob) {
+      stop("Residual plots with predicted class probabilities are not currently supported.")
+    }
   }
   #----------------------------------------------------------------------------
   # Residual calculations
@@ -815,7 +819,7 @@ plot.training_results <- function(x,
         }
       }
     }
-    return(p)
+    return(suppressWarnings(p))
   }
   #----------------------------------------------------------------------------
 
@@ -905,7 +909,7 @@ plot.training_results <- function(x,
     p <- p + theme_bw()
     p <- p + xlab("Dataset index") + ylab("Coefficient of variation (Abs)") + labs(color = "Model") +
       ggtitle("Forecast Variability Across Forecast Horizons")
-    return(p)
+    return(suppressWarnings(p))
   }
 } # nocov end
 #------------------------------------------------------------------------------
@@ -1150,7 +1154,6 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
           p <- p + scale_fill_viridis_d(drop = FALSE)
           p <- p + facet_wrap(~ ggplot_color_group, ncol = 1, scales = "free_y")
           p <- p + theme_bw()
-          p
         }
       #------------------------------------------------------------------------
         } else {  # Plot predicted factor level.
@@ -1226,6 +1229,6 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
         ggtitle("H-Step-Ahead Model Forecasts")
     }
 
-    return(p)
+    return(suppressWarnings(p))
   }
 } # nocov end
