@@ -581,7 +581,7 @@ plot.training_results <- function(x,
 
     } else {  # Plot different colors for each custom window as the windows can be non-coniguous.
 
-      data_plot <- dplyr::arrange(data_plot, model, window_number)
+      data_plot <- dplyr::arrange(data_plot, .data$model, .data$window_number)
 
       data_plot$ggplot_color_group <- apply(data_plot[,  c("model", "window_number", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
     }
@@ -1183,13 +1183,13 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
 
             # Standardize names for plotting and before any concatenation with data_actual.
             names(data_plot)[names(data_plot) == "forecast_period"] <- "index"
-            names(data_pot)[names(data_plot) == paste0(outcome_names, "_pred")] <- "outcome"
+            names(data_plot)[names(data_plot) == paste0(outcome_names, "_pred")] <- "outcome"
             data_plot$value <- 1
             data_plot$actual_or_forecast <- "forecast"
             data_plot$time_series_type <- "model_forecast"
 
             if (!is.null(data_actual)) {
-              data_plot <- suppressWarnings(dplyr::bind_rows(data_plot, data_all))
+              data_plot <- suppressWarnings(dplyr::bind_rows(data_plot, data_actual))
             }
 
             data_plot$ggplot_color_group <- factor(data_plot$ggplot_color_group, levels = rev(unique(data_plot$ggplot_color_group)), ordered = TRUE)
