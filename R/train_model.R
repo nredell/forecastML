@@ -317,11 +317,11 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
           }
 
           if (!is.null(groups)) {
-
             data_groups <- data_for_forecast[, groups, drop = FALSE]
           }
-        }
-
+        }  # End forecast.
+        #----------------------------------------------------------------------
+        # Check the return of the user-defined predict() function.
         if (is.null(outcome_levels) && !ncol(data_pred) %in% c(1, 3)) {  # Numeric outcome.
           stop("For numeric outcomes, the user-defined prediction function needs to return 1- or 3-column data.frame of model predictions.")
         }
@@ -339,7 +339,8 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
                  the number of data.frame columns returned should equal the number of factor levels.")
           }
         }
-
+        #----------------------------------------------------------------------
+        # Format the returned data.frames from predict().
         if (is.null(outcome_levels)) {  # Numeric outcome.
 
           if (ncol(data_pred) == 1) {
@@ -357,9 +358,9 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
             data_pred <- data_pred[, c(2, 1, 3)]
           }
 
-        } else {  # Factor outcomes.
+        } else {  # Factor outcome.
 
-          if (ncol(data_pred) == 1) {  # A predicted factor.
+          if (ncol(data_pred) == 1) {  # A predicted factor level.
 
             names(data_pred) <- paste0(outcome_names, "_pred")
 
@@ -368,7 +369,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
             names(data_pred) <- outcome_levels
           }
         }  # End reformatting of the returned data.frame of predictions.
-
+        #----------------------------------------------------------------------
 
         model_name <- attributes(model_list[[i]])$model_name
 
