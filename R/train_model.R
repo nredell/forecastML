@@ -467,7 +467,7 @@ plot.training_results <- function(x,
   }
 
   data <- x
-  #rm(x)
+  rm(x)
 
   type <- type[1]  # The default plot is predicting over historical validation windows.
 

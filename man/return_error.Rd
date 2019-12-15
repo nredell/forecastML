@@ -19,8 +19,7 @@ and any grouping columns.}
 \item{test_indices}{Required if \code{data_test} is given. A vector or 1-column data.frame of numeric
 row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_test)}.}
 
-\item{metrics}{Common forecast error metrics. See the Error Metrics section below for details. The
-default behavior is to return all metrics.}
+\item{metrics}{A character vector of common forecast error metrics. The default behavior is to return all metrics.}
 
 \item{models}{Optional. A character vector of user-defined model names supplied to \code{train_model()}.}
 
