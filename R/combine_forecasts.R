@@ -25,8 +25,6 @@
 #'       the user-supplied prediction function.
 #'    }
 #' @export
-
-attributes(data_forecasts_1)
 combine_forecasts <- function(..., type = c("horizon", "error"), data_error = list(NULL)) {
 
   data_forecast <- list(...)
