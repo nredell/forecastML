@@ -64,22 +64,19 @@ library(forecastML)
 The forecasting approach used in `forecastML` involves the following steps:
 
 **1**: Build a series of horizon-specific short-, medium-, and long-term forceast models.
+
 **2**: Assess model generalization peformance across a variety of heldout datasets through time.
+
 **3**: Select those models that consistently performed the best at each forecast horizon and combine them to 
 produce a single ensemble forecast.
 
 Below is a plot of 5 forecast models used to produce a single 12-step-ahead forecast where each color 
 represents a distinct horizon-specific ML. From left to right these models are:
 
-**1**: A feed-forward neural network (purple)
-**2**: An ensemble of ML models
-**3**: A boosted tree model
-**4**: A LASSO regression model
-**5**: A Ridge regression model (yellow)
+**1**: A feed-forward neural network (purple); **2**: An ensemble of ML models; 
+**3**: A boosted tree model; **4**: A LASSO regression model; **5**: A Ridge regression model (yellow).
 
 ![](./tools/forecastML_plot.png)
-
-<br>
 
 
 ## Vignettes
