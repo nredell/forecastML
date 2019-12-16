@@ -36,21 +36,24 @@
 #' @export
 combine_forecasts <- function(..., type = c("horizon", "error"), data_error = list(NULL)) {
 
-  data_forecast <- list(...)
+  data_forecast_list <- list(...)
 
-  if (!all(unlist(lapply(data_forecast, function(x) {methods::is(x, "forecast_results")})))) {
+  if (!all(unlist(lapply(data_forecast_list, function(x) {methods::is(x, "forecast_results")})))) {
     stop("One or more of the forecast datasets given in '...' is not an object of class 'forecast_results'.
          Run predict.forecast_model() on a forward-looking forecast dataset trained over a training dataset
          made with create_windows(window_length = 0).")
   }
 
-  outcome_names <- attributes(data_forecast[[1]])$outcome_names
-  outcome_levels <- attributes(data_forecast[[1]])$outcome_levels
-  data_stop <- attributes(data_forecast[[1]])$data_stop
+  outcome_names <- attributes(data_forecast_list[[1]])$outcome_names
+  outcome_levels <- attributes(data_forecast_list[[1]])$outcome_levels
+  data_stop <- attributes(data_forecast_list[[1]])$data_stop
+
+  data_forecast <- dplyr::bind_rows(data_forecast_list)  # Collapse the forecast_results list(...).
+  data_forecast <- dplyr::as_tibble(data_forecast)
   #----------------------------------------------------------------------------
-  # For factor outcomes, is the prediction a factor level or probability.
+  # For factor outcomes, is the prediction a factor level or probability?
   if (!is.null(outcome_levels)) {
-    factor_level <- if (any(names(data) %in% paste0(outcome_names, "_pred"))) {TRUE} else {FALSE}
+    factor_level <- if (any(names(data_forecast) %in% paste0(outcome_names, "_pred"))) {TRUE} else {FALSE}
     factor_prob <- !factor_level
 
     if (factor_prob) {
@@ -59,10 +62,7 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
   }
   #----------------------------------------------------------------------------
 
-  data_forecast <- dplyr::bind_rows(data_forecast)
-  data_forecast <- dplyr::as_tibble(data_forecast)
-
-  if (unique(data_forecast$window_length) != 0) {
+  if (any(unique(data_forecast$window_length) != 0)) {
     stop("Some models were trained using multiple validation windows. Retrain any final forecast models
          using create_windows(window_length = 0) before combining forecast models across horizons.")
   }
@@ -70,53 +70,62 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
   type <- type[1]
 
   if (!type %in% c("horizon")) {  # List all available types here.
-    stop("Select a forecast combination 'type' that is one of 'horizon', 'error' is not yet supported.")
+    stop("Select a forecast combination 'type' that is one of 'horizon'; 'error' is not yet supported.")
   }
 
   if (type == "horizon") {
 
-    model_forecast_horizons <- sort(unique(data_forecast$model_forecast_horizon))
-    horizons <- sort(unique(data_forecast$horizon))
+    # Because different model forecast horizons could be passed in '...'--e.g., model A = 1- and 12-step-
+    # ahead models and model B = 3-, 6-, and 9-step ahead models--, we'll combine the horizon-specific
+    # forecasts into a singular forecast separately for each model.
+    forecast_combination <- lapply(seq_along(data_forecast_list), function(i) {
 
-    # Create a list of forecast horizons where each horizon-specific model will produce
-    # a forecast. This is a greedy selection method where the final forecast is a combination of horizon-specific
-    # models--the combination being that longer-term models only contribute forecasts that are not
-    # already being contributed by shorter-term models.
-    horizon_filter <- lapply(seq_along(model_forecast_horizons), function(i) {
+      data_forecast <- data_forecast_list[[i]]
 
-      if (i == 1) {
+      model_forecast_horizons <- sort(unique(data_forecast$model_forecast_horizon))
+      horizons <- sort(unique(data_forecast$horizon))
 
-        if (model_forecast_horizons[i] == 1) {
+      # Create a list of forecast horizons where each horizon-specific model will produce
+      # a forecast. This is a greedy selection method where the final forecast is a combination of horizon-specific
+      # models--the combination being that longer-term models only contribute forecasts that are not
+      # already being contributed by shorter-term models.
+      horizon_filter <- lapply(seq_along(model_forecast_horizons), function(i) {
 
-          x <- 1
+        if (i == 1) {
+
+          if (model_forecast_horizons[i] == 1) {
+
+            x <- 1
+
+          } else {
+
+            x <- seq(1, model_forecast_horizons[i])
+          }
+
+        } else if (i < max(seq_along(model_forecast_horizons))) {
+
+          x <- seq(model_forecast_horizons[i - 1] + 1, model_forecast_horizons[i], 1)
 
         } else {
 
-          x <- seq(1, model_forecast_horizons[i])
+          x <- seq(model_forecast_horizons[i - 1] + 1, model_forecast_horizons[i], 1)
         }
+      })  # End the creation of model-specific forecast combination horizon filter indices.
+      #--------------------------------------------------------------------------
+      # Filter the results so that short-term forecasts from shorter-term horizon-specific models overwrite
+      # short-term forecasts from longer-term horizon-specific models.
+      data_forecast <- lapply(seq_along(model_forecast_horizons), function(i) {
 
-      } else if (i < max(seq_along(model_forecast_horizons))) {
-
-        x <- seq(model_forecast_horizons[i - 1] + 1, model_forecast_horizons[i], 1)
-
-      } else {
-
-        x <- seq(model_forecast_horizons[i - 1] + 1, model_forecast_horizons[i], 1)
-      }
-    })
+        data_forecast[data_forecast$model_forecast_horizon == model_forecast_horizons[i] &
+                        data_forecast$horizon %in% horizon_filter[[i]], ]
+      })
+      data_forecast <- dplyr::bind_rows(data_forecast)
+      data_forecast <- dplyr::select(data_forecast, -.data$window_length, -.data$window_number)
+      data_forecast <- dplyr::arrange(data_forecast, .data$horizon)
+      data_forecast <- as.data.frame(data_forecast)
+    })  # End forecast combination for all models given in '...'.
     #--------------------------------------------------------------------------
-    # Filter the results so that short-term forecasts from shorter-term horizon-specific models overwrite
-    # short-term forecasts from longer-term horizon-specific models.
-    data_forecast <- lapply(seq_along(model_forecast_horizons), function(i) {
-
-      data_forecast[data_forecast$model_forecast_horizon == model_forecast_horizons[i] &
-                    data_forecast$horizon %in% horizon_filter[[i]], ]
-    })
-
-    data_forecast <- dplyr::bind_rows(data_forecast)
-    data_forecast <- dplyr::select(data_forecast, -.data$window_length, -.data$window_number)
-    data_forecast <- dplyr::arrange(data_forecast, .data$model, .data$horizon)
-    data_forecast <- as.data.frame(data_forecast)
+    data_forecast <- dplyr::bind_rows(forecast_combination)
 
     attr(data_forecast, "outcome_names") <- outcome_names
     attr(data_forecast, "outcome_levels") <- outcome_levels
