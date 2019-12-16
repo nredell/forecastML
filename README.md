@@ -63,11 +63,11 @@ library(forecastML)
 
 The forecasting approach used in `forecastML` involves the following steps:
 
-    **1**: Build a series of horizon-specific short-, medium-, and long-term forceast models.
+    1: Build a series of horizon-specific short-, medium-, and long-term forecast models.
 
-    **2**: Assess model generalization peformance across a variety of heldout datasets through time.
+    2: Assess model generalization peformance across a variety of heldout datasets through time.
 
-    **3**: Select those models that consistently performed the best at each forecast horizon and 
+    3: Select those models that consistently performed the best at each forecast horizon and 
     combine them to produce a single ensemble forecast.
 
 Below is a plot of 5 forecast models used to produce a single 12-step-ahead forecast where each color 
@@ -545,10 +545,6 @@ plot(data_forecasts_prob)
 
 * Refactor to incorporate `tsibble` time series datasets and principles.
 
-* Add support for forecasting factors similar to sequence analysis.
-
 * Add more forecast error metrics.
-
-* Support forecast combinations across horizon-specific models.
 
 * Add confidence/credible forecast intervals based on validation window performance.
