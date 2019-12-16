@@ -63,18 +63,18 @@ library(forecastML)
 
 The forecasting approach used in `forecastML` involves the following steps:
 
-**1**: Build a series of horizon-specific short-, medium-, and long-term forceast models.
+    **1**: Build a series of horizon-specific short-, medium-, and long-term forceast models.
 
-**2**: Assess model generalization peformance across a variety of heldout datasets through time.
+    **2**: Assess model generalization peformance across a variety of heldout datasets through time.
 
-**3**: Select those models that consistently performed the best at each forecast horizon and combine them to 
-produce a single ensemble forecast.
+    **3**: Select those models that consistently performed the best at each forecast horizon and 
+    combine them to produce a single ensemble forecast.
 
 Below is a plot of 5 forecast models used to produce a single 12-step-ahead forecast where each color 
-represents a distinct horizon-specific ML. From left to right these models are:
+represents a distinct horizon-specific ML model. From left to right these models are:
 
 **1**: A feed-forward neural network (purple); **2**: An ensemble of ML models; 
-**3**: A boosted tree model; **4**: A LASSO regression model; **5**: A Ridge regression model (yellow).
+**3**: A boosted tree model; **4**: A LASSO regression model; **5**: A LASSO regression model (yellow).
 
 ![](./tools/forecastML_plot.png)
 
@@ -220,7 +220,6 @@ model_results <- forecastML::train_model(data_train,
 prediction_function <- function(model, data_features) {
 
   x <- as.matrix(data_features, ncol = ncol(data_features))
-
   data_pred <- data.frame("y_pred" = predict(model, x, s = "lambda.min"),  # 1 column is required.
                           "y_pred_lower" = predict(model, x, s = "lambda.min") - 50,  # optional.
                           "y_pred_upper" = predict(model, x, s = "lambda.min") + 50)  # optional.
@@ -239,14 +238,14 @@ plot(data_valid, horizons = c(1, 6, 12))
 
 # Forward-looking forecast data.frame.
 data_forecast <- forecastML::create_lagged_df(data_seatbelts, type = "forecast",
-                                              outcome_col = 1,
-                                              lookback = lookback, horizons = horizons)
+                                              outcome_col = 1, lookback = lookback, horizons = horizons)
 
 # Forecasts.
 data_forecasts <- predict(model_results, prediction_function = list(prediction_function), data = data_forecast)
 
 # We'll plot a background dataset of actuals as well.
-plot(data_forecasts, data_actual = data_seatbelts[-(1:150), ], 
+plot(data_forecasts,
+     data_actual = data_seatbelts[-(1:150), ], 
      actual_indices = as.numeric(row.names(data_seatbelts[-(1:150), ])), 
      horizons = c(1, 6, 12), windows = c(5, 10, 15))
 ```
