@@ -41,7 +41,7 @@ with the \code{future} package.
 \section{Methods and related functions}{
 
 
-The output of of \code{train_model} can be passed into
+The output of \code{train_model} can be passed into
 
 \itemize{
   \item \code{\link{return_error}}

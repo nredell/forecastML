@@ -28,6 +28,20 @@ The following quote from Bergmeir et al.'s article nicely sums up the aim of thi
 > (e.g., when using Machine Learning methods), the aforementioned problems of CV are largely
 > irrelevant, and CV can and should be used without modification, as in the independent case."
 
+
+## README Contents
+
+* **[Install](#install)**
+* **[Approach to forecasting](#approach-to-forecasting)**
+* **[Vignettes](#vignettes)**
+* **[Cheat sheets](#cheat-sheets)**
+* **[FAQ](#faq)**
+* **Examples**
+    + **[Forecasting numeric outcomes](#examples---numeric-outcomes-with-r-and-python)**
+    + **[Forecasting factor outcomes (forecasting sequences)](#examples---factor-outcomes-with-r-and-python)**
+* **[Roadmap](#roadmap)**
+
+
 ## Install
 
 * CRAN
@@ -44,15 +58,28 @@ devtools::install_github("nredell/forecastML")
 library(forecastML)
 ```
 
-## README Contents
 
-* **[Vignettes](#vignettes)**
-* **[Cheat sheets](#cheat-sheets)**
-* **[FAQ](#faq)**
-* **Examples**
-    + **[Forecasting numeric outcomes](#examples---numeric-outcomes-with-r-and-python)**
-    + **[Forecasting factor outcomes (forecasting sequences)](#examples---factor-outcomes-with-r-and-python)**
-* **[Roadmap](#roadmap)**
+## Approach to Forecasting
+
+The forecasting approach used in `forecastML` involves the following steps:
+
+**1**: Build a series of horizon-specific short-, medium-, and long-term forceast models.
+**2**: Assess model generalization peformance across a variety of heldout datasets through time.
+**3**: Select those models that consistently performed the best at each forecast horizon and combine them to 
+produce a single ensemble forecast.
+
+Below is a plot of 5 forecast models used to produce a single 12-step-ahead forecast where each color 
+represents a distinct horizon-specific ML. From left to right these models are:
+
+**1**: A feed-forward neural network (purple)
+**2**: An ensemble of ML models
+**3**: A boosted tree model
+**4**: A LASSO regression model
+**5**: A Ridge regression model (yellow)
+
+![](./tools/forecastML_plot.png)
+
+<br>
 
 
 ## Vignettes
@@ -92,13 +119,14 @@ capabilities of the user-specified model.
 
 6. **`return_hyper`:** Return user-defined model hyperparameters across validation datasets.
 
-7. **`combine_forecasts`:** Coming soon.
+7. **`combine_forecasts`:** Combine multiple horizon-specific forecast models to produce one forecast.
 
 ![](./tools/forecastML_cheat_sheet_data.png)
 
 <br>
 
 ![](./tools/forecastML_cheat_sheet_model.png)
+
 
 ## FAQ
 

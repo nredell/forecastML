@@ -28,7 +28,8 @@ An S3 object of class 'forecastML' with final h-step-ahead forecasts.
       \item \code{forecast_period}: The forecast period in row indices or dates. The forecast period starts at either \code{attributes(create_lagged_df())$data_stop + 1} for row indices or \code{attributes(create_lagged_df())$data_stop + 1 * frequency} for date indices.
       \item \code{"groups"}: If given, the user-supplied groups in \code{create_lagged_df()}.
       \item \code{"outcome_name"_pred}: The final forecasts.
-      the user-supplied prediction function.
+      \item \code{"outcome_name"_pred_lower}: If given, the lower forecast bounds returned by the user-supplied prediction function.
+      \item \code{"outcome_name"_pred_upper}: If given, the upper forecast bounds returned by the user-supplied prediction function.
    }
 }
 \description{
@@ -38,3 +39,13 @@ when producing final short-horizon h-step-ahead forecasts) or (b) produce final 
 any combination of horizon-specific models that minimized error over the validation/training dataset or
 a holdout test dataset.
 }
+\section{Methods and related functions}{
+
+
+The output of \code{combine_forecasts()} has the following generic S3 methods
+
+\itemize{
+  \item \code{\link[=plot.forecastML]{plot}}
+}
+}
+

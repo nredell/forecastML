@@ -24,7 +24,7 @@
 #'
 #' @section Methods and related functions:
 #'
-#' The output of of \code{train_model} can be passed into
+#' The output of \code{train_model} can be passed into
 #'
 #' \itemize{
 #'   \item \code{\link{return_error}}
@@ -244,7 +244,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 
   if (!all(unlist(lapply(model_list, function(x) {class(x)[1]})) %in% "forecast_model")) {
     stop("The '...' argument takes 1 or more objects of class 'forecast_model' as input. Run train_model() first.
-         Also, the arguments 'prediction_function' and 'data' need to be named and not positional becase they
+         Also, the arguments 'prediction_function' and 'data' need to be named and not positional because they
          follow '...'.")
   }
 
@@ -969,7 +969,8 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
     factor_level <- if (any(names(data_forecast) %in% paste0(outcome_names, "_pred"))) {TRUE} else {FALSE}
     factor_prob <- !factor_level
   }
-
+  #----------------------------------------------------------------------------
+  # Join the actual dataset, if given, to the forecast_results.
   if (!is.null(data_actual)) {
 
     data_actual <- data_actual[, c(outcome_names, groups), drop = FALSE]
@@ -981,6 +982,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL,
       data_actual <- dplyr::filter(data_actual, eval(parse(text = group_filter)))
     }
   }
+  #----------------------------------------------------------------------------
 
   forecast_horizons <- sort(unique(data_forecast$model_forecast_horizon))
 
