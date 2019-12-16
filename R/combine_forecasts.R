@@ -14,7 +14,7 @@
 #' @param data_error Not implemented at present.
 #' @return An S3 object of class 'forecastML' with final h-step-ahead forecasts.
 #'
-#'    \strong{Columns in returned 'forecast_results' data.frame:}
+#'    \strong{Columns in returned 'forecastML' data.frame:}
 #'     \itemize{
 #'       \item \code{model}: User-supplied model name in \code{train_model()}.
 #'       \item \code{model_forecast_horizon}: The direct-forecasting time horizon that the model was trained on.

@@ -24,6 +24,7 @@ RoxygenNote: 6.1.1
 Collate: 
     'fill_gaps.R'
     'create_windows.R'
+    'combine_forecasts.R'
     'lagged_df.R'
     'return_error.R'
     'return_hyper.R'
