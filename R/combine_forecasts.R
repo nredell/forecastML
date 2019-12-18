@@ -81,6 +81,7 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
       model_forecast_horizons <- sort(unique(data_forecast$model_forecast_horizon))
       horizons <- sort(unique(data_forecast$horizon))
 
+      #------------------------------------------------------------------------
       # Create a list of forecast horizons where each horizon-specific model will produce
       # a forecast. This is a greedy selection method where the final forecast is a combination of horizon-specific
       # models--the combination being that longer-term models only contribute forecasts that are not
@@ -161,7 +162,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
   }
 
   data_forecast <- x
-  rm(x)
+  #rm(x)
 
   outcome_names <- attributes(data_forecast)$outcome_names
   outcome_levels <- attributes(data_forecast)$outcome_levels
@@ -173,14 +174,10 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
     stop("Support for forecast combination plots with groups is still in progress.")
   }
   #----------------------------------------------------------------------------
-  # For factor outcomes, is the prediction a factor level or probability.
+  # For factor outcomes, is the prediction a factor level or probability?
   if (!is.null(outcome_levels)) {
     factor_level <- if (any(names(data_forecast) %in% paste0(outcome_names, "_pred"))) {TRUE} else {FALSE}
     factor_prob <- !factor_level
-  }
-
-  if (factor_prob) {
-    stop("Support for forecast combination plots with factor class probabilities is still in progress.")
   }
   #----------------------------------------------------------------------------
   # Join the actual dataset, if given, to the forecast_results.
@@ -302,8 +299,8 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
 
       data_plot <- data_forecast
 
-      # The plot will be faceted by model so it doesn't need to be added to the unique identifier here.
-      data_plot$ggplot_color_group <- apply(data_plot[,  c("model_forecast_horizon", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+      # The plot will be faceted by model.
+      data_plot$ggplot_color_group <- apply(data_plot[,  c("model", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
 
       if (factor_prob) {  # Plot predicted class probabilities.
 
@@ -325,7 +322,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
             data_actual$value <- 1  # Plot a solid bar with probability 1 in geom_col().
 
             # In cases where historical data is provided in data_actual, duplicate the historical data
-            # such that it appears as a sequence in each plot facet. Here, 'ggplot_color_group' gives the,
+            # such that it appears as a sequence in each plot facet. Here, 'model' gives the,
             # possibly user-filtered, plot facets.
             if ("historical" %in% unique(data_actual$time_series_type)) {
 
@@ -412,8 +409,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
           p <- p + scale_y_continuous(limits = 0:1)
           p <- p + scale_color_viridis_d(drop = FALSE)
           p <- p + scale_fill_viridis_d(drop = FALSE)
-          # p <- p + facet_wrap(~ ggplot_color_group, ncol = 1, scales = "free_y")
-          p <- p + facet_wrap(~ model, ncol = 1, scales = "free_y")
+          p <- p + facet_wrap(~ ggplot_color_group, ncol = 1, scales = "free_y")
           p <- p + theme_bw() + theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
         }
       }  # End factor level prediction plots.
