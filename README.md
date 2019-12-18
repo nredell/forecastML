@@ -81,7 +81,7 @@ represents a distinct horizon-specific ML model. From left to right these models
 * Below is a similar combination of horizon-specific models with a factor outcome and forecasting factor 
 probabilities 12 steps ahead.
 
-![](./tools/forecastML_level_plot.png)
+![](./tools/forecastML_factor_plot.png)
 
 
 ## Vignettes
