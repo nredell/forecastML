@@ -55,10 +55,6 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
   if (!is.null(outcome_levels)) {
     factor_level <- if (any(names(data_forecast) %in% paste0(outcome_names, "_pred"))) {TRUE} else {FALSE}
     factor_prob <- !factor_level
-
-    if (factor_prob) {
-      stop("Forecast combinations are not currently available for class probability outcomes.")
-    }
   }
   #----------------------------------------------------------------------------
 
