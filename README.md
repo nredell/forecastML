@@ -70,13 +70,18 @@ The forecasting approach used in `forecastML` involves the following steps:
     3: Select those models that consistently performed the best at each forecast horizon and 
     combine them to produce a single ensemble forecast.
 
-Below is a plot of 5 forecast models used to produce a single 12-step-ahead forecast where each color 
+* Below is a plot of 5 forecast models used to produce a single 12-step-ahead forecast where each color 
 represents a distinct horizon-specific ML model. From left to right these models are:
 
-**1**: A feed-forward neural network (purple); **2**: An ensemble of ML models; 
+* **1**: A feed-forward neural network (purple); **2**: An ensemble of ML models; 
 **3**: A boosted tree model; **4**: A LASSO regression model; **5**: A LASSO regression model (yellow).
 
 ![](./tools/forecastML_plot.png)
+
+* Below is a similar combination of horizon-specific models with a factor outcome and forecasting factor 
+probabilities 12 steps ahead.
+
+![](./tools/forecastML_level_plot.png)
 
 
 ## Vignettes

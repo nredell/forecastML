@@ -151,18 +151,20 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
 #' @param models Optional. Filter results by user-defined model name from \code{train_model()}.
 #' @param group_filter Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"});
 #' passed to \code{dplyr::filter()} internally.
+#' @param drop_facet Optional. Boolean. If actuals are given when forecasting factors, the plot facet with 'actual' data can be dropped.
 #' @param ... Not used.
 #' @return Forecast plot of class 'ggplot'.
 #' @export
 plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
-                            models = NULL, group_filter = NULL, ...) { # nocov start
+                            models = NULL, group_filter = NULL,
+                            drop_facet = FALSE, ...) { # nocov start
 
   if (!methods::is(x, "forecastML")) {
     stop("The 'x' argument takes an object of class 'forecastML' as input. Run combine_forecasts() first.")
   }
 
   data_forecast <- x
-  #rm(x)
+  rm(x)
 
   outcome_names <- attributes(data_forecast)$outcome_names
   outcome_levels <- attributes(data_forecast)$outcome_levels
@@ -348,6 +350,10 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
           data_plot$value <- as.numeric(data_plot$value)
           data_plot$outcome <- factor(data_plot$outcome, levels = outcome_levels, ordered = TRUE)
 
+          if (drop_facet) {
+            data_plot <- data_plot[!grepl("Actual", data_plot$ggplot_color_group), ]
+          }
+
           p <- ggplot()
           p <- p + geom_col(data = data_plot,
                             aes(x = .data$index, y = .data$value, color = .data$outcome, fill = .data$outcome),
@@ -401,6 +407,10 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
           data_plot$ggplot_color_group <- factor(data_plot$ggplot_color_group, levels = rev(unique(data_plot$ggplot_color_group)), ordered = TRUE)
           data_plot$value <- as.numeric(data_plot$value)
           data_plot$outcome <- factor(data_plot$outcome, levels = outcome_levels, ordered = TRUE)
+
+          if (drop_facet) {
+            data_plot <- data_plot[!grepl("Actual", data_plot$ggplot_color_group), ]
+          }
 
           p <- ggplot()
           p <- p + geom_col(data = data_plot,

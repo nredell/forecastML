@@ -5,7 +5,7 @@
 \title{Plot an object of class 'forecastML'}
 \usage{
 \method{plot}{forecastML}(x, data_actual = NULL, actual_indices = NULL,
-  models = NULL, group_filter = NULL, ...)
+  models = NULL, group_filter = NULL, drop_facet = FALSE, ...)
 }
 \arguments{
 \item{x}{An object of class 'forecastML' from \code{combine_forecasts()}.}
@@ -21,6 +21,8 @@ The data can be historical actuals and/or holdout/test data.}
 
 \item{group_filter}{Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"});
 passed to \code{dplyr::filter()} internally.}
+
+\item{drop_facet}{Optional. Boolean. If actuals are given when forecasting factors, the plot facet with 'actual' data can be dropped.}
 
 \item{...}{Not used.}
 }
