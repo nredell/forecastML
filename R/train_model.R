@@ -591,6 +591,8 @@ plot.training_results <- function(x,
 
       data_plot <- dplyr::arrange(data_plot, .data$model, .data$window_number)
 
+      data_plot$ggplot_group_group <- apply(data_plot[,  c("model", "window_number", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+
       data_plot$ggplot_color_group <- apply(data_plot[,  c("model", "window_number", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
     }
 
