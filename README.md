@@ -63,12 +63,12 @@ library(forecastML)
 
 The forecasting approach used in `forecastML` involves the following steps:
 
-    1: Build a series of horizon-specific short-, medium-, and long-term forecast models.
+**1.** Build a series of horizon-specific short-, medium-, and long-term forecast models.
 
-    2: Assess model generalization peformance across a variety of heldout datasets through time.
+**2.** Assess model generalization peformance across a variety of heldout datasets through time.
 
-    3: Select those models that consistently performed the best at each forecast horizon and 
-    combine them to produce a single ensemble forecast.
+**3.** Select those models that consistently performed the best at each forecast horizon and 
+combine them to produce a single ensemble forecast.
 
 * Below is a plot of 5 forecast models used to produce a single 12-step-ahead forecast where each color 
 represents a distinct horizon-specific ML model. From left to right these models are:
@@ -89,7 +89,7 @@ probabilities 12 steps ahead.
 The main functions covered in each vignette are shown below as `function()`.
 
 * Detailed **[forecastML overview vignette](https://nredell.github.io/forecastML/doc/package_overview.html)**. 
-`create_lagged_df()`, `create_windows()`, `train_model()`, `return_error()`, `return_hyper()`
+`create_lagged_df()`, `create_windows()`, `train_model()`, `return_error()`, `return_hyper()`, `combine_forecasts()`
 
 * **[Creating custom feature lags for model training](https://nredell.github.io/forecastML/doc/lagged_features.html)**. `create_lagged_df(lookback_control = ...)`
 
