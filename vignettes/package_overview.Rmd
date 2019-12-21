@@ -35,6 +35,8 @@ The following quote from Bergmeir et al.'s article nicely sums up the aim of thi
 > (e.g., when using Machine Learning methods), the aforementioned problems of CV are largely
 > irrelevant, and CV can and should be used without modification, as in the independent case."
 
+<br>
+
 # Direct Forecasting
 
 In contrast to the recursive or iterated method for producing multi-step-ahead forecasts used in traditional forecasting 
@@ -80,6 +82,7 @@ represents a distinct horizon-specific ML model. From left to right these models
 
 ![](forecastML_plot.png){width=700px, height=400px}
 
+<br>
 
 # Key Functions
 
@@ -107,6 +110,7 @@ knitr::opts_chunk$set(fig.width = 7, fig.height = 4)
 knitr::opts_knit$set(fig.width = 7, fig.height = 4)
 ```
 
+<br>
 
 # Example
 
