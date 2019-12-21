@@ -179,7 +179,6 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
     factor_prob <- !factor_level
   }
   #----------------------------------------------------------------------------
-  # Join the actual dataset, if given, to the forecast_results.
   if (!is.null(data_actual)) {
 
     data_actual <- data_actual[, c(outcome_names, groups), drop = FALSE]
@@ -206,8 +205,27 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
       p <- ggplot()
 
       if (!is.null(groups)) {  # Grouped time series
-        data_forecast$ggplot_group <- apply(data_forecast[, groups, drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
-        data_forecast$ggplot_group <- factor(data_forecast$ggplot_group, levels = unique(data_forecast$ggplot_group), ordered = TRUE)
+
+        if (!is.null(data_actual)) {  # If actuals are given, get the groups from this dataset.
+
+          data_actual$ggplot_group <- apply(data_actual[, groups, drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+
+          group_levels <- unique(data_actual$ggplot_group)
+
+          data_actual$ggplot_group <- factor(data_actual$ggplot_group, levels = group_levels, ordered = TRUE)
+
+          data_forecast$ggplot_group <- apply(data_forecast[, groups, drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+
+          data_forecast$ggplot_group <- factor(data_forecast$ggplot_group, levels = group_levels, ordered = TRUE)
+
+        } else {
+
+          data_forecast$ggplot_group <- apply(data_forecast[, groups, drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+
+          group_levels <- unique(data_forecast$ggplot_group)
+
+          data_forecast$ggplot_group <- factor(data_forecast$ggplot_group, levels = group_levels, ordered = TRUE)
+        }
       }
       #------------------------------------------------------------------------
       if (all(horizons == 1)) {  # Use geom_point instead of geom_line to plot a 1-step-ahead forecast.
@@ -329,12 +347,9 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
                                                      y = eval(parse(text = outcome_names))), color = "grey50")
         } else {
 
-          stop("Plotting historical data with groups is not yet supported.")
-
-          # p <- p + geom_line(data = data_actual, aes(x = .data$index,
-          #                                            y = eval(parse(text = outcome_names)),
-          #                                            color = .data$plot_group,
-          #                                            group = .data$plot_group))
+          p <- p + geom_line(data = data_actual,
+                             aes(x = .data$index, y = eval(parse(text = outcome_names)),
+                                 color = .data$ggplot_group, group = .data$ggplot_group))
         }
       }  # End plot of user-supplied historcal and/or test set actuals.
       #------------------------------------------------------------------------

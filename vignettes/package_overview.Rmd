@@ -83,7 +83,8 @@ capabilities of the user-specified model.
 
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(fig.width = 8, fig.height = 4)
+knitr::opts_chunk$set(fig.width = 7, fig.height = 4)
+knitr::opts_knit$set(fig.width = 7, fig.height = 4)
 ```
 
 ## Example

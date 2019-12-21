@@ -193,7 +193,7 @@ create_windows <- function(lagged_df, window_length = 12L,
 #' @param x An object of class 'windows' from \code{create_windows()}.
 #' @param lagged_df An object of class 'lagged_df' from \code{create_lagged_df()}.
 #' @param show_labels Boolean. If \code{TRUE}, show validation dataset IDs on the plot.
-#' @param group_filter Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
+#' @param group_filter Optional. A string for filtering plot results for grouped time series (e.g., \code{"group_col_1 == 'A'"}).
 #' This string is passed to \code{dplyr::filter()} internally.
 #' @param ... Not used.
 #' @return A plot of the outer-loop nested cross-validation windows of class 'ggplot'.
@@ -217,6 +217,7 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
 
   outcome_col <- attributes(data)$outcome_col
   outcome_names <- attributes(data)$outcome_names
+  outcome_levels <- attributes(data)$outcome_levels
   row_indices <- attributes(data)$row_indices
   date_indices <- attributes(data)$date_indices
   groups <- attributes(data)$groups
@@ -252,7 +253,7 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
       dplyr::group_by(.data$window_length, .data$window) %>%
       dplyr::summarise("index" = .data$start + ((.data$stop - .data$start) / 2))  # Window midpoint for plot label.
 
-    if (methods::is(data_plot[, outcome_col], "numeric")) {
+    if (is.null(outcome_levels)) {  # Numeric outcome.
 
       data_plot_group$label_height <- ifelse(min(data_plot[, 1], na.rm = TRUE) < 0,
                                              (max(data_plot[, 1], na.rm = TRUE) - base::abs(min(data_plot[, 1], na.rm = TRUE))) / 2,
@@ -293,18 +294,18 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
   p <- p + geom_rect(data = windows, aes(xmin = .data$start, xmax = .data$stop,
                                          ymin = -Inf, ymax = Inf), fill = "grey85", show.legend = FALSE)
 
-  if (methods::is(data_plot[, outcome_names], "numeric")) {
+  if (is.null(outcome_levels)) {  # Numeric outcome.
 
     p <- p + geom_line(data = data_plot, aes(x = .data$index, y = eval(parse(text = outcome_names)),
                                              color = .data$ggplot_color_group), size = 1.05)
 
-  } else if (methods::is(data_plot[, outcome_names], "factor")) {
+  } else {  # Factor outcome.
 
     p <- p + geom_tile(data = data_plot, aes(x = .data$index, y = ordered(.data$ggplot_color_group),
                                              fill = ordered(eval(parse(text = outcome_names)))))
   }
 
-  if (!is.null(groups) && methods::is(data_plot[, outcome_names], "numeric")) {
+  if (!is.null(groups) && is.null(outcome_levels)) {  # Numeric outcome with groups.
     if (nrow(data_plot_point) >= 1) {
       p <- p + geom_point(data = data_plot_point, aes(x = .data$index, y = eval(parse(text = outcome_names)),
                                                       color = .data$ggplot_color_group), show.legend = FALSE)
@@ -313,12 +314,12 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
 
   if (isTRUE(show_labels) || missing(show_labels)) {
 
-    if (methods::is(data_plot[, outcome_names], "numeric")) {
+    if (is.null(outcome_levels)) {  # Numeric outcome.
 
       p <- p + geom_label(data = data_plot_group, aes(x = .data$index, y = .data$label_height,
                                                       label = .data$window), color = "black", size = 4)
 
-    } else if (methods::is(data_plot[, outcome_names], "factor")) {
+    } else {  # Factor outcome.
 
       data_plot_group$label_height <- ordered(levels(ordered(data_plot$ggplot_color_group))[1])
 
@@ -329,25 +330,25 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
 
   p <- p + theme_bw()
 
-  if (is.null(groups) && methods::is(data_plot[, outcome_col], "numeric")) {
+  if (is.null(groups) && is.null(outcome_levels)) {  # Numeric outcome without groups.
 
     p <- p + theme(legend.position = "none")
   }
 
-  if (methods::is(data_plot[, outcome_col], "numeric")) {
+  if (is.null(outcome_levels)) {  # Numeric outcome
 
     p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Groups") + ggtitle("Validation Windows")
 
-  } else {
+    } else {  # Factor outcome.
 
     if (length(levels(data_plot$ggplot_color_group)) == 1) {
 
       p <- p + xlab("Dataset index") + ylab("Outcome") + labs(fill = "Outcome") + ggtitle("Validation Windows")
 
-    } else {
+      } else {
 
       p <- p + xlab("Dataset index") + ylab("Groups") + labs(fill = "Outcome") + ggtitle("Validation Windows")
     }
   }
-  return(p)
+  return(suppressWarnings(p))
 } # nocov end

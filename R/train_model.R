@@ -579,12 +579,15 @@ plot.training_results <- function(x,
     if (isFALSE(window_custom)) {
 
       if (!is.null(groups)) {
-        data_plot <- dplyr::arrange(data_plot, model, eval(parse(text = groups)))
+        data_plot <- dplyr::arrange(data_plot, .data$model, .data$window_number, eval(parse(text = groups)))
       }
 
       data_plot$ggplot_color_group <- apply(data_plot[,  c("model", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
 
-    } else {  # Plot different colors for each custom window as the windows can be non-coniguous.
+      # Used to avoid lines spanning any gaps between validation windows.
+      data_plot$ggplot_group_group <- apply(data_plot[,  c("model", "window_number", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+
+    } else {  # Plot different colors for each custom window as the windows can be non-contiguous.
 
       data_plot <- dplyr::arrange(data_plot, .data$model, .data$window_number)
 
@@ -614,12 +617,12 @@ plot.training_results <- function(x,
 
       data_plot_point$ggplot_color_group <- factor(data_plot_point$ggplot_color_group, ordered = TRUE, levels(data_plot$ggplot_color_group))
 
-      data_plot <- data_plot[data_plot$date_indices %in% date_indices[valid_indices], ]
+      data_plot <- data_plot[data_plot$date_indices %in% valid_indices, ]
       # This may be an empty data.frame if every time series has 2 or more contiguous records, and
       # suppressWarnings() suppresses a forcats warning.
       data_plot_point <- suppressWarnings(data_plot_point[data_plot_point$date_indices %in% date_indices[valid_indices], ])
     }
-
+    #--------------------------------------------------------------------------
   } else {  # Factor outcomes.
 
     data_plot$ggplot_color_group <- apply(data_plot[,  c("model", "horizon", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
@@ -657,12 +660,14 @@ plot.training_results <- function(x,
 
     if (type == "prediction") {
 
-      if (is.null(outcome_levels)) {  # Numeric outcomes; plot historical predictions.
+      if (is.null(outcome_levels)) {  # Numeric outcome; plot historical predictions.
 
         p <- ggplot()
 
-        p <- p + geom_line(data = data_plot[data_plot$outcome != outcome_names, ],
-                           aes(x = .data$index, y = .data$value, group = .data$ggplot_color_group, color = .data$ggplot_color_group),
+        #test <- data_plot[data_plot$outcome != outcome_names, ]
+
+        p <- p + geom_line(data = data_plot[data_plot$outcome != outcome_names, ],  # Predictions in melted data.
+                           aes(x = .data$index, y = .data$value, group = .data$ggplot_group_group, color = .data$ggplot_color_group),
                            size = 1.05, linetype = 1)
 
       # If the plotting data.frame has both lower and upper forecasts plot these bounds.
@@ -685,7 +690,7 @@ plot.training_results <- function(x,
 
         p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
                            aes(x = .data$index, y = .data$value,
-                               group = .data$ggplot_color_group,
+                               group = .data$ggplot_group_group,
                                color = .data$ggplot_color_group), linetype = 2)
 
         p <- p + scale_color_viridis_d()
@@ -755,8 +760,8 @@ plot.training_results <- function(x,
 
         p <- p + geom_line(size = 1.05, linetype = 1)
         p <- p + geom_hline(yintercept = 0)
-
         p <- p + scale_color_viridis_d()
+        p <- p + theme_bw()
 
       } else {  # Factor outcome.
 
@@ -774,6 +779,7 @@ plot.training_results <- function(x,
         # Plot predictions to avoid duplicate residuals in plots.
         p <- p + geom_tile(data = data_plot[data_plot$outcome != outcome_names, ], aes(x = .data$index, y = .data$ggplot_color_group,
                                                  fill = ordered(.data$residual)))
+        p <- p + theme_bw()
       }
     }  # End residual plot.
     #--------------------------------------------------------------------------
