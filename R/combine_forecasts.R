@@ -7,11 +7,11 @@
 #' a holdout test dataset.
 #'
 #' @param ... One or more objects of class 'forecast_results' from running \code{predict.forecast_model()} on
-#' an input forward-looking forecast dataset. These are the forecasts from the horizon-specific
+#' an input forward-looking forecast data set. These are the forecasts from the horizon-specific
 #' direct forecasting models trained over the entire training dataset by setting \code{create_windows(..., window_length = 0)}.
-#' If \code{type = 'horizon'}, 1 final h-step-ahead forecast is returned for each model passed in \code{...}.
-#' @param type A character vector of length 1 that identifies the forecast combination method.
-#' @param data_error Not implemented at present.
+#' If \code{type = 'horizon'}, 1 final h-step-ahead forecast is returned for each model object passed in \code{...}.
+#' @param type Default: 'horizon'. A character vector of length 1 that identifies the forecast combination method.
+#' @param data_error Optional. Not implemented at present.
 #' @return An S3 object of class 'forecastML' with final h-step-ahead forecasts.
 #'
 #'    \strong{Columns in returned 'forecastML' data.frame:}

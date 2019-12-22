@@ -9,13 +9,13 @@ combine_forecasts(..., type = c("horizon", "error"),
 }
 \arguments{
 \item{...}{One or more objects of class 'forecast_results' from running \code{predict.forecast_model()} on
-an input forward-looking forecast dataset. These are the forecasts from the horizon-specific
+an input forward-looking forecast data set. These are the forecasts from the horizon-specific
 direct forecasting models trained over the entire training dataset by setting \code{create_windows(..., window_length = 0)}.
-If \code{type = 'horizon'}, 1 final h-step-ahead forecast is returned for each model passed in \code{...}.}
+If \code{type = 'horizon'}, 1 final h-step-ahead forecast is returned for each model object passed in \code{...}.}
 
-\item{type}{A character vector of length 1 that identifies the forecast combination method.}
+\item{type}{Default: 'horizon'. A character vector of length 1 that identifies the forecast combination method.}
 
-\item{data_error}{Not implemented at present.}
+\item{data_error}{Optional. Not implemented at present.}
 }
 \value{
 An S3 object of class 'forecastML' with final h-step-ahead forecasts.
