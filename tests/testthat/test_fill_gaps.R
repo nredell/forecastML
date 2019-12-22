@@ -71,7 +71,7 @@ test_that("fill_gaps column fills are correct", {
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-test_that("fill_gaps args are specified correctly", {
+test_that("fill_gaps error messages work", {
 
   data("data_buoy_gaps", package = "forecastML")
 
@@ -89,6 +89,28 @@ test_that("fill_gaps args are specified correctly", {
 
   data_buoy_gaps$date <- as.Date(data_buoy_gaps$date)
 
+  # Expect error if the input data is not a data.frame.
+  expect_error(forecastML::fill_gaps(as.matrix(data_buoy_gaps), date_col = 1,
+                                     frequency = frequency, groups = groups,
+                                     static_features = static_features))
+
+  # Expect error if the date_col argument is out of bounds.
+  expect_error(forecastML::fill_gaps(data_buoy_gaps, date_col = 1:2,
+                                     frequency = frequency, groups = groups,
+                                     static_features = static_features))
+
+  # Expect error if there are missing dates.
+  data_temp <- data_buoy_gaps
+  data_temp$date[1] <- NA
+  expect_error(forecastML::fill_gaps(data_temp, date_col = 1,
+                                     frequency = frequency, groups = groups,
+                                     static_features = static_features))
+
+  # Expect error if the 'frequency' argument is does not work in base::seq().
+  expect_error(forecastML::fill_gaps(data_buoy_gaps, date_col = 1,
+                                     frequency = "1 decade", groups = groups,
+                                     static_features = static_features))
+
   # Expect static_features to not work when groups are missing
   expect_error(forecastML::fill_gaps(data_buoy_gaps, date_col = 1,
                                      frequency = frequency,
@@ -97,3 +119,5 @@ test_that("fill_gaps args are specified correctly", {
   # Expect missing date arguments to error out.
   expect_error(forecastML::fill_gaps(data_buoy_gaps))
 })
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
