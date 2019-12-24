@@ -9,9 +9,15 @@
 #' @param ... One or more objects of class 'forecast_results' from running \code{predict.forecast_model()} on
 #' an input forward-looking forecast data set. These are the forecasts from the horizon-specific
 #' direct forecasting models trained over the entire training dataset by setting \code{create_windows(..., window_length = 0)}.
+#' If multiple models are passed in \code{...}, the model names from \code{train_model()} need to be unique for a
+#' given model forecast horizon.
 #' If \code{type = 'horizon'}, 1 final h-step-ahead forecast is returned for each model object passed in \code{...}.
 #' @param type Default: 'horizon'. A character vector of length 1 that identifies the forecast combination method.
-#' @param data_error Optional. Not implemented at present.
+#' @param data_error Optional. A list of objects of class 'validation_error' from running \code{return_error()}
+#' on a training dataset. The length of \code{data_error} should equal the length of \code{...}.
+#' @param metric Required if \code{data_error} is given. A length 1 character vector naming the forecast
+#' error metric used to select the optimal model at each direct forecast horizon from the models passed
+#' in '...' e.g., 'mae'.
 #' @return An S3 object of class 'forecastML' with final h-step-ahead forecasts.
 #'
 #'    \strong{Columns in returned 'forecastML' data.frame:}
@@ -34,7 +40,7 @@
 #'   \item \code{\link[=plot.forecastML]{plot}}
 #' }
 #' @export
-combine_forecasts <- function(..., type = c("horizon", "error"), data_error = list(NULL)) {
+combine_forecasts <- function(..., type = c("horizon", "error"), data_error = list(NULL), metric = NULL) {
 
   data_forecast_list <- list(...)
 
@@ -42,6 +48,14 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
     stop("One or more of the forecast datasets given in '...' is not an object of class 'forecast_results'.
          Run predict.forecast_model() on a forward-looking forecast dataset trained over a training dataset
          made with create_windows(window_length = 0).")
+  }
+
+  if (!is.null(data_error[[1]])) {
+
+    if (is.null(metric) || length(metric) > 1) {
+      stop("'metric' should be a length 1 character vector naming the forecast error metric used to select
+           the optimal model at each direct forecast horizon from the models passed in '...', e.g., 'mae'.")
+    }
   }
 
   outcome_names <- attributes(data_forecast_list[[1]])$outcome_names
@@ -66,8 +80,8 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
 
   type <- type[1]
 
-  if (!type %in% c("horizon")) {  # List all available types here.
-    stop("Select a forecast combination 'type' that is one of 'horizon'; 'error' is not yet supported.")
+  if (!type %in% c("horizon", "error")) {  # List all available types here.
+    stop("Select a forecast combination 'type' that is one of 'horizon' or 'error'.")
   }
 
   if (type == "horizon") {
@@ -125,15 +139,40 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
     #--------------------------------------------------------------------------
     data_forecast <- dplyr::bind_rows(forecast_combination)
 
-    attr(data_forecast, "outcome_names") <- outcome_names
-    attr(data_forecast, "outcome_levels") <- outcome_levels
-    attr(data_forecast, "groups") <- groups
-    attr(data_forecast, "data_stop") <- data_stop
+  } else if (type == "error") {
 
-    class(data_forecast) <- c("forecastML", class(data_forecast))
+    data_error <- data_error_list
+    data_error <- lapply(data_error, function(x) {x$error_by_horizon})
+    data_error <- dplyr::bind_rows(data_error)
 
-    return(data_forecast)
-  }
+    if (!any(names(data_error) %in% metric)) {
+      stop("The 'metric' is not available in 'data_error'. Re-run return_error() with your metric of choice.")
+    }
+
+    names(data_error)[names(data_error) == "horizon"] <- "model_forecast_horizon"
+
+    data_forecast <- dplyr::left_join(data_forecast, data_error, by = c("model", "model_forecast_horizon"))
+
+    data_forecast <- data_forecast %>%
+      dplyr::group_by(.data$horizon) %>%
+      dplyr::mutate("error_rank" = base::rank(eval(parse(text = metric)), ties.method = "first")) %>%
+      dplyr::filter(.data$error_rank == 1)
+
+    data_forecast <- dplyr::select(data_forecast, -.data$window_length, -.data$window_number,
+                                   -.data$window_start, -.data$window_stop, -.data$error_rank)
+    data_forecast <- dplyr::arrange(data_forecast, .data$horizon)
+    data_forecast <- as.data.frame(data_forecast)
+  }  # End type = "error".
+
+  attr(data_forecast, "outcome_names") <- outcome_names
+  attr(data_forecast, "outcome_levels") <- outcome_levels
+  attr(data_forecast, "groups") <- groups
+  attr(data_forecast, "data_stop") <- data_stop
+  attr(data_forecast, "metric") <- metric
+
+  class(data_forecast) <- c("forecastML", class(data_forecast))
+
+  return(data_forecast)
 }
 
 #------------------------------------------------------------------------------
@@ -172,6 +211,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
   outcome_levels <- attributes(data_forecast)$outcome_levels
   groups <- attributes(data_forecast)$groups
   data_stop <- attributes(data_forecast)$data_stop
+  metric <- attributes(data_forecast)$metric
   #----------------------------------------------------------------------------
   # For factor outcomes, is the prediction a factor level or probability?
   if (!is.null(outcome_levels)) {
@@ -218,7 +258,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
 
           data_forecast$ggplot_group <- factor(data_forecast$ggplot_group, levels = group_levels, ordered = TRUE)
 
-        } else {
+        } else {  # Actuals not given.
 
           data_forecast$ggplot_group <- apply(data_forecast[, groups, drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
 
@@ -226,6 +266,10 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
 
           data_forecast$ggplot_group <- factor(data_forecast$ggplot_group, levels = group_levels, ordered = TRUE)
         }
+
+      } else {  # Non-grouped time series.
+
+        data_forecast$ggplot_group <- "group"  # 1 group for connecting lines from multiple forecast horizons.
       }
       #------------------------------------------------------------------------
       if (all(horizons == 1)) {  # Use geom_point instead of geom_line to plot a 1-step-ahead forecast.
@@ -317,11 +361,11 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
 
           p <- p + geom_line(data = data_forecast,
                              aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
-                                 color = ordered(.data$model_forecast_horizon), group = .data$model))
+                                 color = ordered(.data$model_forecast_horizon), group = .data$ggplot_group))
 
           p <- p + geom_point(data = data_forecast,
                               aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
-                                  color = ordered(.data$model_forecast_horizon), group = .data$model), color = "black")
+                                  color = ordered(.data$model_forecast_horizon), group = .data$ggplot_group), color = "black")
 
         } else {  # Grouped time series.
 
@@ -354,15 +398,23 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
       }  # End plot of user-supplied historcal and/or test set actuals.
       #------------------------------------------------------------------------
       p <- p + scale_color_viridis_d()
-      p <- p + facet_wrap(~ model, ncol = 1, scales = "free_y")
+      if (is.null(metric)) {  # combine_forecasts(type = "horizon")
+        p <- p + facet_wrap(~ model, ncol = 1, scales = "free_y")
+      }
       p <- p + theme_bw()
       #--------------------------------------------------------------------------
     } else {  # Factor outcome.
 
       data_plot <- data_forecast
 
-      # The plot will be faceted by model.
-      data_plot$ggplot_color_group <- apply(data_plot[,  c("model", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+      if (is.null(metric)) {  # combine_forecasts(type = "horizon")
+
+        data_plot$ggplot_color_group <- apply(data_plot[,  c("model", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+
+      } else {  # combine_forecasts(type = "error")
+
+        data_plot$ggplot_color_group <- apply(data_plot[,  groups, drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+      }
 
       if (factor_prob) {  # Plot predicted class probabilities.
 

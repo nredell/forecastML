@@ -5,17 +5,24 @@
 \title{Combine multiple horizon-specific forecast models to produce one forecast}
 \usage{
 combine_forecasts(..., type = c("horizon", "error"),
-  data_error = list(NULL))
+  data_error = list(NULL), metric = NULL)
 }
 \arguments{
 \item{...}{One or more objects of class 'forecast_results' from running \code{predict.forecast_model()} on
 an input forward-looking forecast data set. These are the forecasts from the horizon-specific
 direct forecasting models trained over the entire training dataset by setting \code{create_windows(..., window_length = 0)}.
+If multiple models are passed in \code{...}, the model names from \code{train_model()} need to be unique for a
+given model forecast horizon.
 If \code{type = 'horizon'}, 1 final h-step-ahead forecast is returned for each model object passed in \code{...}.}
 
 \item{type}{Default: 'horizon'. A character vector of length 1 that identifies the forecast combination method.}
 
-\item{data_error}{Optional. Not implemented at present.}
+\item{data_error}{Optional. A list of objects of class 'validation_error' from running \code{return_error()}
+on a training dataset. The length of \code{data_error} should equal the length of \code{...}.}
+
+\item{metric}{Required if \code{data_error} is given. A length 1 character vector naming the forecast
+error metric used to select the optimal model at each direct forecast horizon from the models passed
+in '...' e.g., 'mae'.}
 }
 \value{
 An S3 object of class 'forecastML' with final h-step-ahead forecasts.

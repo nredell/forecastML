@@ -64,7 +64,8 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
     stop("If using a test dataset to assess forecast error, both 'data_test' and 'test_indices' need to be specified.")
   }
 
-  # The order of these available metrics should match the error_functions vector below.
+  # The order of these available metrics should match the error_functions vector below. Only 'mae'
+  # is available for factor outcomes at present; an error will be thrown below if this is not the case.
   error_metrics <- c("mae", "mape", "mdape", "smape")
 
   # Filter the user input error metrics to only those that are available.
@@ -81,12 +82,16 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
   outcome_names <- attributes(data)$outcome_names
   outcome_levels <- attributes(data)$outcome_levels
   groups <- attributes(data)$groups
-
   #----------------------------------------------------------------------------
   # For factor outcomes, is the prediction a factor level or probability.
   if (!is.null(outcome_levels)) {
+
     factor_level <- if (any(names(data) %in% paste0(outcome_names, "_pred"))) {TRUE} else {FALSE}
     factor_prob <- !factor_level
+
+    if (!all(metrics %in% c("mae"))) {
+      stop("Only the 'mae' metric is available for factor outcomes. Set 'metrics = 'mae'' and re-run.")
+    }
 
     # This will eventually change.
     if (factor_prob) {
