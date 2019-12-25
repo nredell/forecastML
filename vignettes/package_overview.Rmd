@@ -792,7 +792,7 @@ This implies that, for our 12-month-ahead forecast,
     + the 6-step-ahead model forecasts from months 4 through 6, and 
     + the 12-step-ahead model forecasts from months 7 through 12.
 <br>
-* Plot all forecasts.
+* Plot the final forecast.
 
 ```{r, message = FALSE, warning = FALSE}
 data_combined <- forecastML::combine_forecasts(data_forecast)
