@@ -103,7 +103,7 @@ The main functions covered in each vignette are shown below as `function()`.
 
 ## Cheat Sheets
 
-![](./tools/forecastML_cheat_sheet.png)
+![](./tools/forecastML_cheat_sheet.PNG)
 
 1. **`fill_gaps`:** Optional if no temporal gaps/missing rows in data collection. Fill gaps in data collection and 
 prepare a dataset of evenly-spaced time series for modeling with lagged features. Returns a 'data.frame' with 
@@ -123,11 +123,11 @@ capabilities of the user-specified model.
 
 7. **`combine_forecasts`:** Combine multiple horizon-specific forecast models to produce one forecast.
 
-![](./tools/forecastML_cheat_sheet_data.png)
+![](./tools/forecastML_cheat_sheet_data.PNG)
 
 <br>
 
-![](./tools/forecastML_cheat_sheet_model.png)
+![](./tools/forecastML_cheat_sheet_model.PNG)
 
 
 ## FAQ
