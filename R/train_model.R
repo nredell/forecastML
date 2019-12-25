@@ -763,6 +763,7 @@ plot.training_results <- function(x,
         p <- p + geom_line(size = 1.05, linetype = 1)
         p <- p + geom_hline(yintercept = 0)
         p <- p + scale_color_viridis_d()
+        p <- p + facet_grid(horizon ~ ., drop = TRUE)
         p <- p + theme_bw()
 
       } else {  # Factor outcome.
