@@ -44,6 +44,8 @@
 #' \itemize{
 #'   \item \code{\link[=plot.forecastML]{plot}}
 #' }
+#'
+#' @example /R/examples/example_combine_forecasts.R
 #' @export
 combine_forecasts <- function(..., type = c("horizon", "error"), data_error = list(NULL), metric = NULL) {
 
