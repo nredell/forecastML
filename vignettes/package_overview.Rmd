@@ -144,7 +144,7 @@ install.packages("forecastML")
 ```{r, warning = FALSE, message = FALSE}
 library(dplyr)
 library(ggplot2)
-#library(forecastML)
+library(forecastML)
 library(glmnet)
 library(randomForest)
 library(DT)

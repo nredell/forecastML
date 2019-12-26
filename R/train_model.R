@@ -504,6 +504,10 @@ plot.training_results <- function(x,
     }
   }
   #----------------------------------------------------------------------------
+  if (!is.null(groups) && !is.null(outcome_levels)) {
+    stop("Plots are currently not available for grouped data with factor outcomes.")
+  }
+  #----------------------------------------------------------------------------
   # Residual calculations
   if (is.null(outcome_levels)) {  # Numeric outcome.
 

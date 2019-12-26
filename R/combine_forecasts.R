@@ -3,22 +3,27 @@
 #' The horizon-specific models can either be combined to (a) produce final forecasts for only those
 #' horizons at which they were trained (i.e., shorter-horizon models override longer-horizon models
 #' when producing final short-horizon h-step-ahead forecasts) or (b) produce final forecasts using
-#' any combination of horizon-specific models that minimized error over the validation/training dataset or
-#' a holdout test dataset.
+#' any combination of horizon-specific models that minimized error over the validation/training dataset.
 #'
 #' @param ... One or more objects of class 'forecast_results' from running \code{predict.forecast_model()} on
 #' an input forward-looking forecast data set. These are the forecasts from the horizon-specific
 #' direct forecasting models trained over the entire training dataset by setting \code{create_windows(..., window_length = 0)}.
 #' If multiple models are passed in \code{...}, the model names from \code{train_model()} need to be unique for a
 #' given model forecast horizon.
-#' If \code{type = 'horizon'}, 1 final h-step-ahead forecast is returned for each model object passed in \code{...}.
 #' @param type Default: 'horizon'. A character vector of length 1 that identifies the forecast combination method.
 #' @param data_error Optional. A list of objects of class 'validation_error' from running \code{return_error()}
-#' on a training dataset. The length of \code{data_error} should equal the length of \code{...}.
+#' on a training dataset. The length and order of \code{data_error} should match the models passed in \code{...}.
 #' @param metric Required if \code{data_error} is given. A length 1 character vector naming the forecast
-#' error metric used to select the optimal model at each direct forecast horizon from the models passed
+#' error metric used to select the optimal model at each forecast horizon from the models passed
 #' in '...' e.g., 'mae'.
 #' @return An S3 object of class 'forecastML' with final h-step-ahead forecasts.
+#'
+#'    \strong{Forecast combination type:}
+#'     \itemize{
+#'       \item \code{type = 'horizon'}: 1 final h-step-ahead forecast is returned for each model object passed in \code{...}.
+#'       \item \code{type = 'error'}: 1 final h-step-ahead forecast is returned by selecting, for each forecast horizon,
+#'       the model that minimized the chosen error metric at that horizon on the outer-loop validation data sets.
+#'    }
 #'
 #'    \strong{Columns in returned 'forecastML' data.frame:}
 #'     \itemize{
@@ -72,7 +77,6 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
     factor_prob <- !factor_level
   }
   #----------------------------------------------------------------------------
-
   if (any(unique(data_forecast$window_length) != 0)) {
     stop("Some models were trained using multiple validation windows. Retrain any final forecast models
          using create_windows(window_length = 0) before combining forecast models across horizons.")
@@ -217,6 +221,10 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
   if (!is.null(outcome_levels)) {
     factor_level <- if (any(names(data_forecast) %in% paste0(outcome_names, "_pred"))) {TRUE} else {FALSE}
     factor_prob <- !factor_level
+  }
+  #----------------------------------------------------------------------------
+  if (!is.null(groups) && !is.null(outcome_levels)) {
+    stop("Forecast plots are not yet available for factor outcomes with multiple time series.")
   }
   #----------------------------------------------------------------------------
   if (!is.null(data_actual)) {

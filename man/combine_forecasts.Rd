@@ -12,20 +12,26 @@ combine_forecasts(..., type = c("horizon", "error"),
 an input forward-looking forecast data set. These are the forecasts from the horizon-specific
 direct forecasting models trained over the entire training dataset by setting \code{create_windows(..., window_length = 0)}.
 If multiple models are passed in \code{...}, the model names from \code{train_model()} need to be unique for a
-given model forecast horizon.
-If \code{type = 'horizon'}, 1 final h-step-ahead forecast is returned for each model object passed in \code{...}.}
+given model forecast horizon.}
 
 \item{type}{Default: 'horizon'. A character vector of length 1 that identifies the forecast combination method.}
 
 \item{data_error}{Optional. A list of objects of class 'validation_error' from running \code{return_error()}
-on a training dataset. The length of \code{data_error} should equal the length of \code{...}.}
+on a training dataset. The length and order of \code{data_error} should match the models passed in \code{...}.}
 
 \item{metric}{Required if \code{data_error} is given. A length 1 character vector naming the forecast
-error metric used to select the optimal model at each direct forecast horizon from the models passed
+error metric used to select the optimal model at each forecast horizon from the models passed
 in '...' e.g., 'mae'.}
 }
 \value{
 An S3 object of class 'forecastML' with final h-step-ahead forecasts.
+
+   \strong{Forecast combination type:}
+    \itemize{
+      \item \code{type = 'horizon'}: 1 final h-step-ahead forecast is returned for each model object passed in \code{...}.
+      \item \code{type = 'error'}: 1 final h-step-ahead forecast is returned by selecting, for each forecast horizon,
+      the model that minimized the chosen error metric at that horizon on the outer-loop validation data sets.
+   }
 
    \strong{Columns in returned 'forecastML' data.frame:}
     \itemize{
@@ -43,8 +49,7 @@ An S3 object of class 'forecastML' with final h-step-ahead forecasts.
 The horizon-specific models can either be combined to (a) produce final forecasts for only those
 horizons at which they were trained (i.e., shorter-horizon models override longer-horizon models
 when producing final short-horizon h-step-ahead forecasts) or (b) produce final forecasts using
-any combination of horizon-specific models that minimized error over the validation/training dataset or
-a holdout test dataset.
+any combination of horizon-specific models that minimized error over the validation/training dataset.
 }
 \section{Methods and related functions}{
 
