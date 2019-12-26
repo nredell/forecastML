@@ -147,7 +147,6 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
 
   } else if (type == "error") {
 
-    data_error <- data_error_list
     data_error <- lapply(data_error, function(x) {x$error_by_horizon})
     data_error <- dplyr::bind_rows(data_error)
 
@@ -218,6 +217,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
   groups <- attributes(data_forecast)$groups
   data_stop <- attributes(data_forecast)$data_stop
   metric <- attributes(data_forecast)$metric
+  horizons <- unique(data_forecast$horizon)
   #----------------------------------------------------------------------------
   # For factor outcomes, is the prediction a factor level or probability?
   if (!is.null(outcome_levels)) {
@@ -361,7 +361,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
                                  aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
                                      ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
                                      color = .data$ggplot_group,
-                                     fill = ggplot_group),
+                                     fill = .data$ggplot_group),
                                  linetype = 0, alpha = .25, show.legend = FALSE)
           }
         }  # End plotting lower and upper forecast bounds.

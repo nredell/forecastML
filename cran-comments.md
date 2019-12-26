@@ -9,6 +9,17 @@
 
 ## Submission history
 
+* **12-25-2019**
+* This is a minor version update, 0.6.0 to 0.7.0, for an existing CRAN package.
+    + User-visible new features
+        + Support forecasting factor outcome levels and probabilities.
+        + Add function `combine_forecasts()` to produce final h-step-ahead forecasts from ensemble models.
+        + Reworked vignettes for style and to cover the most common use cases.
+    + Bug fixes
+        + None
+    + Internals
+        + Refactored `return_error()` to support the addition of new error metrics in zzz.R
+<br>
 
 * **11-22-2019**
 * This is a minor version update, 0.5.0 to 0.6.0, for an existing CRAN package.
