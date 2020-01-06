@@ -9,8 +9,8 @@ return_error(data_results, data_test = NULL, test_indices = NULL,
   horizons = NULL, windows = NULL, group_filter = NULL)
 }
 \arguments{
-\item{data_results}{An object of class 'training_results' or 'forecast_results' from running
-\code{\link[=predict.forecast_model]{predict}} on a trained model.}
+\item{data_results}{An object of class 'training_results' or 'forecast_results' from running (a)
+\code{\link[=predict.forecast_model]{predict}} on a trained model or (b) \code{combine_forecasts()}.}
 
 \item{data_test}{Required for forecast results only. If \code{data_results} is an object of class 'forecast_results', a data.frame used to
 assess the accuracy of a 'forecast_results' object. \code{data_test} should have the outcome/target columns
@@ -33,7 +33,8 @@ row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_test
 \value{
 An S3 object of class 'validation_error' or 'forecast_error': A list of data.frames
 of error metrics for the validation datasets or forecast dataset depending
-on the \code{data_test} argument. \cr
+on the \code{data_test} argument. An input to \code{data_results} from \code{combine_forecasts()} will return
+a single data.frame with results for each model passed in \code{...}. \cr
 
 A list containing: \cr
 

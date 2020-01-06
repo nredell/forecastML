@@ -2,8 +2,8 @@
 #'
 #' Compute forecast error metrics on the validation datasets or a new test dataset.
 #'
-#' @param data_results An object of class 'training_results' or 'forecast_results' from running
-#' \code{\link[=predict.forecast_model]{predict}} on a trained model.
+#' @param data_results An object of class 'training_results' or 'forecast_results' from running (a)
+#' \code{\link[=predict.forecast_model]{predict}} on a trained model or (b) \code{combine_forecasts()}.
 #' @param data_test Required for forecast results only. If \code{data_results} is an object of class 'forecast_results', a data.frame used to
 #' assess the accuracy of a 'forecast_results' object. \code{data_test} should have the outcome/target columns
 #' and any grouping columns.
@@ -18,7 +18,8 @@
 #'
 #' @return An S3 object of class 'validation_error' or 'forecast_error': A list of data.frames
 #' of error metrics for the validation datasets or forecast dataset depending
-#' on the \code{data_test} argument. \cr
+#' on the \code{data_test} argument. An input to \code{data_results} from \code{combine_forecasts()} will return
+#' a single data.frame with results for each model passed in \code{...}. \cr
 #'
 #' A list containing: \cr
 #'
@@ -75,10 +76,13 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
     stop("None of the error 'metrics' match any of 'mae', 'mape', 'mdape', or 'smape'.")
   }
 
+  # The return() from combine_forecasts(), 'forecastML', is also an object of class 'forecast_results' but does not need
+  # filtering, so these input types will be handled slightly differently.
+  is_forecastML <- methods::is(data_results, "forecastML")
+
   data <- data_results
   rm(data_results)
 
-  outcome_col <- attributes(data)$outcome_col
   outcome_names <- attributes(data)$outcome_names
   outcome_levels <- attributes(data)$outcome_levels
   groups <- attributes(data)$groups
@@ -143,14 +147,17 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
   }
   #----------------------------------------------------------------------------
   # Filter results based on user input.
-  models <- if (is.null(models)) {unique(data$model)} else {models}
-  horizons <- if (is.null(horizons)) {unique(data$horizon)} else {horizons}
-  windows <- if (is.null(windows)) {unique(data$window_number)} else {windows}
+  if (!is_forecastML) {
 
-  data <- data[data$model %in% models & data$horizon %in% horizons & data$window_number %in% windows, ]
+    models <- if (is.null(models)) {unique(data$model)} else {models}
+    horizons <- if (is.null(horizons)) {unique(data$horizon)} else {horizons}
+    windows <- if (is.null(windows)) {unique(data$window_number)} else {windows}
 
-  if (!is.null(group_filter)) {
-    data <- dplyr::filter(data, eval(parse(text = group_filter)))
+    data <- data[data$model %in% models & data$horizon %in% horizons & data$window_number %in% windows, ]
+
+    if (!is.null(group_filter)) {
+      data <- dplyr::filter(data, eval(parse(text = group_filter)))
+    }
   }
   #----------------------------------------------------------------------------
   # Select error functions. The forecastML internal error functions are in zzz.R.
@@ -205,7 +212,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
                           y = rlang::sym(outcome_names),
                           z = rlang::sym(paste0(outcome_names, "_pred")))
     #--------------------------------------------------------------------------
-    } else {  # Error metrics for the forecast_results class which has no validation windows and slightly different grouping columns.
+    } else if (!is_forecastML) {  # Error metrics for the forecast_results class which has no validation windows and slightly different grouping columns.
 
       data_1 <- data.frame()
 
@@ -226,19 +233,43 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
                             x = rlang::quo(.data$residual),
                             y = rlang::sym(outcome_names),
                             z = rlang::sym(paste0(outcome_names, "_pred")))
+
+    } else {  # Final forecasts from combine_forecasts().
+
+      data_combined <- data %>%
+        dplyr::group_by_at(dplyr::vars(.data$model, !!groups)) %>%
+        dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
+                            .funs = error_functions,
+                            x = rlang::quo(.data$residual),
+                            y = rlang::sym(outcome_names),
+                            z = rlang::sym(paste0(outcome_names, "_pred")))
+
     }  # End error metrics for forecast results.
   #----------------------------------------------------------------------------
 
-  data_out <- list("error_by_window" = data_1, "error_by_horizon" = data_2, "error_global" = data_3)
-  data_out[] <- lapply(data_out, as.data.frame)  # Remove the tibble class.
+  if (!is_forecastML) {
+
+    data_out <- list("error_by_window" = data_1, "error_by_horizon" = data_2, "error_global" = data_3)
+    data_out[] <- lapply(data_out, as.data.frame)  # Remove the tibble class.
+  }
+
+  if (is.null(data_test)) {  # Validation error.
+
+      class(data_out) <- c("validation_error", class(data_out))
+
+  } else {  # Forecast error.
+
+    if (!is_forecastML) {
+
+      class(data_out) <- c("forecast_error", class(data_out))
+
+    } else {
+      data_out <- as.data.frame(data_combined)
+      class(data_out) <- c("forecast_error", class(data_out))
+    }
+  }
 
   attr(data_out, "error_metrics") <- metrics
-
-  if (is.null(data_test)) {
-    class(data_out) <- c("validation_error", class(data_out))
-  } else {
-    class(data_out) <- c("forecast_error", class(data_out))
-  }
 
   return(data_out)
 }
@@ -273,7 +304,6 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
 
   type <- type[1]
 
-  outcome_col <- attributes(data_results)$outcome_col
   outcome_names <- attributes(data_results)$outcome_names
   groups <- attributes(data_results)$groups
 

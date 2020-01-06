@@ -9,9 +9,9 @@ combine_forecasts(..., type = c("horizon", "error"),
 }
 \arguments{
 \item{...}{One or more objects of class 'forecast_results' from running \code{predict.forecast_model()} on
-an input forward-looking forecast data set. These are the forecasts from the horizon-specific
+an input forward-looking forecast dataset. These are the forecasts from the horizon-specific
 direct forecasting models trained over the entire training dataset by setting \code{create_windows(..., window_length = 0)}.
-If multiple models are passed in \code{...}, the model names from \code{train_model()} need to be unique for a
+If multiple models are passed in \code{...}, the model names from \code{train_model()} should be unique for a
 given model forecast horizon.}
 
 \item{type}{Default: 'horizon'. A character vector of length 1 that identifies the forecast combination method.}
