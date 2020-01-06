@@ -9,7 +9,7 @@
 
 ## Submission history
 
-* **12-25-2019**
+* **01-06-2020**
 * This is a minor version update, 0.6.0 to 0.7.0, for an existing CRAN package.
     + User-visible new features
         + Support forecasting factor outcome levels and probabilities.
@@ -19,6 +19,7 @@
         + None
     + Internals
         + Refactored `return_error()` to support the addition of new error metrics in zzz.R
+        + Unit test code coverage = 83%.
 <br>
 
 * **11-22-2019**
