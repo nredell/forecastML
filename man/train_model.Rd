@@ -4,8 +4,14 @@
 \alias{train_model}
 \title{Train a model across horizons and validation datasets}
 \usage{
-train_model(lagged_df, windows, model_name, model_function, ...,
-  use_future = FALSE)
+train_model(
+  lagged_df,
+  windows,
+  model_name,
+  model_function,
+  ...,
+  use_future = FALSE
+)
 }
 \arguments{
 \item{lagged_df}{An object of class 'lagged_df' from \code{\link{create_lagged_df}}.}

@@ -455,12 +455,15 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 #' @param valid_indices Optional. A numeric or date vector to filter results by validation row indices or dates.
 #' @param group_filter Optional. A string for filtering plot results for grouped time series
 #' (e.g., \code{"group_col_1 == 'A'"}). The results are passed to \code{dplyr::filter()} internally.
+#' @param facet Optional. A formula with any combination of \code{horizon}, \code{model}, or \code{group} (for grouped time series)
+#' passed to \code{ggplot2::facet_grid()} internally (e.g., \code{horizon ~ model}, \code{horizon + model ~ .}, \code{~ horizon + group}).
+#' Can be \code{NULL}.
 #' @param ... Not used.
 #' @return Diagnostic plots of class 'ggplot'.
 #' @export
 plot.training_results <- function(x,
-                                  type = c("prediction", "residual", "forecast_stability", "forecast_variability"),
-                                  models = NULL, horizons = NULL,
+                                  type = c("prediction", "residual", "forecast_stability"),
+                                  facet = horizon ~ model, models = NULL, horizons = NULL,
                                   windows = NULL, valid_indices = NULL, group_filter = NULL, ...) { # nocov start
 
   if (!methods::is(x, "training_results")) {
@@ -493,9 +496,39 @@ plot.training_results <- function(x,
   frequency <- attributes(data)$frequency
   groups <- attributes(data)$group
   window_custom <- all(data$window_length == "custom")
+
+  facet_names <- all.vars(facet)
+
+  if (isTRUE(any(facet_names %in% "."))) {
+    facet_names <- facet_names[!facet_names %in% "."]
+  }
+
+  if (!is.null(facet) && !all(facet_names %in% c("horizon", "model", "group"))) {
+    stop("One or more of the plot facets is not in 'horizon', 'model', or 'group'.")
+  }
+
+  # Adjust the formula, substituting the group name from the data into the 'facet' input formula.
+  if ("group" %in% facet_names) {
+
+    rhs <- try(labels(stats::terms(facet)))
+
+    if (methods::is(rhs, "try-error")) {
+      rhs <- "."
+    }
+
+    lhs <- facet_names[!facet_names %in% rhs]
+
+    lhs[lhs %in% "group"] <- groups
+    rhs[rhs %in% "group"] <- groups
+
+    facet <- as.formula(paste(paste(lhs, collapse = "+"), "~", paste(rhs, collapse = "+")))
+
+    facet_names[facet_names %in% "group"] <- groups
+  }
   #----------------------------------------------------------------------------
   # For factor outcomes, is the prediction a factor level or probability.
   if (!is.null(outcome_levels)) {
+
     factor_level <- if (any(names(data) %in% paste0(outcome_names, "_pred"))) {TRUE} else {FALSE}
     factor_prob <- !factor_level
 
@@ -538,10 +571,10 @@ plot.training_results <- function(x,
 
     valid_indices <- if (is.null(valid_indices)) {unique(data$valid_indices)} else {valid_indices}
 
-  } else {
+    } else {
 
     valid_indices <- if (is.null(valid_indices)) {unique(data$date_indices)} else {date_indices}
-  }
+    }
 
   data_plot <- data
 
@@ -549,79 +582,85 @@ plot.training_results <- function(x,
   data_plot$horizon <- data_plot$model_forecast_horizon
   data_plot$model_forecast_horizon <- NULL
 
-  data_plot <- data_plot[data_plot$model %in% models & data_plot$horizon %in% horizons &
-                         data_plot$window_number %in% windows, ]
-  #----------------------------------------------------------------------------
-
-  if (methods::is(valid_indices, "Date") || methods::is(valid_indices, "POSIXt")) {
-
-    data_plot <- data_plot[data_plot$date_indices %in% valid_indices, ]  # Filter plots by dates.
-    data_plot$index <- data_plot$date_indices
-
-  } else {
-
-    data_plot <- data_plot[data_plot$valid_indices %in% valid_indices, ]  # Filter plots by row indices.
-
-    if (!is.null(date_indices)) {
-
-      data_plot$index <- data_plot$date_indices
-
-    } else {
-
-      data_plot$index <- data_plot$valid_indices
-    }
-  }
+  data_plot <- data_plot[data_plot$model %in% models & data_plot$horizon %in% horizons & data_plot$window_number %in% windows, ]
 
   if (!is.null(group_filter)) {
 
     data_plot <- dplyr::filter(data_plot, eval(parse(text = group_filter)))
   }
   #----------------------------------------------------------------------------
-  # Create different line segments in ggplot with `color = ggplot_color_group`.
+  if (methods::is(valid_indices, "Date") || methods::is(valid_indices, "POSIXt")) {
+
+    data_plot <- data_plot[data_plot$date_indices %in% valid_indices, ]  # Filter plots by dates.
+    data_plot$index <- data_plot$date_indices
+
+    } else {
+
+      data_plot <- data_plot[data_plot$valid_indices %in% valid_indices, ]  # Filter plots by row indices.
+
+      if (!is.null(date_indices)) {
+
+        data_plot$index <- data_plot$date_indices
+
+      } else {
+
+        data_plot$index <- data_plot$valid_indices
+      }
+    }
+  #----------------------------------------------------------------------------
+  # Set up ggplot color and group parameters.
   if (is.null(outcome_levels)) {  # Numeric outcomes.
 
-    if (isFALSE(window_custom)) {
-
-      if (!is.null(groups)) {
-        data_plot <- dplyr::arrange(data_plot, .data$model, .data$window_number, eval(parse(text = groups)))
-      }
-
-      data_plot$ggplot_color_group <- apply(data_plot[,  c("model", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
-
-      # Used to avoid lines spanning any gaps between validation windows.
-      data_plot$ggplot_group_group <- apply(data_plot[,  c("model", "window_number", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
-
-    } else {  # Plot different colors for each custom window as the windows can be non-contiguous.
+    if (is.null(groups)) {
 
       data_plot <- dplyr::arrange(data_plot, .data$model, .data$window_number)
 
-      data_plot$ggplot_group_group <- apply(data_plot[,  c("model", "window_number", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+    } else {
 
-      data_plot$ggplot_color_group <- apply(data_plot[,  c("model", "window_number", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+      data_plot <- dplyr::arrange(data_plot, .data$model, .data$window_number, eval(parse(text = groups)))
+    }
+    #--------------------------------------------------------------------------
+    # ggplot colors and facets are complimentary: all facets, same color; all colors, no facet.
+    ggplot_color <- c(c("model", "horizon", groups)[!c("model", "horizon", groups) %in% facet_names])
+    #--------------------------------------------------------------------------
+
+    data_plot$ggplot_color <- apply(data_plot[,  ggplot_color, drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+
+    # Give predictions a name in the legend if plot is faceted by model and horizon (and group if groups are given).
+    if (length(ggplot_color) == 0) {
+      data_plot$ggplot_color <- "Prediction"
     }
 
-    data_plot$ggplot_color_group <- ordered(data_plot$ggplot_color_group, levels = unique(data_plot$ggplot_color_group))
+    # Used to avoid lines spanning any gaps between validation windows.
+    if (all(data_plot$window_number == 1)) {  # One window; no need to add the window number to the legend.
 
+      data_plot$ggplot_group <- apply(data_plot[,  ggplot_color, drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+
+    } else {
+
+      data_plot$ggplot_group <- apply(data_plot[,  c("window_number", ggplot_color), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+    }
+
+    # Coerce to viridis color scale with an ordered factor. With the data.frame sorted, unique() pulls the levels in their order of appearance.
+    data_plot$ggplot_color <- factor(data_plot$ggplot_color, levels = unique(data_plot$ggplot_color), ordered = TRUE)
     #----------------------------------------------------------------------------
-    # Fill in date gaps with NAs so ggplot doesn't connect line segments where there were no entries recorded.
-    if (!is.null(groups)) {
+    # Fill in date gaps with NAs so ggplot doesn't connect line segments where there were no predictions were made.
+    if (!is.null(date_indices)) {
 
       data_plot_template <- expand.grid("index" = seq(min(date_indices, na.rm = TRUE), max(date_indices, na.rm = TRUE), by = frequency),
-                                        "ggplot_color_group" = unique(data_plot$ggplot_color_group),
+                                        "ggplot_color" = unique(data_plot$ggplot_color),
                                         "horizon" = horizons,
                                         stringsAsFactors = FALSE)
 
-      data_plot <- dplyr::left_join(data_plot_template, data_plot, by = c("index", "horizon", "ggplot_color_group"))
+      data_plot <- dplyr::left_join(data_plot_template, data_plot, by = c("index", "horizon", "ggplot_color"))
 
       # Create a dataset of points for those instances where there the outcomes are NA before and after a given instance.
       # Points are needed because ggplot will not plot a 1-instance geom_line().
       data_plot_point <- data_plot %>%
-        dplyr::group_by(.data$ggplot_color_group) %>%
+        dplyr::group_by(.data$ggplot_color) %>%
         dplyr::mutate("lag" = dplyr::lag(eval(parse(text = outcome_names)), 1),
                       "lead" = dplyr::lead(eval(parse(text = outcome_names)), 1)) %>%
         dplyr::filter(is.na(.data$lag) & is.na(.data$lead))
-
-      data_plot_point$ggplot_color_group <- factor(data_plot_point$ggplot_color_group, ordered = TRUE, levels(data_plot$ggplot_color_group))
 
       data_plot <- data_plot[data_plot$date_indices %in% valid_indices, ]
       # This may be an empty data.frame if every time series has 2 or more contiguous records, and
@@ -633,7 +672,7 @@ plot.training_results <- function(x,
 
     data_plot$ggplot_color_group <- apply(data_plot[,  c("model", "horizon", groups), drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
   }
-
+  #----------------------------------------------------------------------------
   #----------------------------------------------------------------------------
 
   if (type %in% c("prediction", "residual")) {
@@ -664,45 +703,58 @@ plot.training_results <- function(x,
       data_plot$index <- data_plot$date_indices
     }
 
+    #--------------------------------------------------------------------------
     if (type == "prediction") {
 
       if (is.null(outcome_levels)) {  # Numeric outcome; plot historical predictions.
 
         p <- ggplot()
 
-        #test <- data_plot[data_plot$outcome != outcome_names, ]
+        #--------------------------------------------------------------------------
+        # Plot actuals on the first or lowest layer.
+        if (is.null(groups)) {  # Single time series.
 
+          p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
+                             aes(x = .data$index, y = .data$value), color = "grey50")
+
+        } else {  # Actuals, grouped time series.
+
+          # If faceting by group, this reduces to the single time series case so the actuals
+          # will be the default grey so as not to double encode the plot data.
+          if (any(facet_names %in% groups)) {
+
+            p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
+                               aes(x = .data$index, y = .data$value), color = "grey50")
+
+          } else {
+
+            p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
+                               aes(x = .data$index, y = .data$value,
+                                   group = .data$ggplot_group,
+                                   color = .data$ggplot_color), linetype = 2)
+            p <- p + scale_color_viridis_d()
+          }
+        }
+        #--------------------------------------------------------------------------
+        # Plot predictions.
+        data_plot$ggplot_color
         p <- p + geom_line(data = data_plot[data_plot$outcome != outcome_names, ],  # Predictions in melted data.
-                           aes(x = .data$index, y = .data$value, group = .data$ggplot_group_group, color = .data$ggplot_color_group),
+                           aes(x = .data$index, y = .data$value, group = .data$ggplot_group, color = .data$ggplot_color),
                            size = 1.05, linetype = 1)
 
-      # If the plotting data.frame has both lower and upper forecasts plot these bounds.
-      if (all(any(grepl("_pred_lower", names(data_plot))), any(grepl("_pred_upper", names(data_plot))))) {
+        # If the plotting data.frame has both lower and upper forecasts plot these bounds.
+        if (all(any(grepl("_pred_lower", names(data_plot))), any(grepl("_pred_upper", names(data_plot))))) {
 
-        p <- p + geom_ribbon(data = data_plot[data_plot$outcome == outcome_names, ],
-                             aes(x = .data$index, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
-                                 ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
-                                 fill = .data$ggplot_color_group, color = NULL), alpha = .25, show.legend = FALSE)
+          p <- p + geom_ribbon(data = data_plot[data_plot$outcome == outcome_names, ],
+                               aes(x = .data$index, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
+                                   ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
+                                   fill = .data$ggplot_color, group = .data$ggplot_group, color = NULL), alpha = .25, show.legend = FALSE)
         }
 
-      if (is.null(groups)) {
-
-        p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
-                           aes(x = .data$index, y = .data$value), color = "grey50")
-        p <- p + facet_grid(horizon ~ ., drop = TRUE)
+        if (!is.null(facet)) {
+          p <- p + facet_grid(facet, drop = TRUE)
+        }
         p <- p + theme_bw()
-
-        } else {
-
-        p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
-                           aes(x = .data$index, y = .data$value,
-                               group = .data$ggplot_group_group,
-                               color = .data$ggplot_color_group), linetype = 2)
-
-        p <- p + scale_color_viridis_d()
-        p <- p + facet_grid(horizon ~ ., drop = TRUE)
-        p <- p + theme_bw()
-      }
     #--------------------------------------------------------------------------
     } else {  # Factor outcome.
 
@@ -762,12 +814,12 @@ plot.training_results <- function(x,
         # Plot historical predictions.
         p <- ggplot(data_plot[data_plot$outcome != outcome_names, ],
                     aes(x = .data$index, y = .data$residual,
-                        group = .data$ggplot_color_group, color = .data$ggplot_color_group))
+                        group = .data$ggplot_group, color = .data$ggplot_color))
 
         p <- p + geom_line(size = 1.05, linetype = 1)
         p <- p + geom_hline(yintercept = 0)
         p <- p + scale_color_viridis_d()
-        p <- p + facet_grid(horizon ~ ., drop = TRUE)
+        p <- p + facet_grid(facet, drop = TRUE)
         p <- p + theme_bw()
 
       } else {  # Factor outcome.
@@ -795,20 +847,36 @@ plot.training_results <- function(x,
 
       if (is.null(outcome_levels)) {  # Numeric outcome.
 
-        p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Model") +
-          ggtitle("Forecasts vs. Actuals Through Time - Faceted by horizon")
+        if (!is.null(groups)) {  # Grouped time series.
+
+          if (any(facet_names %in% groups)) {
+
+            p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = NULL, group = NULL) +
+              ggtitle("Forecasts vs. Actuals Through Time")
+
+          } else {
+
+            p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = NULL, group = NULL) +
+              ggtitle("Forecasts vs. Actuals Through Time", subtitle = c("Dashed lines are actuals"))
+          }
+
+        } else {  # Single time series.
+
+          p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = NULL, group = NULL) +
+            ggtitle("Forecasts vs. Actuals Through Time")
+        }
 
       } else {  # Factor outcome.
 
         if (factor_prob) {
 
           p <- p + xlab("Dataset index") + ylab("Outcome probability") + labs(color = "Outcome", fill = "Outcome") +
-            ggtitle("Forecasts vs. Actuals Through Time - Faceted by model and horizon")
+            ggtitle("Forecasts vs. Actuals Through Time")
 
         } else {
 
           p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Outcome", fill = "Outcome") +
-            ggtitle("Forecasts vs. Actuals Through Time - Faceted by model and horizon")
+            ggtitle("Forecasts vs. Actuals Through Time")
         }
       }
 
@@ -816,20 +884,20 @@ plot.training_results <- function(x,
 
       if (is.null(outcome_levels)) {
 
-        p <- p + xlab("Dataset index") + ylab("Residual") + labs(color = "Model") +
-          ggtitle("Forecast Error Through Time - Faceted by forecast horizon")
+        p <- p + xlab("Dataset index") + ylab("Residual") + labs(color = NULL, group = NULL) +
+          ggtitle("Forecast Error Through Time")
 
       } else {
 
         if (is.null(groups)) {
 
           p <- p + xlab("Dataset index") + ylab("Residual and model") + labs(fill = "Residual") +
-            ggtitle("Forecast Error Through Time - Faceted by forecast horizon")
+            ggtitle("Forecast Error Through Time")
 
         } else {
 
           p <- p + xlab("Dataset index") + ylab("Residual, model, and group") + labs(fill = "Residual") +
-            ggtitle("Forecast Error Through Time - Faceted by forecast horizon")
+            ggtitle("Forecast Error Through Time")
         }
       }
     }
@@ -874,56 +942,6 @@ plot.training_results <- function(x,
     p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Model") + labs(fill = NULL) +
       ggtitle("Rolling Origin Forecast Stability - Faceted by dataset index")
     return(p)
-  }
-  #----------------------------------------------------------------------------
-
-  if (type %in% c("forecast_variability")) {
-
-    data_plot_summary <- data_plot %>%
-      dplyr::group_by(.data$model, .data$valid_indices,
-                      .data$window_length, .data$window_number) %>%
-      dplyr::summarise("cov" = base::abs(stats::sd(eval(parse(text = paste0(outcome_names, "_pred"))), na.rm = TRUE) / mean(eval(parse(text = paste0(outcome_names, "_pred"))), na.rm = TRUE))) %>%
-      dplyr::distinct(.data$model, .data$valid_indices,
-                      .data$window_length, .keep_all = TRUE)
-    data_plot_summary$group <- with(data_plot_summary, paste0(window_length))
-    data_plot_summary$group <- ordered(data_plot_summary$group)
-
-    data_outcome <- data_plot_summary
-    data_outcome$window_number <- NULL
-    data_outcome <- dplyr::distinct(data_outcome, .data$valid_indices,
-                                    .data$window_length, .keep_all = TRUE)
-
-    data_outcome <- dplyr::left_join(data_outcome, data_plot, by = c("model", "valid_indices", "window_length"))
-    data_outcome <- dplyr::distinct(data_outcome, .data$valid_indices,
-                                    .data$window_length, .keep_all = TRUE)
-
-    # For each plot facet, create columns to min-max scale the original time-series data.
-    data_outcome <- data_outcome %>%
-      dplyr::group_by(.data$window_length) %>%
-      dplyr::mutate("min_scale" = min(cov, na.rm = TRUE),
-                    "max_scale" = max(cov, na.rm = TRUE)) %>%
-      dplyr::ungroup()
-
-    data_outcome$outcome_scaled <- (((data_outcome$max_scale - data_outcome$min_scale) * (data_outcome[, outcome_names, drop = TRUE] - min(data_outcome[, outcome_names, drop = TRUE], na.rm = TRUE))) /
-                                      (max(data_outcome[, outcome_names, drop = TRUE], na.rm = TRUE) - min(data_outcome[, outcome_names, drop = TRUE], na.rm = TRUE))) + data_outcome$min_scale
-
-    p <- ggplot()
-    p <- p + geom_line(data = data_plot_summary, aes(x = .data$valid_indices,
-                                                     y = .data$cov, color = factor(.data$model),
-                                                     group = paste0(.data$model, .data$window_number)), size = 1,
-                       linetype = 1, alpha = .50)
-    p <- p + geom_point(data = data_plot_summary, aes(x = .data$valid_indices,
-                                                      y = .data$cov,
-                                                      color = factor(.data$model),
-                                                      group = paste0(.data$model, .data$window_number)),
-                        show.legend = FALSE)
-    p <- p + geom_line(data = data_outcome, aes(.data$valid_indices, .data$outcome_scaled,
-                                                group = .data$window_number), color = "grey50")
-    p <- p + scale_color_viridis_d()
-    p <- p + theme_bw()
-    p <- p + xlab("Dataset index") + ylab("Coefficient of variation (Abs)") + labs(color = "Model") +
-      ggtitle("Forecast Variability Across Forecast Horizons")
-    return(suppressWarnings(p))
   }
 } # nocov end
 #------------------------------------------------------------------------------
