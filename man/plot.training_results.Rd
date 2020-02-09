@@ -13,6 +13,7 @@
   windows = NULL,
   valid_indices = NULL,
   group_filter = NULL,
+  keep_missing = FALSE,
   ...
 )
 }
@@ -35,6 +36,8 @@ Can be \code{NULL}.}
 
 \item{group_filter}{Optional. A string for filtering plot results for grouped time series
 (e.g., \code{"group_col_1 == 'A'"}). The results are passed to \code{dplyr::filter()} internally.}
+
+\item{keep_missing}{Boolean. If \code{TRUE}, predictions are plotted for indices/dates where the outcome is missing.}
 
 \item{...}{Not used.}
 }

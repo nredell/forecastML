@@ -458,13 +458,14 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 #' @param facet Optional. A formula with any combination of \code{horizon}, \code{model}, or \code{group} (for grouped time series)
 #' passed to \code{ggplot2::facet_grid()} internally (e.g., \code{horizon ~ model}, \code{horizon + model ~ .}, \code{~ horizon + group}).
 #' Can be \code{NULL}.
+#' @param keep_missing Boolean. If \code{TRUE}, predictions are plotted for indices/dates where the outcome is missing.
 #' @param ... Not used.
 #' @return Diagnostic plots of class 'ggplot'.
 #' @export
 plot.training_results <- function(x,
                                   type = c("prediction", "residual", "forecast_stability"),
                                   facet = horizon ~ model, models = NULL, horizons = NULL,
-                                  windows = NULL, valid_indices = NULL, group_filter = NULL, ...) { # nocov start
+                                  windows = NULL, valid_indices = NULL, group_filter = NULL, keep_missing = FALSE, ...) { # nocov start
 
   if (!methods::is(x, "training_results")) {
     stop("The 'x' argument takes an object of class 'training_results' as input. Run predict() on a 'forecast_model' object first.")
@@ -497,34 +498,13 @@ plot.training_results <- function(x,
   groups <- attributes(data)$group
   window_custom <- all(data$window_length == "custom")
 
-  facet_names <- all.vars(facet)
-
-  if (isTRUE(any(facet_names %in% "."))) {
-    facet_names <- facet_names[!facet_names %in% "."]
+  if (isFALSE(keep_missing)) {
+    data <- data[!is.na(data[, outcome_names]), ]
   }
 
-  if (!is.null(facet) && !all(facet_names %in% c("horizon", "model", "group"))) {
-    stop("One or more of the plot facets is not in 'horizon', 'model', or 'group'.")
-  }
-
-  # Adjust the formula, substituting the group name from the data into the 'facet' input formula.
-  if ("group" %in% facet_names) {
-
-    rhs <- try(labels(stats::terms(facet)))
-
-    if (methods::is(rhs, "try-error")) {
-      rhs <- "."
-    }
-
-    lhs <- facet_names[!facet_names %in% rhs]
-
-    lhs[lhs %in% "group"] <- groups
-    rhs[rhs %in% "group"] <- groups
-
-    facet <- as.formula(paste(paste(lhs, collapse = "+"), "~", paste(rhs, collapse = "+")))
-
-    facet_names[facet_names %in% "group"] <- groups
-  }
+  facets <- forecastML_facet_plot(facet, groups)  # Function in zzz.R.
+  facet <- facets[[1]]
+  facet_names <- facets[[2]]
   #----------------------------------------------------------------------------
   # For factor outcomes, is the prediction a factor level or probability.
   if (!is.null(outcome_levels)) {

@@ -4,9 +4,16 @@
 \alias{return_error}
 \title{Compute forecast error}
 \usage{
-return_error(data_results, data_test = NULL, test_indices = NULL,
-  metrics = c("mae", "mape", "mdape", "smape"), models = NULL,
-  horizons = NULL, windows = NULL, group_filter = NULL)
+return_error(
+  data_results,
+  data_test = NULL,
+  test_indices = NULL,
+  metrics = c("mae", "mape", "mdape", "smape"),
+  models = NULL,
+  horizons = NULL,
+  windows = NULL,
+  group_filter = NULL
+)
 }
 \arguments{
 \item{data_results}{An object of class 'training_results' or 'forecast_results' from running (a)
