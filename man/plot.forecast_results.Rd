@@ -4,10 +4,17 @@
 \alias{plot.forecast_results}
 \title{Plot an object of class forecast_results}
 \usage{
-\method{plot}{forecast_results}(x, data_actual = NULL,
-  actual_indices = NULL, models = NULL, horizons = NULL,
-  windows = NULL, facet_plot = c("model", "model_forecast_horizon"),
-  group_filter = NULL, ...)
+\method{plot}{forecast_results}(
+  x,
+  data_actual = NULL,
+  actual_indices = NULL,
+  facet = horizon ~ model,
+  models = NULL,
+  horizons = NULL,
+  windows = NULL,
+  group_filter = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{An object of class 'forecast_results' from \code{predict.forecast_model()}.}
@@ -19,13 +26,15 @@ The data can be historical actuals and/or holdout/test data.}
 of numeric row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_actual)}.
 The data can be historical actuals and/or holdout/test data.}
 
+\item{facet}{Optional. A formula with any combination of \code{horizon}, \code{model}, or \code{group} (for grouped time series)
+passed to \code{ggplot2::facet_grid()} internally (e.g., \code{horizon ~ model}, \code{horizon + model ~ .}, \code{~ horizon + group}).
+Can be \code{NULL}.}
+
 \item{models}{Optional. Filter results by user-defined model name from \code{train_model()}.}
 
 \item{horizons}{Optional. Filter results by horizon.}
 
-\item{windows}{Optional. Filter results by validation window number.}
-
-\item{facet_plot}{Adjust the plot display through \code{ggplot2::facet_grid()}.
+\item{windows}{Optional. Filter results by validation window number.
 \code{facet_plot = NULL} plots results in one facet.}
 
 \item{group_filter}{Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"});
