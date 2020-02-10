@@ -20,7 +20,7 @@ Imports:
     purrr (>= 0.3.2),
     data.table (>= 1.12.6),
     dtplyr (>= 1.0.0)
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2
 Collate: 
     'fill_gaps.R'
     'create_windows.R'

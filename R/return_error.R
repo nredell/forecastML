@@ -384,10 +384,15 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
   ggplot_color <- c(c("model", "horizon", groups)[!c("model", "horizon", groups) %in% facet_names])
   #--------------------------------------------------------------------------
 
-  data_plot <- dplyr::arrange(data_plot, .data$model, .data$horizon, .data$window_number, eval(parse(text = groups)))
+  if (is.null(groups)) {
+    data_plot <- dplyr::arrange(data_plot, .data$model, .data$horizon, .data$window_number)
+  } else {
+    data_plot <- dplyr::arrange(data_plot, .data$model, .data$horizon, .data$window_number, !!rlang::sym(groups))
+  }
 
   if (type == "global") {
     data_plot$horizon <- "All"
+    data_plot$horizon <- ordered(data_plot$horizon)
   }
 
   data_plot$horizon <- factor(data_plot$horizon, levels = unique(data_plot$horizon), ordered = TRUE)
@@ -400,6 +405,7 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
   # Give predictions a name in the legend if plot is faceted by model and horizon (and group if groups are given).
   if (length(ggplot_color) == 0) {
     data_plot$ggplot_color <- "Error"
+    data_plot$ggplot_color <- ordered(data_plot$ggplot_color)
   }
 
   temp_1 <- unlist(Map(function(x) {toupper(substr(x[1], 1, 1))}, ggplot_color))
