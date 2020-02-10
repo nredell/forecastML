@@ -162,11 +162,16 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
     data_forecast <- data_forecast %>%
       dplyr::group_by_at(dplyr::vars(.data$horizon, !!groups)) %>%
       dplyr::mutate("error_rank" = base::rank(eval(parse(text = metric)), ties.method = "first")) %>%
-      dplyr::filter(.data$error_rank == 1) %>%
-      dplyr::arrange(.data$horizon, !!rlang::sym(groups))
+      dplyr::filter(.data$error_rank == 1)
 
     data_forecast <- dplyr::select(data_forecast, -.data$window_length, -.data$window_number,
                                    -.data$window_start, -.data$window_stop, -.data$error_rank)
+
+    if (is.null(groups)) {
+      data_forecast <- dplyr::arrange(data_forecast, .data$horizon)
+    } else {
+      data_forecast <- dplyr::arrange(data_forecast, .data$horizon, !!rlang::sym(groups))
+    }
 
     data_forecast <- as.data.frame(data_forecast)
   }  # End type = "error".
