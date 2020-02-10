@@ -1065,10 +1065,6 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
       data_plot$ggplot_color <- factor(data_plot$ggplot_color, levels = unique(data_plot$ggplot_color), ordered = TRUE)
 
       data_plot$ggplot_group <- factor(data_plot$ggplot_group, levels = unique(data_plot$ggplot_group), ordered = TRUE)
-
-      if (ggplot_color == "horizon") {  # Order the legend by numeric forecast horizon.
-        data_plot$ggplot_color <- factor(data_plot$ggplot_color, levels = sort(as.numeric(unique(data_plot$horizon))), ordered = TRUE)
-      }
     }
     #--------------------------------------------------------------------------
     if (is.null(outcome_levels)) {  # Numeric outcome.
