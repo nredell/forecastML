@@ -50,6 +50,7 @@
 combine_forecasts <- function(..., type = c("horizon", "error"), data_error = list(NULL), metric = NULL) {
 
   data_forecast_list <- list(...)
+  #data_forecast_list <- list(data_forecasts)
 
   if (!all(unlist(lapply(data_forecast_list, function(x) {methods::is(x, "forecast_results")})))) {
     stop("One or more of the forecast datasets given in '...' is not an object of class 'forecast_results'.
@@ -156,16 +157,17 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
 
     names(data_error)[names(data_error) == "horizon"] <- "model_forecast_horizon"
 
-    data_forecast <- dplyr::left_join(data_forecast, data_error, by = c("model", "model_forecast_horizon"))
+    data_forecast <- dplyr::left_join(data_forecast, data_error, by = c("model", "model_forecast_horizon", groups))
 
     data_forecast <- data_forecast %>%
-      dplyr::group_by(.data$horizon) %>%
+      dplyr::group_by_at(dplyr::vars(.data$horizon, !!groups)) %>%
       dplyr::mutate("error_rank" = base::rank(eval(parse(text = metric)), ties.method = "first")) %>%
-      dplyr::filter(.data$error_rank == 1)
+      dplyr::filter(.data$error_rank == 1) %>%
+      dplyr::arrange(.data$horizon, !!rlang::sym(groups))
 
     data_forecast <- dplyr::select(data_forecast, -.data$window_length, -.data$window_number,
                                    -.data$window_start, -.data$window_stop, -.data$error_rank)
-    data_forecast <- dplyr::arrange(data_forecast, .data$horizon)
+
     data_forecast <- as.data.frame(data_forecast)
   }  # End type = "error".
 

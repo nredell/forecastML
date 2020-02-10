@@ -4,8 +4,12 @@
 \alias{combine_forecasts}
 \title{Combine multiple horizon-specific forecast models to produce one forecast}
 \usage{
-combine_forecasts(..., type = c("horizon", "error"),
-  data_error = list(NULL), metric = NULL)
+combine_forecasts(
+  ...,
+  type = c("horizon", "error"),
+  data_error = list(NULL),
+  metric = NULL
+)
 }
 \arguments{
 \item{...}{One or more objects of class 'forecast_results' from running \code{predict.forecast_model()} on
