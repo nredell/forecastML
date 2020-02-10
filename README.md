@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="tools/direct_forecast_illustration.PNG" width="200px"></img>
+</p>
+
 [![CRAN](https://www.r-pkg.org/badges/version/forecastML)](https://cran.r-project.org/package=forecastML)
 [![lifecycle](https://img.shields.io/badge/lifecycle-maturing-blue.svg)](https://www.tidyverse.org/lifecycle/#maturing)
 [![Travis Build
