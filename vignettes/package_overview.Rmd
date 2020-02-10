@@ -106,8 +106,8 @@ capabilities of the user-specified model.
 
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(fig.width = 7, fig.height = 4)
-knitr::opts_knit$set(fig.width = 7, fig.height = 4)
+knitr::opts_chunk$set(fig.width = 7.15, fig.height = 4)
+knitr::opts_knit$set(fig.width = 7.15, fig.height = 4)
 ```
 
 <br>
@@ -179,7 +179,7 @@ data_test <- data[(nrow(data) - 12 + 1):nrow(data), ]
 p <- ggplot(data, aes(x = dates, y = DriversKilled))
 p <- p + geom_line()
 p <- p + geom_vline(xintercept = dates[nrow(data_train)], color = "red", size = 1.1)
-p <- p + theme_bw() + xlab("Index")
+p <- p + theme_bw() + xlab("Dataset index")
 p
 ```
 
@@ -385,7 +385,7 @@ prediction_function_2 <- function(model, data_features) {
 
 <br>
 
-### forecastML::predict on histrical data
+### forecastML::predict on historical data
 
 The `predict.forecast_model()` S3 method takes any number of trained models from `train_model()` and a 
 list of user-defined prediction functions. The list of prediction functions should appear in the same order 
@@ -485,7 +485,7 @@ DT::datatable(data_error$error_global, options = list(scrollX = TRUE), )
 Below is a plot of error metrics across time for select validation windows and forecast horizons.
 
 ```{r}
-plot(data_error, data_results, type = "time", horizons = c(1, 6, 12), windows = 5:7)
+plot(data_error, data_results, type = "time", facet = ~ horizon, horizons = c(1, 6, 12), windows = 5:7)
 ```
 
 <br>
@@ -493,7 +493,7 @@ plot(data_error, data_results, type = "time", horizons = c(1, 6, 12), windows = 
 Below is a plot of forecast error metrics by forecast model horizon collapsed across validation windows.
 
 ```{r}
-plot(data_error, data_results, type = "horizon", horizons = c(1, 6, 12))
+plot(data_error, data_results, type = "horizon", facet = ~ horizon, horizons = c(1, 6, 12))
 ```
 
 <br>
@@ -640,8 +640,7 @@ sensitive to the data on which it was trained--producing an erratic forecast whe
 plot(data_forecast,
      data_actual = data[-(1:150), ],  # Actuals from the training and test data sets.
      actual_indices = dates[-(1:150)], 
-     horizons = c(1, 6, 12),
-     facet_plot = c("model", "model_forecast_horizon"))
+     horizons = c(1, 6, 12))
 ```
 
 <br>
@@ -728,7 +727,6 @@ data_error <- forecastML::return_error(data_results, metrics = c("mae", "mape", 
 data_error$error_global[, c("mae", "mape", "mdape", "smape")] <- lapply(data_error$error_global[, c("mae", "mape", "mdape", "smape")], round, 1)
 
 DT::datatable(head(data_error$error_global), options = list(scrollX = TRUE))
-plot(data_error, data_results, type = "horizon")
 ```
 
 <br>
@@ -750,14 +748,12 @@ for (i in seq_along(data_forecast_list)) {
   data_forecast_list[[i]]$law <- 1
 }
 
-data_forecast <- predict(model_results, prediction_function = list(prediction_function), 
-                         data = data_forecast_list)
+data_forecast <- predict(model_results, prediction_function = list(prediction_function), data = data_forecast_list)
 
 plot(data_forecast,
      data_actual = data[-(1:150), ],
      actual_indices = dates[-(1:150)],
-     horizons = c(1, 6, 12), 
-     facet_plot = c("model", "model_forecast_horizon"))
+     horizons = c(1, 6, 12))
 ```
 
 <br>

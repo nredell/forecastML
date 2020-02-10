@@ -1030,11 +1030,11 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
 
       if (is.null(groups)) {
 
-        data_plot <- dplyr::arrange(data_plot, .data$model, .data$model_forecast_horizon, .data$window_number)
+        data_plot <- dplyr::arrange(data_plot, .data$model, .data$model_forecast_horizon, .data$horizon, .data$window_number)
 
       } else {
 
-        data_plot <- dplyr::arrange(data_plot, .data$model, .data$model_forecast_horizon, .data$window_number, eval(parse(text = groups)))
+        data_plot <- dplyr::arrange(data_plot, .data$model, .data$model_forecast_horizon, .data$window_number, .data$horizon, eval(parse(text = groups)))
       }
       #--------------------------------------------------------------------------
       # ggplot colors and facets are complimentary: all facets, same color; all colors, no facet.
@@ -1063,7 +1063,12 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
 
       # Coerce to viridis color scale with an ordered factor. With the data.frame sorted, unique() pulls the levels in their order of appearance.
       data_plot$ggplot_color <- factor(data_plot$ggplot_color, levels = unique(data_plot$ggplot_color), ordered = TRUE)
+
       data_plot$ggplot_group <- factor(data_plot$ggplot_group, levels = unique(data_plot$ggplot_group), ordered = TRUE)
+
+      if (ggplot_color == "horizon") {  # Order the legend by numeric forecast horizon.
+        data_plot$ggplot_color <- factor(data_plot$ggplot_color, levels = sort(as.numeric(unique(data_plot$horizon))), ordered = TRUE)
+      }
     }
     #--------------------------------------------------------------------------
     if (is.null(outcome_levels)) {  # Numeric outcome.
@@ -1131,7 +1136,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
 
             p <- p + geom_line(data = data_actual, aes(x = .data$index,
                                                        y = eval(parse(text = outcome_names)),
-                                                       color = .data$ggplot_group,
+                                                       color = .data$ggplot_color,
                                                        group = .data$ggplot_group), show.legend = FALSE)
           }
         }

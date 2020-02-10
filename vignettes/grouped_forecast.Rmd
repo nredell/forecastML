@@ -10,8 +10,8 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(fig.width = 7, fig.height = 4)
-knitr::opts_knit$set(fig.width = 7, fig.height = 4)
+knitr::opts_chunk$set(fig.width = 7.15, fig.height = 4)
+knitr::opts_knit$set(fig.width = 7.15, fig.height = 4)
 ```
 
 
@@ -69,6 +69,8 @@ from NOAA's National Buoy Data Center available at https://www.ndbc.noaa.gov/ us
 `data_buoy_gaps` consists of:
 
 * `date`: A date column which will be removed for modeling.
+
+* `buoy_id`: Group ID for unique time series.
 
 * `wind_spd`: The outcome which is treated as a lagged feature by default.
 
@@ -203,6 +205,7 @@ data_train <- forecastML::create_lagged_df(data, type = type, outcome_col = outc
 DT::datatable(head(data_train$horizon_1), options = list(scrollX = TRUE))
 ```
 
+<br>
 
 * The plot below shows the feature map for any lagged features across forecast horizons. Here, we set all 
 non-dynamic and non-static features to have the same lags (refer to the custom lags vignette to see how this could be modified). 
@@ -229,6 +232,7 @@ p <- plot(windows, data_train) + theme(legend.position = "none")
 p
 ```
 
+<br>
 
 * Now we'll use the `group_filter = "buoy_id == 1"` argument to get a closer look at 
 1 of our 14 time series. The user-supplied filter is passed to `dplyr::filter()` internally.
@@ -360,31 +364,19 @@ prediction_function <- function(model, data_features) {
 data_pred_cv <- predict(model_results_cv, prediction_function = list(prediction_function), data = data_train)
 ```
 
-
-* The predictions are solid lines; the actuals are dashed lines.
-
 * We'll filter this plot for closer inspection below.
 
 ```{r, message = FALSE, warning = FALSE}
 plot(data_pred_cv) + theme(legend.position = "none")
 ```
 
+<br>
 
-* It's somewhat difficult to see how we've done here, so we'll use the `group_filter` argument again 
-to focus on specific results. Note that the `plot()` function returns a `ggplot` object so that we 
-can easily modify our plot.
-
-* Notice that during the first half of 2015 there were no wind speed measurements recorded; however, 
-we're getting some interesting variability in predictions here because the day of the month and year dynamic features 
-have captured some signal.
+* It's somewhat difficult to see how we've done here, so we'll use the `group_filter` 
+and `facet` arguments to focus on specific buoys.
 
 ```{r, message = FALSE, warning = FALSE}
-p <- plot(data_pred_cv, group_filter = "buoy_id %in% c(1, 2, 3)", horizons = 7) 
-p <- p + theme(legend.position = "none")
-p <- p + scale_x_date(limits = c(as.Date("2015-01-01"), as.Date("2015-12-31")))
-p <- p + facet_grid(horizon ~ buoy_id) + ggtitle(paste0(p$labels$title, " and buoy ID"))
-p <- p + theme(axis.text.x = element_text(angle = 90))
-p
+plot(data_pred_cv, facet = group ~ model, group_filter = "buoy_id %in% c(1, 2, 3)", windows = 1) 
 ```
 
 
@@ -437,20 +429,17 @@ data_forecasts <- predict(model_results_cv, prediction_function = list(predictio
 ```
 
 
-* Plots for each model--just `xgboost` here--and time horizon. The separate lines are for the 
-combination of `buoy_id` and validation window.
+* Plots for each model--just `xgboost` here--and direct forecast horizon. Because there are 3 
+`xgboost` models for each direct forecast horizon there are 3 points/lines for each buoy within 
+each direct forecast horizon.
 
 ```{r, message = FALSE, warning = FALSE}
-plot(data_forecasts) + theme(legend.position = "none")
+plot(data_forecasts)
 ```
 
 
-* We'll filter results to look at the forecasts across validation windows for `buoy_id == 1`. 
-In this case, a validation window shows how the model would forecast if it were *not* trained 
-on data in a given time frame or window.
-
 ```{r, message = FALSE, warning = FALSE}
-plot(data_forecasts, group_filter = "buoy_id == 1")
+plot(data_forecasts, facet = group ~ model, group_filter = "buoy_id %in% 1:3")
 ```
 
 
@@ -492,12 +481,6 @@ DT::datatable(head(data_forecasts), options = list(scrollX = TRUE))
 ```
 
 
-
-```{r, message = FALSE, warning = FALSE}
-plot(data_forecasts)
-```
-
-
 ## Forecast Combination
 
 * The **final step in the `forecastML` framework** is to combine multiple direct-horizon forecast 
@@ -523,6 +506,7 @@ actual_indices <- dates[dates >= as.Date("2018-11-01")]
 plot(data_combined, data_actual = data_actual, actual_indices = actual_indices)
 ```
 
+<br>
 
 * Plot a single forecast.
 
