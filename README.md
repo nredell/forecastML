@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="tools/direct_forecast_illustration.PNG" width="200px"></img>
+  <img src="tools/direct_forecast_illustration.PNG" width="400px"></img>
 </p>
 
 [![CRAN](https://www.r-pkg.org/badges/version/forecastML)](https://cran.r-project.org/package=forecastML)
