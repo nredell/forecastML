@@ -32,6 +32,41 @@ The following quote from Bergmeir et al.'s article nicely sums up the aim of thi
 > (e.g., when using Machine Learning methods), the aforementioned problems of CV are largely
 > irrelevant, and CV can and should be used without modification, as in the independent case."
 
+## Lightning Example
+
+``` r
+library(forecastML)
+library(glmnet)
+
+data("data_seatbelts", package = "forecastML")
+
+data_train <- forecastML::create_lagged_df(data_seatbelts, type = "train", method = "direct",
+                                           outcome_col = 1, lookback = 1:15, horizon = 1:12)
+
+windows <- forecastML::create_windows(data_train, window_length = 0)
+
+model_fun <- function(data) {
+  x <- as.matrix(data[, -1, drop = FALSE])
+  y <- as.matrix(data[, 1, drop = FALSE])
+  model <- glmnet::cv.glmnet(x, y)
+}
+
+model_results <- forecastML::train_model(data_train, windows, model_name = "LASSO", model_function = model_fun)
+
+prediction_fun <- function(model, data_features) {
+  data_pred <- data.frame("y_pred" = predict(model, as.matrix(data_features)))
+}
+
+data_forecast <- forecastML::create_lagged_df(data_seatbelts, type = "forecast", method = "direct",
+                                              outcome_col = 1, lookback = 1:15, horizon = 1:12)
+
+data_forecasts <- predict(model_results, prediction_function = list(prediction_fun), data = data_forecast)
+
+data_forecasts <- forecastML::combine_forecasts(data_forecasts)
+
+plot(data_forecasts, data_actual = data_seatbelts[-(1:100), ], actual_indices = (1:nrow(data_seatbelts))[-(1:100)])
+```
+![](./tools/lightning_example.png)
 
 ## README Contents
 
