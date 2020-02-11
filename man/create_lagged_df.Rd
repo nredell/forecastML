@@ -4,10 +4,22 @@
 \alias{create_lagged_df}
 \title{Create model training and forecasting datasets with lagged, grouped, dynamic, and static features}
 \usage{
-create_lagged_df(data, type = c("train", "forecast"), outcome_col = 1L,
-  horizons, lookback = NULL, lookback_control = NULL, dates = NULL,
-  frequency = NULL, dynamic_features = NULL, groups = NULL,
-  static_features = NULL, use_future = FALSE, keep_rows = FALSE)
+create_lagged_df(
+  data,
+  type = c("train", "forecast"),
+  method = c("direct", "multi_outcome"),
+  outcome_col = 1L,
+  horizons,
+  lookback = NULL,
+  lookback_control = NULL,
+  dates = NULL,
+  frequency = NULL,
+  dynamic_features = NULL,
+  groups = NULL,
+  static_features = NULL,
+  use_future = FALSE,
+  keep_rows = FALSE
+)
 }
 \arguments{
 \item{data}{A data.frame with the (a) target to be forecasted and (b) features/predictors. An optional date column can be given in the
@@ -16,6 +28,9 @@ rows--usually due to periods when no data was collected--will result in poorly t
 Use \code{\link{fill_gaps}} to fill in any missing rows/data prior to running this function.}
 
 \item{type}{The type of dataset to return--(a) model training or (b) forecast prediction. The default is \code{train}.}
+
+\item{method}{The type of modeling dataset(s) to create. \code{direct} returns 1 data.frame for each forecast horizon and
+\code{multi_outcome} returns 1 data.frame for simultaneously modeling all forecast horizons. The default is \code{direct}.}
 
 \item{outcome_col}{The column index--an integer--of the target to be forecasted. Forecasting only one outcome column is allowed at present, however,
 groups of time series can be forecasted if they are stacked vertically in a long dataset and the \code{groups}, \code{dates},

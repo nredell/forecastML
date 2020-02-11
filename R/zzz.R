@@ -64,4 +64,77 @@ forecastML_facet_plot <- function(facet, groups) {
   return(list(facet, facet_names))
 }
 #------------------------------------------------------------------------------
+# Used in lagged_df.R in create_lagged_df() for removing feature-specific feature lag indices when
+# they do not support direct forecasting to a given forecast horizon.
+forecastML_filter_lookback_control <- function(lookback_control, horizons, groups, group_cols,
+                                               static_feature_cols, dynamic_feature_cols) {
+
+  if (length(horizons) == 1) {  # A single-horizon, non-nested lookback_control of feature lags.
+
+    lookback_control <- lapply(seq_along(lookback_control), function(i) {
+
+      if (is.null(groups)) {  # Single time series
+
+        if (i %in% dynamic_feature_cols) {
+
+          lookback_control[[i]] <- 0
+
+        } else {
+
+          lookback_control[[i]][lookback_control[[i]] >= horizons]
+        }
+
+      } else {  # Multiple time series
+
+        if (i %in% c(group_cols, static_feature_cols, dynamic_feature_cols)) {
+
+          lookback_control[[i]] <- 0
+
+        } else {
+
+          if (!is.null(lookback_control[[i]])) {
+
+            lookback_control[[i]] <- lookback_control[[i]][lookback_control[[i]] >= horizons]
+          }
+        }
+        lookback_control[[i]]
+      }
+    })  # Impossible lags for lagged features have been removed.
+
+  } else if (length(horizons) > 1) {  # A multiple-horizon, nested lookback_control of feature lags.
+
+    lookback_control <- lapply(seq_along(lookback_control), function(i) {
+      lapply(seq_along(lookback_control[[i]]), function(j) {
+
+        if (is.null(groups)) {  # Single time series.
+
+          if (j %in% dynamic_feature_cols) {
+
+            lookback_control[[i]][[j]] <- 0
+
+          } else {
+
+            lookback_control[[i]][[j]][lookback_control[[i]][[j]] >= horizons[i]]
+          }
+
+        } else {  # Multiple time series.
+
+          if (j %in% c(group_cols, static_feature_cols, dynamic_feature_cols)) {
+
+            lookback_control[[i]][[j]] <- 0
+
+          } else {
+
+            if (!is.null(lookback_control[[i]][[j]])) {
+
+              lookback_control[[i]][[j]] <- lookback_control[[i]][[j]][lookback_control[[i]][[j]] >= horizons[i]]
+            }
+          }
+          lookback_control[[i]][[j]]
+        }
+      })
+    })  # Impossible lags for lagged features have been removed.
+  }  # Impossible lags in 'lookback_control' have been removed.
+}
+
 # nocov end
