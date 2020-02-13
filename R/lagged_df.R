@@ -108,7 +108,7 @@
 #' @importFrom data.table :=
 #'
 #' @export
-create_lagged_df <- function(data, type = c("train", "forecast"), method = c("direct", "multi_outcome"),
+create_lagged_df <- function(data, type = c("train", "forecast"), method = c("direct", "multi_output"),
                              outcome_col = 1L, horizons, lookback = NULL,
                              lookback_control = NULL, dates = NULL, frequency = NULL, dynamic_features = NULL,
                              groups = NULL, static_features = NULL, use_future = FALSE, keep_rows = FALSE) {
@@ -202,7 +202,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
   if (!is.null(groups) && is.null(dates)) {
     stop("The 'dates' argument needs to be specified with grouped data.")
   }
-
+  #--------------------------------------------------------------------------
   data <- as.data.frame(data)
 
   type <- type[1]  # Model-training datasets are the default.
@@ -220,10 +220,17 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
     group_cols <- which(names(data) %in% groups)
     static_feature_cols <- which(names(data) %in% static_features)
   }
-
+  #--------------------------------------------------------------------------
   # Outcome data.
-  data_y <- data[, outcome_col, drop = FALSE]
+  if (method == "direct") {  # An nrow(data) by 1 data.frame.
 
+    data_y <- data[, outcome_col, drop = FALSE]
+
+  } else if (method == "multi_output") {  # An nrow(data) by length(horizons) data.frame.
+
+    data_y <- forecastML_create_multi_outcome(data, outcome_col, horizons, groups)
+  }
+  #--------------------------------------------------------------------------
   # If the outcome is a factor, save the levels out as an attribute.
   if (methods::is(data[, outcome_col], "factor")) {
 
@@ -235,6 +242,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
   }
   #--------------------------------------------------------------------------
   # For method = "direct", remove feature lags in lookback_control that don't support forecasting to the given horizon.
+  # For method = "multi_output", all feature lags can be used for all forecast horizons.
   if (!is.null(lookback_control) && method == "direct") {
 
     lookback_control <- forecastML_filter_lookback_control(lookback_control, horizons, groups, group_cols, static_feature_cols, dynamic_feature_cols)
@@ -266,14 +274,31 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
   if (type == "train") {
 
     # Loop over forecast model horizons [i] > features in dataset [j].
-    data_out <- lapply(seq_along(horizons), function(i) {
+    data_out <- lapply(
+
+      if (method == "direct") {  # 1 dataset for each model.
+
+        seq_along(horizons)
+
+        } else if (method == "multi_output") {  # 1 dataset for the 1 model.
+
+          1
+
+        }, function(i) {
 
       forecast_horizon <- horizons[i]
 
       # Only create lagged features that allow direct forecasting to max(i). If a single lookback vector is defined,
       # we'll do this filtering outside of the inner loop below.
-      if (!is.null(lookback)) {
-        lookback_over_horizon <- lookback[lookback >= forecast_horizon]
+      if (method == "direct") {
+
+        if (!is.null(lookback)) {
+          lookback_over_horizon <- lookback[lookback >= forecast_horizon]
+        }
+
+      } else if (method == "multi_output") {
+
+        lookback_over_horizon <- lookback
       }
 
       data_x <- lapply_function(1:ncol(data), function(j, future.packages, future.seed) {
@@ -296,7 +321,6 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
         if (length(lookback_over_horizon) > 0 || var_names[j] %in% c(groups, dynamic_features, static_features)) {
 
           #--------------------------------------------------------------------
-
           # Create a list of lag functions for dplyr::mutate_at(). This approach is approximately 30% faster than the
           # previous dplyr::do sapply() approach of mutating and adding one lagged feature column at a time.
           lag_functions <- vector("list", length(lookback_over_horizon))
@@ -384,9 +408,14 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
         }
       }
 
-      attr(data_out, "horizons") <- forecast_horizon
+      if (method == "direct") {
+        attr(data_out, "horizons") <- forecast_horizon  # 1 dataset per horizon.
+      } else if (method == "multi_output") {
+        attr(data_out, "horizons") <- horizons  # 1 dataset for all horizons.
+      }
+
       if (!is.null(lookback)) {
-        attr(data_out, "lookback") <- lookback_over_horizon  # Non-grouped data.
+        attr(data_out, "lookback") <- lookback_over_horizon
       } else {
         attr(data_out, "lookback") <- if (length(horizons) == 1) {lookback_control} else {lookback_control[[i]]}  # length(horizons) == 1 is the user convenience mentioned earlier.
       }
@@ -628,13 +657,18 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
       }
       as.data.frame(data_x)
     })  # End loop 'i' and return 'data_out'.
-  }  # End `type = forecast` dataset creation.
+  }  # End 'type = forecast' dataset creation.
   #----------------------------------------------------------------------------
 
-  names(data_out) <- paste0("horizon_", horizons)
+  if (method == "direct") {
+    names(data_out) <- paste0("horizon_", horizons)
+  } else if (method == "multi_output") {
+    names(data_out) <- paste0("horizon_", paste(horizons, collapse = "_"))
+  }
 
   # Global classes and attributes for the return object.
   attr(data_out, "type") <- type
+  attr(data_out, "method") <- method
   attr(data_out, "horizons") <- horizons
   attr(data_out, "outcome_col") <- outcome_col
   attr(data_out, "outcome_names") <- names(data)[outcome_col]

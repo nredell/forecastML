@@ -3,6 +3,44 @@
   requireNamespace("dplyr")
 }
 
+# Error functions in lagged_df.R. for create_lagged_df(method = "multi_outcome").
+#
+forecastML_create_multi_outcome <- function(data, outcome_col, horizons, groups) {
+
+  outcome_indices <- purrr::map(1:nrow(data), function(x) {x + horizons})
+
+  outcome_indices <- tibble::tibble(outcome_indices)
+
+  outcome_indices <- dplyr::bind_cols(data[, groups, drop = FALSE], outcome_indices)
+
+  outcome_indices$index <- 1:nrow(outcome_indices)
+
+  outcome_indices <- outcome_indices %>%
+    dplyr::group_by_at(dplyr::vars(!!groups)) %>%
+    dplyr::mutate("max_group_index" = max(index, na.rm = TRUE)) %>%
+    dplyr::group_by(index) %>%
+    dplyr::mutate("outcome_indices" = list(ifelse(unlist(outcome_indices) > max_group_index, NA, unlist(outcome_indices))))
+
+  outcome_indices <- outcome_indices$outcome_indices
+
+  data_outcomes <- lapply(outcome_indices, function(i) {
+
+    if (all(is.na(i))) {
+
+      data.frame(matrix(rep(NA, length(horizons)), nrow = 1))
+
+    } else {
+
+      data.frame(matrix(data[i, outcome_col, drop = TRUE], nrow = 1))
+    }
+  })
+
+  data_outcomes <- dplyr::bind_rows(data_outcomes)
+
+  names(data_outcomes) <- paste0(outcome_name, "_", horizons)
+
+  return(data_outcomes)
+}
 #------------------------------------------------------------------------------
 # Error functions in return_error.R.
 # For all error function args: x = 'residual', y = 'actual', and z = 'prediction'.
