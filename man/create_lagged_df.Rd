@@ -7,7 +7,7 @@
 create_lagged_df(
   data,
   type = c("train", "forecast"),
-  method = c("direct", "multi_outcome"),
+  method = c("direct", "multi_output"),
   outcome_col = 1L,
   horizons,
   lookback = NULL,

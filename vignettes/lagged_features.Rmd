@@ -19,7 +19,7 @@ Keeping only those feature lags that show high autocorrelation or cross-correlat
 outcome--e.g., 3 and 12 months for monthly data--is a good place to start.
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(fig.width = 7, fig.height = 4)
+knitr::opts_chunk$set(fig.width = 7.15, fig.height = 4)
 ```
 
 
