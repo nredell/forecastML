@@ -3,9 +3,9 @@
   requireNamespace("dplyr")
 }
 
-# Error functions in lagged_df.R. for create_lagged_df(method = "multi_outcome").
-#
-forecastML_create_multi_outcome <- function(data, outcome_col, horizons, groups) {
+# Function in lagged_df.R. for create_lagged_df(method = "multi_outcome").
+# The output is an nrow(data) by length(horizons) data.frame of outcome values.
+forecastML_create_multi_outcome <- function(data, outcome_name, horizons, groups) {
 
   outcome_indices <- purrr::map(1:nrow(data), function(x) {x + horizons})
 
@@ -17,9 +17,9 @@ forecastML_create_multi_outcome <- function(data, outcome_col, horizons, groups)
 
   outcome_indices <- outcome_indices %>%
     dplyr::group_by_at(dplyr::vars(!!groups)) %>%
-    dplyr::mutate("max_group_index" = max(index, na.rm = TRUE)) %>%
-    dplyr::group_by(index) %>%
-    dplyr::mutate("outcome_indices" = list(ifelse(unlist(outcome_indices) > max_group_index, NA, unlist(outcome_indices))))
+    dplyr::mutate("max_group_index" = max(.data$index, na.rm = TRUE)) %>%
+    dplyr::group_by(.data$index) %>%
+    dplyr::mutate("outcome_indices" = list(ifelse(unlist(outcome_indices) > .data$max_group_index, NA, unlist(outcome_indices))))
 
   outcome_indices <- outcome_indices$outcome_indices
 
@@ -31,7 +31,7 @@ forecastML_create_multi_outcome <- function(data, outcome_col, horizons, groups)
 
     } else {
 
-      data.frame(matrix(data[i, outcome_col, drop = TRUE], nrow = 1))
+      data.frame(matrix(data[i, outcome_name, drop = TRUE], nrow = 1))
     }
   })
 
