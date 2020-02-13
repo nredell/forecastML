@@ -82,10 +82,10 @@ from NOAA's National Buoy Data Center available at https://www.ndbc.noaa.gov/ us
 
 
 ```{r, message = FALSE, warning = FALSE}
+library(forecastML)
 library(dplyr)
 library(DT)
 library(ggplot2)
-library(forecastML)
 library(xgboost)
 
 data("data_buoy_gaps", package = "forecastML")

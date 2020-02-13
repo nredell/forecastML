@@ -292,15 +292,16 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
       # Only create lagged features that allow direct forecasting to max(i). If a single lookback vector is defined,
       # we'll do this filtering outside of the inner loop below.
-      if (method == "direct") {
+      if (!is.null(lookback)) {
 
-        if (!is.null(lookback)) {
+        if (method == "direct") {
+
           lookback_over_horizon <- lookback[lookback >= forecast_horizon]
+
+        } else if (method == "multi_output") {
+
+          lookback_over_horizon <- (lookback - 1)[(lookback - 1) >= 0]
         }
-
-      } else if (method == "multi_output") {
-
-        lookback_over_horizon <- (lookback - 1)[(lookback - 1) >= 0]
       }
 
       data_x <- lapply_function(1:ncol(data), function(j, future.packages, future.seed) {
@@ -311,29 +312,25 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
             if (method == "direct") {
 
-              if (!is.null(lookback)) {
-                lookback_over_horizon <- lookback_control[[j]]
-              }
+              lookback_over_horizon <- lookback_control[[j]]
 
             } else if (method == "multi_output") {
 
               lookback_over_horizon <- (lookback_control[[j]] - 1)[(lookback_control[[j]] - 1) >= 0]
             }
 
-            } else {
+            } else {  # Multiple forecast horizons.
 
               if (method == "direct") {
 
-                if (!is.null(lookback)) {
-                  lookback_over_horizon <- lookback_control[[i]][[j]]
-                }
+                lookback_over_horizon <- lookback_control[[i]][[j]]
 
               } else if (method == "multi_output") {
 
                 lookback_over_horizon <- (lookback_control[[i]][[j]] - 1)[(lookback_control[[i]][[j]] - 1) >= 0]
               }
           }
-        }
+        }  # End lookback_control lag adjustment
 
         # If there are no feature-level lags suitable for the forecast horizons, skip the code below and return NULL for this feature-level lagged data.frame.
         # However, grouping, dynamic, and static features will pass through and be added to the output dataset without lags.
@@ -456,30 +453,47 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
       forecast_horizon <- horizons[i]
 
-      if (method == "direct") {  # Feature lags filtered to support direct forecasting.
+      # Only create lagged features that allow direct forecasting to max(i). If a single lookback vector is defined,
+      # we'll do this filtering outside of the inner loop below.
+      if (!is.null(lookback)) {
 
-        if (!is.null(lookback)) {
+        if (method == "direct") {
+
           lookback_over_horizon <- lookback[lookback >= forecast_horizon]
+
+        } else if (method == "multi_output") {
+
+          lookback_over_horizon <- (lookback - 1)[(lookback - 1) >= 0]
         }
-
-      } else if (method == "multi_output") {  # No filter for feature lags; all are valid.
-
-        lookback_over_horizon <- lookback
       }
 
       data_x <- lapply_function(1:ncol(data), function(j, future.packages, future.seed) {
 
         if (!is.null(lookback_control)) {
-          # As a convenience to the user a single-horizons forecast that uses a custom lookback doesn't need to be a nested list.
+          # As a convenience to the user, a single-direct-horizon forecast that uses a custom lookback doesn't need to be a nested list.
           if (length(horizons) == 1) {
 
-            lookback_over_horizon <- lookback_control[[j]]
+            if (method == "direct") {
 
-          } else {
+              lookback_over_horizon <- lookback_control[[j]]
 
-            lookback_over_horizon <- lookback_control[[i]][[j]]
+            } else if (method == "multi_output") {
+
+              lookback_over_horizon <- (lookback_control[[j]] - 1)[(lookback_control[[j]] - 1) >= 0]
+            }
+
+          } else {  # Multiple forecast horizons.
+
+            if (method == "direct") {
+
+              lookback_over_horizon <- lookback_control[[i]][[j]]
+
+            } else if (method == "multi_output") {
+
+              lookback_over_horizon <- (lookback_control[[i]][[j]] - 1)[(lookback_control[[i]][[j]] - 1) >= 0]
+            }
           }
-        }
+        }  # End lookback_control lag adjustment
 
         # If there are no feature-level lags suitable for the forecast horizons, return NULL for this feature-level lagged data.frame.
         # However, grouping features will pass through and be added to the output dataset without lags.
@@ -591,8 +605,8 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
                 data_x <- data_x %>%
                   dplyr::group_by_at(dplyr::vars(groups)) %>%
-                  dplyr::mutate("row_number" = !!row_names) %>%
-                  dplyr::mutate("max_row_number" = !!n_instances,
+                  dplyr::mutate("row_number" = 1:dplyr::n()) %>%
+                  dplyr::mutate("max_row_number" = max(.data$row_number, na.rm = TRUE),
                                 "horizon" = .data$max_row_number - .data$row_number + 1) %>%
                   dplyr::filter(.data$horizon <= forecast_horizon) %>%
                   dplyr::mutate("horizon" = rev(.data$horizon),
@@ -646,16 +660,15 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
       if (is.null(groups)) {
 
         data_x <- Reduce(function(x, y) {dplyr::full_join(x, y, by = c("row_number", "horizon"))}, data_x)
+        names(data_x)[names(data_x) == "row_number"] <- "index"
 
       } else {
 
         data_x <- Reduce(function(x, y) {try(dplyr::full_join(x, y, by = c("row_number", "horizon", groups)))}, data_x)
-        data_x <- dplyr::select(data_x, -.data$row_number)
+        data_x <- dplyr::select(data_x, -.data$row_number)  # The index will be a date from a merged template.
       }
 
       if (is.null(dates)) {  # Single time series without dates.
-
-        names(data_x)[names(data_x) == "row_number"] <- "index"
 
         if (method == "multi_output") {
           data_x$index <- paste(n_instances + horizons, collapse = ", ")  # There is only 1 row in the forecast data.frame.
@@ -664,8 +677,6 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
       } else {  # Single or multiple time series with dates.
 
-        data_x <- dplyr::select(data_x, -.data$row_number)
-
         date_of_forecast <- data.frame("horizon" = 1:forecast_horizon,
                                        "index" = seq(max(dates, na.rm = TRUE), by = frequency, length.out = forecast_horizon + 1)[-1])
 
@@ -673,7 +684,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
         data_x <- data_x[, c(ncol(data_x), 1:(ncol(data_x) - 1))]
 
-        if (method == "multi_output") {  # There is only 1 row in the forecast data.frame so the indices and horizons will be collapsed into a string.
+        if (method == "multi_output") {  # There is only 1--per group--row in the forecast data.frame so these columns will be collapsed into a string.
           data_x$index <- paste(seq(max(dates, na.rm = TRUE), by = frequency, length.out = max(horizons, na.rm = TRUE) + 1)[-1][horizons], collapse = ", ")
           data_x$horizon <- paste(horizons, collapse = ", ")
         }
