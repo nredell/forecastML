@@ -660,15 +660,15 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
       if (is.null(groups)) {
 
         data_x <- Reduce(function(x, y) {dplyr::full_join(x, y, by = c("row_number", "horizon"))}, data_x)
-        names(data_x)[names(data_x) == "row_number"] <- "index"
 
       } else {
 
         data_x <- Reduce(function(x, y) {try(dplyr::full_join(x, y, by = c("row_number", "horizon", groups)))}, data_x)
-        data_x <- dplyr::select(data_x, -.data$row_number)  # The index will be a date from a merged template.
       }
 
       if (is.null(dates)) {  # Single time series without dates.
+
+        names(data_x)[names(data_x) == "row_number"] <- "index"
 
         if (method == "multi_output") {
           data_x$index <- paste(n_instances + horizons, collapse = ", ")  # There is only 1 row in the forecast data.frame.
@@ -676,6 +676,8 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
         }
 
       } else {  # Single or multiple time series with dates.
+
+        data_x <- dplyr::select(data_x, -.data$row_number)  # The index will be a date from a merged template.
 
         date_of_forecast <- data.frame("horizon" = 1:forecast_horizon,
                                        "index" = seq(max(dates, na.rm = TRUE), by = frequency, length.out = forecast_horizon + 1)[-1])
