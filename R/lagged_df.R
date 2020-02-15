@@ -413,7 +413,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
       # If the forecast is grouped, leave the NAs in the dataset for the user because the ML model used for these
       # cases will likely handle NA values.
-      if (is.null(groups)) {
+      if (is.null(groups) && method == "direct") {
 
         if (isFALSE(keep_rows)) {
           data_out <- data_out[-(1:lookback_max), ]  # Remove the first rows with NAs in lagged features.
@@ -746,33 +746,35 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
   attr(data_out, "method") <- method
   attr(data_out, "horizons") <- horizons
   attr(data_out, "outcome_col") <- outcome_col
-  attr(data_out, "outcome_names") <- outcome_name
+  attr(data_out, "outcome_cols") <- if (method == "direct") {outcome_col} else if (method == "multi_output") {outcome_col:(length(horizons))}
+  attr(data_out, "outcome_name") <- outcome_name
+  attr(data_out, "outcome_names") <- if (method == "direct") {outcome_name} else if (method == "multi_output") {names(data_out[[1]][outcome_col:(length(horizons))])}
   attr(data_out, "outcome_levels") <- outcome_levels
   attr(data_out, "predictor_names") <- var_names
   attr(data_out, "dynamic_features") <- dynamic_features
   attr(data_out, "static_features") <- static_features
 
   if (is.null(groups)) {
-    if (isFALSE(keep_rows)) {
+    if (isFALSE(keep_rows) && method == "direct") {
       attr(data_out, "row_indices") <- row_names[-(1:lookback_max)]
     } else {
       attr(data_out, "row_indices") <- row_names
     }
     if (is.null(dates)) {
-      if (isFALSE(keep_rows)) {
+      if (isFALSE(keep_rows) && method == "direct") {
         attr(data_out, "data_start") <- lookback_max + 1  # Removes NAs at the beginning of the dataset
       } else {
         attr(data_out, "data_start") <- min(row_names, na.rm = TRUE)  # Keep NAs at the beginning of the dataset
       }
       attr(data_out, "data_stop") <- max(row_names, na.rm = TRUE)
     } else {  # Non-grouped time series with dates.
-      if (isFALSE(keep_rows)) {
+      if (isFALSE(keep_rows) && method == "direct") {
         attr(data_out, "date_indices") <- dates[-(1:lookback_max)]
       } else {
         attr(data_out, "date_indices") <- dates
       }
       attr(data_out, "frequency") <- frequency
-      if (isFALSE(keep_rows)) {
+      if (isFALSE(keep_rows) && method == "direct") {
         attr(data_out, "data_start") <- min(dates[lookback_max + 1], na.rm = TRUE)  # Removes NAs at the beginning of the dataset
       } else {
         attr(data_out, "data_start") <- min(dates, na.rm = TRUE)  # Keep NAs at the beginning of the dataset
@@ -787,6 +789,10 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
     attr(data_out, "data_stop") <- max(dates, na.rm = TRUE)
   }
   attr(data_out, "groups") <- groups
+
+  if (method == "multi_output") {
+    attr(data_out, "outcome") <- data[, outcome_col, drop = FALSE]
+  }
 
   if (is.null(groups)) {
     class(data_out) <- c("lagged_df", class(data_out))

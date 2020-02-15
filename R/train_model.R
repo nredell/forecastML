@@ -166,6 +166,8 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
   attr(data_out, "model_name") <- model_name
   attr(data_out, "horizons") <- horizons
   attr(data_out, "outcome_col") <- attributes(lagged_df)$outcome_col
+  attr(data_out, "outcome_cols") <- attributes(lagged_df)$outcome_cols
+  attr(data_out, "outcome_name") <- attributes(lagged_df)$outcome_name
   attr(data_out, "outcome_names") <- attributes(lagged_df)$outcome_names
   attr(data_out, "outcome_levels") <- attributes(lagged_df)$outcome_levels
   attr(data_out, "row_indices") <- row_indices
@@ -173,6 +175,7 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
   attr(data_out, "frequency") <- attributes(lagged_df)$frequency
   attr(data_out, "data_stop") <- attributes(lagged_df)$data_stop
   attr(data_out, "groups") <- attributes(lagged_df)$groups
+  attr(data_out, "method") <- attributes(lagged_df)$method
 
   class(data_out) <- c("forecast_model", class(data_out))
 
@@ -256,15 +259,18 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
     stop("The 'data' argument takes a training or forecasting dataset of class 'lagged_df' from create_lagged_df().")
   }
 
-  type <- attributes(data)$type
+  type <- attributes(data)$type  # train or forecast.
 
   outcome_col <- attributes(model_list[[1]])$outcome_col
+  outcome_cols <- attributes(model_list[[1]])$outcome_cols
+  outcome_name <- attributes(model_list[[1]])$outcome_name
   outcome_names <- attributes(model_list[[1]])$outcome_names
   outcome_levels <- attributes(model_list[[1]])$outcome_levels
   row_indices <- attributes(model_list[[1]])$row_indices
   date_indices <- attributes(model_list[[1]])$date_indices
   horizons <- attributes(model_list[[1]])$horizons
   groups <- attributes(model_list[[1]])$groups
+  method <- attributes(model_list[[1]])$method
 
   if (type == "train") {
 
@@ -289,18 +295,18 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
         # Predict on training data or the forecast dataset?
         if (type == "train") {  # Nested cross-validation.
 
-          x_valid <- data[[j]][row_indices %in% data_results$valid_indices, -(outcome_col), drop = FALSE]
-          y_valid <- data[[j]][row_indices %in% data_results$valid_indices, outcome_col, drop = FALSE]  # Actuals in function return.
+          x_valid <- data[[j]][row_indices %in% data_results$valid_indices, -(outcome_cols), drop = FALSE]
+          y_valid <- data[[j]][row_indices %in% data_results$valid_indices, outcome_cols, drop = FALSE]  # Actuals in function return.
 
           data_pred <- try(prediction_fun(data_results$model, x_valid))  # Nested cross-validation.
 
           if (methods::is(data_pred, "try-error")) {
-            warning(paste0("A model's prediction returned class 'try-error' for validation window ", k))
+            warning(paste0("Model '", attributes(model_list[[i]])$model_name, "' returned class 'try-error' for model ", j, " in validation window ", k))
           }
 
           if (!is.null(groups)) {
 
-            data_groups <- x_valid[, groups, drop = FALSE]  # save out group identifiers.
+            data_groups <- x_valid[, groups, drop = FALSE]  # Save out group identifiers.
           }
 
         } else {  # Forecast.
@@ -313,7 +319,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
           data_pred <- try(prediction_fun(data_results$model, data_for_forecast))  # User-defined prediction function.
 
           if (methods::is(data_pred, "try-error")) {
-            warning(paste0("A model's prediction returned class 'try-error' for validation window ", k))
+            warning(paste0("Model '", attributes(model_list[[i]])$model_name, "' returned class 'try-error' for model ", j, " in validation window ", k))
           }
 
           if (!is.null(groups)) {
@@ -322,53 +328,71 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
         }  # End forecast.
         #----------------------------------------------------------------------
         # Check the return of the user-defined predict() function.
-        if (is.null(outcome_levels) && !ncol(data_pred) %in% c(1, 3)) {  # Numeric outcome.
+        if (is.null(outcome_levels) && method == "direct" && !ncol(data_pred) %in% c(1, 3)) {  # Numeric outcome.
           stop("For numeric outcomes, the user-defined prediction function needs to return 1- or 3-column data.frame of model predictions.")
+        }
+
+        if (is.null(outcome_levels) && method == "multi_output" && !ncol(data_pred) == length(horizons)) {  # Numeric outcome.
+          stop("For numeric outcomes, the user-defined prediction function needs to return length(horizons)-column data.frame of model predictions.")
         }
 
         if (!is.null(outcome_levels)) {  # Factor outcome.
 
-          if (ncol(data_pred) == 1 && !methods::is(data_pred[, 1], "factor")) {
+          if (ncol(data_pred) == 1 && method == "direct" && !methods::is(data_pred[, 1], "factor")) {
             stop("For factor outcomes where the predicted factor level is returned (e.g., predict(..., type = 'response')), the user-defined
                  prediction function needs to return 1-column data.frame of factor predictions. If returning class
                  probabilities, the number of data.frame columns should equal the number of factor levels and be in the same order as levels(data$outcome).")
           }
 
-          if (ncol(data_pred) > 1 && ncol(data_pred) != length(outcome_levels)) {
+          if (method == "direct" && ncol(data_pred) > 1 && ncol(data_pred) != length(outcome_levels)) {
             stop("For factor outcomes where class probabilities are returned (e.g., predict(..., type = 'prob')),
                  the number of data.frame columns returned should equal the number of factor levels.")
           }
         }
         #----------------------------------------------------------------------
         # Format the returned data.frames from predict().
-        if (is.null(outcome_levels)) {  # Numeric outcome.
+        if (method == "direct") {
 
-          if (ncol(data_pred) == 1) {
+          if (is.null(outcome_levels)) {  # Numeric outcome.
 
-            names(data_pred) <- paste0(outcome_names, "_pred")
+            if (ncol(data_pred) == 1) {
+
+              names(data_pred) <- paste0(outcome_names, "_pred")
+
+            } else {
+
+              # Find the lower, point, and upper forecasts and order the columns accordingly.
+              data_pred <- data_pred[order(unlist(lapply(data_pred, mean, na.rm = TRUE)))]
+
+              names(data_pred) <- c(paste0(outcome_names, "_pred_lower"), paste0(outcome_names, "_pred"), paste0(outcome_names, "_pred_upper"))
+
+              # Re-order so that the point forecast is first.
+              data_pred <- data_pred[, c(2, 1, 3)]
+            }
+
+          } else {  # Factor outcome.
+
+            if (ncol(data_pred) == 1) {  # A predicted factor level.
+
+              names(data_pred) <- paste0(outcome_names, "_pred")
+
+            } else {  # Predicted class probabilities.
+
+              names(data_pred) <- outcome_levels
+            }
+          }  # End reformatting of the returned data.frame of predictions.
+
+        } else if (method == "multi_output") {
+
+          if (is.null(outcome_levels)) {  # Numeric outcome.
+
+              names(data_pred) <- paste0(outcome_names, "_pred")
 
           } else {
 
-            # Find the lower, point, and upper forecasts and order the columns accordingly.
-            data_pred <- data_pred[order(unlist(lapply(data_pred, mean, na.rm = TRUE)))]
-
-            names(data_pred) <- c(paste0(outcome_names, "_pred_lower"), paste0(outcome_names, "_pred"), paste0(outcome_names, "_pred_upper"))
-
-            # Re-order so that the point forecast is first.
-            data_pred <- data_pred[, c(2, 1, 3)]
+            stop("Multi-output models do not currently support factor outcomes.")
           }
-
-        } else {  # Factor outcome.
-
-          if (ncol(data_pred) == 1) {  # A predicted factor level.
-
-            names(data_pred) <- paste0(outcome_names, "_pred")
-
-          } else {  # Predicted class probabilities.
-
-            names(data_pred) <- outcome_levels
-          }
-        }  # End reformatting of the returned data.frame of predictions.
+        }
         #----------------------------------------------------------------------
 
         model_name <- attributes(model_list[[i]])$model_name
@@ -418,11 +442,35 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
     })  # End horizon-level predictions.
     data_horizon <- dplyr::bind_rows(data_horizon)
   })  # End model-level predictions.
+
   data_out <- dplyr::bind_rows(data_model)
+
+  if (method == "multi_output") {
+
+    data_actual_temp <- dplyr::select(data_out, -dplyr::ends_with("_pred"))
+    data_pred_temp <- dplyr::select(data_out, -!!outcome_names)
+
+    data_actual_temp <- tidyr::pivot_longer(data_actual_temp, cols = !!outcome_names, names_to = "remove", values_to = outcome_name)
+    data_actual_temp$remove <- NULL
+    data_pred_temp <- tidyr::pivot_longer(data_pred_temp, cols = dplyr::ends_with("_pred"), values_to = paste0(outcome_name, "_pred"))
+    data_actual_temp[, paste0(outcome_name, "_pred")] <- data_pred_temp[, paste0(outcome_name, "_pred")]
+
+    data_out <- data_actual_temp
+
+    data_out <- data_out %>%
+      dplyr::group_by(.data$model, .data$valid_indices) %>%
+      dplyr::mutate("model_forecast_horizon" = rank(.data$valid_indices, ties.method = "first"))
+
+    names(data_out)[names(data_out) == "model_forecast_horizon"] <- "horizon"
+
+    data_out <- dplyr::arrange(data_out, model, valid_indices, horizon)
+  }
 
   data_out <- as.data.frame(data_out)
 
   attr(data_out, "outcome_col") <- outcome_col
+  attr(data_out, "outcome_cols") <- outcome_cols
+  attr(data_out, "outcome_name") <- outcome_name
   attr(data_out, "outcome_names") <- outcome_names
   attr(data_out, "outcome_levels") <- outcome_levels
   attr(data_out, "row_indices") <- row_indices
@@ -430,6 +478,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
   attr(data_out, "frequency") <- attributes(model_list[[1]])$frequency
   attr(data_out, "data_stop") <- data_stop
   attr(data_out, "groups") <- groups
+  attr(data_out, "method") <- method
 
   if (type == "train") {
     class(data_out) <- c("training_results", "forecast_model", class(data_out))
@@ -491,7 +540,7 @@ plot.training_results <- function(x,
   }
 
   outcome_col <- attributes(data)$outcome_col
-  outcome_names <- attributes(data)$outcome_names
+  outcome_name <- attributes(data)$outcome_name
   outcome_levels <- attributes(data)$outcome_levels
   date_indices <- attributes(data)$date_indices
   frequency <- attributes(data)$frequency

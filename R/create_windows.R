@@ -54,7 +54,7 @@ create_windows <- function(lagged_df, window_length = 12L,
   }
 
   outcome_col <- attributes(data)$outcome_col
-  outcome_names <- attributes(data)$outcome_names
+  outcome_name <- attributes(data)$outcome_name
   date_indices <- attributes(data)$date_indices
   frequency <- attributes(data)$frequency
   data_start <- attributes(data)$data_start
@@ -178,7 +178,7 @@ create_windows <- function(lagged_df, window_length = 12L,
   attributes(window_matrices) <- unlist(list(attributes(window_matrices),  # Keep the data.frame's attributes.
                                              list("skip" = skip,
                                                   "outcome_col" = outcome_col,
-                                                  "outcome_names" = outcome_names)), recursive = FALSE)
+                                                  "outcome_name" = outcome_name)), recursive = FALSE)
 
   class(window_matrices) <- c("windows", class(window_matrices))
 
@@ -215,15 +215,24 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
   data <- lagged_df
   rm(lagged_df)
 
+  method <- attributes(data)$method
+  outcome <- attributes(data)$outcome
   outcome_col <- attributes(data)$outcome_col
-  outcome_names <- attributes(data)$outcome_names
+  outcome_name <- attributes(data)$outcome_name
   outcome_levels <- attributes(data)$outcome_levels
   row_indices <- attributes(data)$row_indices
   date_indices <- attributes(data)$date_indices
   groups <- attributes(data)$groups
 
   # If there are multiple horizons in the lagged_df, select the first dataset and columns for plotting.
-  data_plot <- dplyr::select(data[[1]], outcome_names, groups)
+  if (method == "direct") {
+
+    data_plot <- dplyr::select(data[[1]], !!outcome_name, !!groups)
+
+    } else if (method == "multi_output") {
+
+    data_plot <- dplyr::bind_cols(outcome, dplyr::select(data[[1]], !!groups))
+  }
 
   if (is.null(date_indices)) {  # Index-based x-axis in plot.
 
@@ -278,8 +287,8 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
     # Points are needed because ggplot will not plot a 1-instance geom_line().
     data_plot_point <- data_plot %>%
       dplyr::group_by(.data$ggplot_color_group) %>%
-      dplyr::mutate("lag" = dplyr::lag(eval(parse(text = outcome_names)), 1),
-                    "lead" = dplyr::lead(eval(parse(text = outcome_names)), 1)) %>%
+      dplyr::mutate("lag" = dplyr::lag(eval(parse(text = outcome_name)), 1),
+                    "lead" = dplyr::lead(eval(parse(text = outcome_name)), 1)) %>%
       dplyr::filter(is.na(.data$lag) & is.na(.data$lead))
 
     data_plot_point$ggplot_color_group <- factor(data_plot_point$ggplot_color_group, ordered = TRUE, levels(data_plot$ggplot_color_group))
@@ -296,18 +305,18 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
 
   if (is.null(outcome_levels)) {  # Numeric outcome.
 
-    p <- p + geom_line(data = data_plot, aes(x = .data$index, y = eval(parse(text = outcome_names)),
+    p <- p + geom_line(data = data_plot, aes(x = .data$index, y = eval(parse(text = outcome_name)),
                                              color = .data$ggplot_color_group), size = 1.05)
 
   } else {  # Factor outcome.
 
     p <- p + geom_tile(data = data_plot, aes(x = .data$index, y = ordered(.data$ggplot_color_group),
-                                             fill = ordered(eval(parse(text = outcome_names)))))
+                                             fill = ordered(eval(parse(text = outcome_name)))))
   }
 
   if (!is.null(groups) && is.null(outcome_levels)) {  # Numeric outcome with groups.
     if (nrow(data_plot_point) >= 1) {
-      p <- p + geom_point(data = data_plot_point, aes(x = .data$index, y = eval(parse(text = outcome_names)),
+      p <- p + geom_point(data = data_plot_point, aes(x = .data$index, y = eval(parse(text = outcome_name)),
                                                       color = .data$ggplot_color_group), show.legend = FALSE)
     }
   }
