@@ -471,6 +471,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
       data_x <- lapply_function(1:ncol(data), function(j, future.packages, future.seed) {
 
+        #----------------------------------------------------------------------
         if (!is.null(lookback_control)) {
           # As a convenience to the user, a single-direct-horizon forecast that uses a custom lookback doesn't need to be a nested list.
           if (length(horizons) == 1) {
@@ -496,7 +497,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
             }
           }
         }  # End lookback_control lag adjustment
-
+        #----------------------------------------------------------------------
         # If there are no feature-level lags suitable for the forecast horizons, return NULL for this feature-level lagged data.frame.
         # However, grouping features will pass through and be added to the output dataset without lags.
         if (length(lookback_over_horizon) > 0 || var_names[j] %in% c(groups, dynamic_features, static_features)) {
@@ -647,16 +648,29 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
             if (!var_names[j] %in% c(dynamic_features)) {  # Lagged, non-dynamic features, static and group features are not present.
 
-              data_x <- data[, var_names[j], drop = FALSE] %>%
-                dplyr::mutate("row_number" = !!row_names) %>%
-                dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions) %>%
-                dplyr::mutate("max_row_number" = !!n_instances,
-                              "horizon" = .data$max_row_number - .data$row_number + 1) %>%
-                dplyr::filter(.data$horizon <= forecast_horizon) %>%
-                dplyr::mutate("horizon" = rev(.data$horizon),
-                              "row_number" = .data$max_row_number + .data$horizon) %>%
-                dplyr::select(.data$row_number, .data$horizon, names(lag_functions)) %>%
-                dplyr::as_tibble()
+              if (method == "direct") {
+
+                data_x <- data[, var_names[j], drop = FALSE] %>%
+                  dplyr::mutate("row_number" = !!row_names) %>%
+                  dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions) %>%
+                  dplyr::mutate("max_row_number" = !!n_instances,
+                                "horizon" = .data$max_row_number - .data$row_number + 1) %>%
+                  dplyr::filter(.data$horizon <= forecast_horizon) %>%
+                  dplyr::mutate("horizon" = rev(.data$horizon),
+                                "row_number" = .data$max_row_number + .data$horizon) %>%
+                  dplyr::select(.data$row_number, .data$horizon, names(lag_functions)) %>%
+                  dplyr::as_tibble()
+
+              } else if (method == "multi_output") {
+
+                data_x <- data[, var_names[j], drop = FALSE] %>%
+                  dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions) %>%
+                  dplyr::filter(dplyr::row_number() == dplyr::n()) %>%
+                  dplyr::mutate("row_number" = !!n_instances,  # Hard-coded for merging feature-level data.
+                                "horizon" = !!horizons[1]) %>%  # Hard-coded for merging feature-level data.
+                  dplyr::select(.data$row_number, .data$horizon, names(lag_functions)) %>%
+                  dplyr::as_tibble()
+              }
 
             } else {  # Dynamic features.
 
@@ -748,7 +762,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
   attr(data_out, "outcome_col") <- outcome_col
   attr(data_out, "outcome_cols") <- if (method == "direct") {outcome_col} else if (method == "multi_output") {outcome_col:(length(horizons))}
   attr(data_out, "outcome_name") <- outcome_name
-  attr(data_out, "outcome_names") <- if (method == "direct") {outcome_name} else if (method == "multi_output") {names(data_out[[1]][outcome_col:(length(horizons))])}
+  attr(data_out, "outcome_names") <- if (method == "direct") {outcome_name} else if (method == "multi_output") {names(data_y)}
   attr(data_out, "outcome_levels") <- outcome_levels
   attr(data_out, "predictor_names") <- var_names
   attr(data_out, "dynamic_features") <- dynamic_features

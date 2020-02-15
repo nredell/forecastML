@@ -70,6 +70,7 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
   outcome_levels <- attributes(data_forecast_list[[1]])$outcome_levels
   groups <- attributes(data_forecast_list[[1]])$groups
   data_stop <- attributes(data_forecast_list[[1]])$data_stop
+  method <- attributes(data_forecast_list[[1]])$method
 
   data_forecast <- dplyr::bind_rows(data_forecast_list)  # Collapse the forecast_results list(...).
   data_forecast <- dplyr::as_tibble(data_forecast)
@@ -91,6 +92,11 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
     stop("Select a forecast combination 'type' that is one of 'horizon' or 'error'.")
   }
 
+  if (type == "horizon" && method == "multi_output") {
+    stop("Horizon-based forecast combinations are not needed for multi-output models because there is only one model.
+         Validation-error-based forecast combinations are available for combining multiple multi-output models.")
+  }
+
   if (type == "horizon") {
 
     # Because different model forecast horizons could be passed in '...'--e.g., model A = 1- and 12-step-
@@ -101,6 +107,7 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
       data_forecast <- data_forecast_list[[i]]
 
       model_forecast_horizons <- sort(unique(data_forecast$model_forecast_horizon))
+
       horizons <- sort(unique(data_forecast$horizon))
 
       #------------------------------------------------------------------------
@@ -136,7 +143,7 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
       data_forecast <- lapply(seq_along(model_forecast_horizons), function(i) {
 
         data_forecast[data_forecast$model_forecast_horizon == model_forecast_horizons[i] &
-                        data_forecast$horizon %in% horizon_filter[[i]], ]
+                      data_forecast$horizon %in% horizon_filter[[i]], ]
       })
       data_forecast <- dplyr::bind_rows(data_forecast)
       data_forecast <- dplyr::select(data_forecast, -.data$window_length, -.data$window_number)

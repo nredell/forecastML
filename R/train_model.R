@@ -314,6 +314,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
           forecast_period <- data[[j]][, "index", drop = FALSE]
           names(forecast_period) <- "forecast_period"
           forecast_horizons <- data[[j]][, "horizon", drop = FALSE]
+
           data_for_forecast <- data[[j]][, !names(data[[j]]) %in% c("index", "horizon"), drop = FALSE]  # Remove ID columns for predict().
 
           data_pred <- try(prediction_fun(data_results$model, data_for_forecast))  # User-defined prediction function.
@@ -332,8 +333,8 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
           stop("For numeric outcomes, the user-defined prediction function needs to return 1- or 3-column data.frame of model predictions.")
         }
 
-        if (is.null(outcome_levels) && method == "multi_output" && !ncol(data_pred) == length(horizons)) {  # Numeric outcome.
-          stop("For numeric outcomes, the user-defined prediction function needs to return length(horizons)-column data.frame of model predictions.")
+        if (is.null(outcome_levels) && method == "multi_output" && ncol(data_pred) != length(horizons)) {  # Numeric outcome.
+          stop("For numeric outcomes, the user-defined prediction function needs to return a length(horizons)-column data.frame of model predictions.")
         }
 
         if (!is.null(outcome_levels)) {  # Factor outcome.
@@ -359,7 +360,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 
               names(data_pred) <- paste0(outcome_names, "_pred")
 
-            } else {
+            } else {  # Confidence/credible forecast intervals.
 
               # Find the lower, point, and upper forecasts and order the columns accordingly.
               data_pred <- data_pred[order(unlist(lapply(data_pred, mean, na.rm = TRUE)))]
@@ -450,36 +451,60 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
   # to the index for the predicted time period.
   if (method == "multi_output") {
 
-    data_actual_temp <- dplyr::select(data_out, -dplyr::ends_with("_pred"))
-    data_pred_temp <- dplyr::select(data_out, -!!outcome_names)
-    data_actual_temp <- tidyr::pivot_longer(data_actual_temp, cols = !!outcome_names, names_to = "remove", values_to = outcome_name)
-    data_actual_temp$remove <- NULL
-    data_pred_temp <- tidyr::pivot_longer(data_pred_temp, cols = dplyr::ends_with("_pred"), values_to = paste0(outcome_name, "_pred"))
-    data_actual_temp[, paste0(outcome_name, "_pred")] <- data_pred_temp[, paste0(outcome_name, "_pred")]
+    if (type == "train") {
 
-    data_out <- data_actual_temp
+      data_actual_temp <- dplyr::select(data_out, -dplyr::ends_with("_pred"))
+      data_pred_temp <- dplyr::select(data_out, -!!outcome_names)
+      data_actual_temp <- tidyr::pivot_longer(data_actual_temp, cols = !!outcome_names, names_to = "remove", values_to = outcome_name)
+      data_actual_temp$remove <- NULL
+      data_pred_temp <- tidyr::pivot_longer(data_pred_temp, cols = dplyr::ends_with("_pred"), values_to = paste0(outcome_name, "_pred"))
+      data_actual_temp[, paste0(outcome_name, "_pred")] <- data_pred_temp[, paste0(outcome_name, "_pred")]
 
-    data_out$model_forecast_horizon <- horizons
+      data_out <- data_actual_temp
 
-    data_out$valid_indices <- data_out$model_forecast_horizon + data_out$valid_indices
+      data_out$model_forecast_horizon <- horizons
 
-    data_out$horizons <- NULL
+      data_out$forecast_indices <- data_out$valid_indices
 
-    names(data_out)[names(data_out) == "model_forecast_horizon"] <- "horizon"
+      data_out$forecast_indices <- data_out$model_forecast_horizon + data_out$forecast_indices
 
-    if (!is.null(date_indices)) {
+      data_out$horizons <- NULL
 
-      data_out$date_indices <- as.Date(
-        unlist(purrr::map(1:nrow(data_out),
-                          function(i){base::seq(data_out$date_indices[i], by = frequency, length.out = data_out$horizon[i] + 1)[data_out$horizon[i] + 1]})),
-        origin = "1970-01-01")
+      names(data_out)[names(data_out) == "model_forecast_horizon"] <- "horizon"
+
+      if (!is.null(date_indices)) {
+
+        data_out$forecast_date_indices <- as.Date(unlist(purrr::map(1:nrow(data_out), function(i) {
+          base::seq(data_out$date_indices[i], by = frequency, length.out = data_out$horizon[i] + 1)[data_out$horizon[i] + 1]})),
+          origin = "1970-01-01")
+      }
+
+      data_out <- dplyr::arrange(data_out, model, valid_indices, forecast_indices, horizon)
+
+    } else if (type == "forecast") {
+
+      forecast_period <- data.frame(data_out[, "forecast_period", drop = FALSE], stringsAsFactors = FALSE)
+      forecast_period <- data.frame(strsplit(forecast_period$forecast_period, ", "), stringsAsFactors = FALSE)
+      names(forecast_period) <- "forecast_period"
+      forecast_period$forecast_period <- if (is.null(date_indices)){as.integer(forecast_period$forecast_period)} else {as.Date(forecast_period$forecast_period)}
+
+      data_out <- tidyr::pivot_longer(data_out, cols = dplyr::ends_with("_pred"),
+                                      names_to = "remove", values_to = paste0(outcome_name, "_pred"))
+
+      data_out$remove <- NULL
+
+      data_out$model_forecast_horizon <- NULL
+
+      data_out$horizon <- horizons
+
+      data_out$forecast_period <- forecast_period$forecast_period
     }
-
-    data_out <- dplyr::arrange(data_out, model, valid_indices, horizon)
   }
 
   data_out <- as.data.frame(data_out)
 
+  attr(data_out, "method") <- method
+  attr(data_out, "horizons") <- horizons
   attr(data_out, "outcome_col") <- outcome_col
   attr(data_out, "outcome_cols") <- outcome_cols
   attr(data_out, "outcome_name") <- outcome_name
@@ -490,7 +515,6 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
   attr(data_out, "frequency") <- attributes(model_list[[1]])$frequency
   attr(data_out, "data_stop") <- data_stop
   attr(data_out, "groups") <- groups
-  attr(data_out, "method") <- method
 
   if (type == "train") {
     class(data_out) <- c("training_results", "forecast_model", class(data_out))
@@ -551,6 +575,7 @@ plot.training_results <- function(x,
     stop("Only 'prediction' and 'residual' plots are currently available for models with factors as outcomes.")
   }
 
+  method <- attributes(data)$method
   outcome_col <- attributes(data)$outcome_col
   outcome_name <- attributes(data)$outcome_name
   outcome_levels <- attributes(data)$outcome_levels
@@ -558,7 +583,13 @@ plot.training_results <- function(x,
   frequency <- attributes(data)$frequency
   groups <- attributes(data)$group
   window_custom <- all(data$window_length == "custom")
-  method <- attributes(data)$method
+
+  if (method == "multi_output") {
+    data$valid_indices <- data$forecast_indices  # The plot indices are the forecast period, not the forecast origin.
+    if (!is.null(date_indices)) {
+      data$date_indices <- data$forecast_date_indices  # The plot indices are the forecast period, not the forecast origin.
+    }
+  }
 
   if (isFALSE(keep_missing)) {
     # Set the predicted values to NA to keep any missing data in the actual
@@ -1033,9 +1064,10 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
 
   type <- "forecast"  # Only one plot option at present.
 
+  method <- attributes(data_forecast)$method
+  forecast_horizons <- attributes(data_forecast)$horizons
   outcome_col <- attributes(data_forecast)$outcome_col
   outcome_name <- attributes(data_forecast)$outcome_name
-  forecast_horizons <- sort(unique(data_forecast$model_forecast_horizon))
   outcome_levels <- attributes(data_forecast)$outcome_levels
   date_indices <- attributes(data_forecast)$date_indices
   groups <- attributes(data_forecast)$group
@@ -1071,6 +1103,10 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
   models <- if (is.null(models)) {unique(data_forecast$model)} else {models}
   horizons <- if (is.null(horizons)) {forecast_horizons} else {horizons}
   windows <- if (is.null(windows)) {unique(data_forecast$window_number)} else {windows}
+
+  if (method == "multi_output") {  # Used for filtering below.
+    data_forecast$model_forecast_horizon <- data_forecast$horizon
+  }
 
   data_forecast <- data_forecast[data_forecast$model %in% models &
                                  data_forecast$model_forecast_horizon %in% horizons &
