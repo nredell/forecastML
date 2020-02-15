@@ -66,7 +66,7 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
     }
   }
 
-  outcome_names <- attributes(data_forecast_list[[1]])$outcome_names
+  outcome_name <- attributes(data_forecast_list[[1]])$outcome_name
   outcome_levels <- attributes(data_forecast_list[[1]])$outcome_levels
   groups <- attributes(data_forecast_list[[1]])$groups
   data_stop <- attributes(data_forecast_list[[1]])$data_stop
@@ -76,7 +76,7 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
   #----------------------------------------------------------------------------
   # For factor outcomes, is the prediction a factor level or probability?
   if (!is.null(outcome_levels)) {
-    factor_level <- if (any(names(data_forecast) %in% paste0(outcome_names, "_pred"))) {TRUE} else {FALSE}
+    factor_level <- if (any(names(data_forecast) %in% paste0(outcome_name, "_pred"))) {TRUE} else {FALSE}
     factor_prob <- !factor_level
   }
   #----------------------------------------------------------------------------
@@ -176,7 +176,7 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
     data_forecast <- as.data.frame(data_forecast)
   }  # End type = "error".
 
-  attr(data_forecast, "outcome_names") <- outcome_names
+  attr(data_forecast, "outcome_name") <- outcome_name
   attr(data_forecast, "outcome_levels") <- outcome_levels
   attr(data_forecast, "groups") <- groups
   attr(data_forecast, "data_stop") <- data_stop
@@ -219,7 +219,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
   data_forecast <- x
   rm(x)
 
-  outcome_names <- attributes(data_forecast)$outcome_names
+  outcome_name <- attributes(data_forecast)$outcome_name
   outcome_levels <- attributes(data_forecast)$outcome_levels
   groups <- attributes(data_forecast)$groups
   data_stop <- attributes(data_forecast)$data_stop
@@ -228,7 +228,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
   #----------------------------------------------------------------------------
   # For factor outcomes, is the prediction a factor level or probability?
   if (!is.null(outcome_levels)) {
-    factor_level <- if (any(names(data_forecast) %in% paste0(outcome_names, "_pred"))) {TRUE} else {FALSE}
+    factor_level <- if (any(names(data_forecast) %in% paste0(outcome_name, "_pred"))) {TRUE} else {FALSE}
     factor_prob <- !factor_level
   }
   #----------------------------------------------------------------------------
@@ -238,7 +238,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
   #----------------------------------------------------------------------------
   if (!is.null(data_actual)) {
 
-    data_actual <- data_actual[, c(outcome_names, groups), drop = FALSE]
+    data_actual <- data_actual[, c(outcome_name, groups), drop = FALSE]
 
     data_actual$index <- actual_indices
 
@@ -298,16 +298,16 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
 
             # geom_ribbon() does not work with a single data point when forecast bounds are plotted.
             p <- p + geom_linerange(data = data_forecast,
-                                    aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
-                                        ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
+                                    aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_name, "_pred_lower"))),
+                                        ymax = eval(parse(text = paste0(outcome_name, "_pred_upper"))),
                                         color = .data$model), alpha = .25, size = 3, show.legend = FALSE)
 
           } else {  # Grouped time series.
 
             # geom_ribbon() does not work with a single data point when forecast bounds are plotted.
             p <- p + geom_linerange(data = data_forecast,
-                                    aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
-                                        ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
+                                    aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_name, "_pred_lower"))),
+                                        ymax = eval(parse(text = paste0(outcome_name, "_pred_upper"))),
                                         color = .data$ggplot_group), alpha = .25, size = 3, show.legend = FALSE)
           }
         }
@@ -315,13 +315,13 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
         if (is.null(groups)) {  # Single time series.
 
           p <- p + geom_point(data = data_forecast,
-                              aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                              aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_name, "_pred"))),
                                   color = .data$model, group = .data$model), show.legend = FALSE)
 
         } else {  # Grouped time series.
 
           p <- p + geom_point(data = data_forecast,
-                              aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                              aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_name, "_pred"))),
                                   color = .data$ggplot_group), show.legend = FALSE)
         }
       }  # End forecast horizon of 1.
@@ -347,8 +347,8 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
             data_fill <- dplyr::bind_rows(data_forecast, data_fill)
 
             p <- p + geom_ribbon(data = data_fill,
-                                 aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
-                                     ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
+                                 aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_name, "_pred_lower"))),
+                                     ymax = eval(parse(text = paste0(outcome_name, "_pred_upper"))),
                                      color = ordered(.data$model_forecast_horizon),
                                      fill = ordered(.data$model_forecast_horizon)),
                                  linetype = 0, alpha = .25, show.legend = FALSE)
@@ -365,8 +365,8 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
             data_fill <- dplyr::bind_rows(data_forecast, data_fill)
 
             p <- p + geom_ribbon(data = data_fill,
-                                 aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
-                                     ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
+                                 aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_name, "_pred_lower"))),
+                                     ymax = eval(parse(text = paste0(outcome_name, "_pred_upper"))),
                                      color = .data$ggplot_group,
                                      fill = .data$ggplot_group),
                                  linetype = 0, alpha = .25, show.legend = FALSE)
@@ -377,21 +377,21 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
         if (is.null(groups)) {  # Single time series.
 
           p <- p + geom_line(data = data_forecast,
-                             aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                             aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_name, "_pred"))),
                                  color = ordered(.data$model_forecast_horizon), group = .data$ggplot_group))
 
           p <- p + geom_point(data = data_forecast,
-                              aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                              aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_name, "_pred"))),
                                   color = ordered(.data$model_forecast_horizon), group = .data$ggplot_group), color = "black")
 
         } else {  # Grouped time series.
 
           p <- p + geom_line(data = data_forecast,
-                             aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                             aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_name, "_pred"))),
                                  color = .data$ggplot_group, group = .data$ggplot_group))
 
           p <- p + geom_point(data = data_forecast,
-                              aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                              aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_name, "_pred"))),
                                   color = .data$ggplot_group, group = .data$model))
         }
       }  # End plot forecasts for model forecast horizons > 1.
@@ -405,11 +405,11 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
         if (is.null(groups)) {
 
           p <- p + geom_line(data = data_actual, aes(x = .data$index,
-                                                     y = eval(parse(text = outcome_names))), color = "grey50")
+                                                     y = eval(parse(text = outcome_name))), color = "grey50")
         } else {
 
           p <- p + geom_line(data = data_actual,
-                             aes(x = .data$index, y = eval(parse(text = outcome_names)),
+                             aes(x = .data$index, y = eval(parse(text = outcome_name)),
                                  color = .data$ggplot_group, group = .data$ggplot_group))
         }
       }  # End plot of user-supplied historcal and/or test set actuals.
@@ -448,7 +448,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
             data_actual$actual_or_forecast <- "actual"
             # historical, test, or model_forecast: these may be any combination of historical data and a holdout test dataset.
             data_actual$time_series_type <- with(data_actual, ifelse(index <= attributes(data_forecast)$data_stop, "historical", "test"))
-            names(data_actual)[names(data_actual) == outcome_names] <- "outcome"  # Standardize before concat with forecasts.
+            names(data_actual)[names(data_actual) == outcome_name] <- "outcome"  # Standardize before concat with forecasts.
             data_actual$ggplot_color_group <- "Actual"  # Actuals will be plotted in the top plot facet.
             data_actual$value <- 1  # Plot a solid bar with probability 1 in geom_col().
 
@@ -504,7 +504,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
             data_actual$actual_or_forecast <- "actual"
             # historical, test, or model_forecast: these may be any combination of historical data and a holdout test dataset.
             data_actual$time_series_type <- with(data_actual, ifelse(index <= attributes(data_forecast)$data_stop, "historical", "test"))
-            names(data_actual)[names(data_actual) == outcome_names] <- "outcome"  # Standardize before concat with forecasts.
+            names(data_actual)[names(data_actual) == outcome_name] <- "outcome"  # Standardize before concat with forecasts.
             data_actual$ggplot_color_group <- "Actual"  # Actuals will be plotted in the top plot facet.
             data_actual$value <- 1  # Plot a solid bar with probability 1 in geom_col().
 
@@ -524,7 +524,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL,
 
           # Standardize names for plotting and before any concatenation with data_actual.
           names(data_plot)[names(data_plot) == "forecast_period"] <- "index"
-          names(data_plot)[names(data_plot) == paste0(outcome_names, "_pred")] <- "outcome"
+          names(data_plot)[names(data_plot) == paste0(outcome_name, "_pred")] <- "outcome"
           data_plot$value <- 1
           data_plot$actual_or_forecast <- "forecast"
           data_plot$time_series_type <- "model_forecast"

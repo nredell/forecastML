@@ -28,7 +28,7 @@ return_hyper <- function(forecast_model, hyper_function) {
   }
 
   outcome_col <- attributes(forecast_model)$outcome_col
-  outcome_names <- attributes(forecast_model)$outcome_names
+  outcome_name <- attributes(forecast_model)$outcome_name
   horizon <- attributes(forecast_model)$horizons
 
   # Defined here to catch (from '<<-' below) the user-defined hyperparameter names in hyper_function.
@@ -64,7 +64,7 @@ return_hyper <- function(forecast_model, hyper_function) {
   data_out <- dplyr::bind_rows(data_out)
 
   attr(data_out, "outcome_col") <- outcome_col
-  attr(data_out, "outcome_names") <- outcome_names
+  attr(data_out, "outcome_name") <- outcome_name
   attr(data_out, "hyper_names") <- hyper_names
 
   class(data_out) <- c("forecast_model_hyper", class(data_out))
@@ -116,7 +116,7 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
   data_results$model_forecast_horizon <- NULL
 
   outcome_col <- attributes(data_plot)$outcome_col
-  outcome_names <- attributes(data_plot)$outcome_names
+  outcome_name <- attributes(data_plot)$outcome_name
   hyper_names <- attributes(data_plot)$hyper_names
 
   hyper_num <- unlist(lapply(data_plot[, hyper_names], function(x) {inherits(x, c("numeric", "double", "integer"))}))

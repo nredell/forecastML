@@ -83,14 +83,14 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
   data <- data_results
   rm(data_results)
 
-  outcome_names <- attributes(data)$outcome_names
+  outcome_name <- attributes(data)$outcome_name
   outcome_levels <- attributes(data)$outcome_levels
   groups <- attributes(data)$groups
   #----------------------------------------------------------------------------
   # For factor outcomes, is the prediction a factor level or probability.
   if (!is.null(outcome_levels)) {
 
-    factor_level <- if (any(names(data) %in% paste0(outcome_names, "_pred"))) {TRUE} else {FALSE}
+    factor_level <- if (any(names(data) %in% paste0(outcome_name, "_pred"))) {TRUE} else {FALSE}
     factor_prob <- !factor_level
 
     if (!all(metrics %in% c("mae"))) {
@@ -113,7 +113,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 
     data_test$forecast_period <- test_indices
 
-    data_test <- dplyr::select(data_test, .data$forecast_period, outcome_names, !!groups)
+    data_test <- dplyr::select(data_test, .data$forecast_period, outcome_name, !!groups)
 
     data <- dplyr::inner_join(data, data_test, by = c("forecast_period", groups))
   }
@@ -128,14 +128,14 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
   # Residual calculations
   if (is.null(outcome_levels)) {  # Numeric outcome.
 
-    data$residual <- data[, outcome_names] - data[, paste0(outcome_names, "_pred")]
+    data$residual <- data[, outcome_name] - data[, paste0(outcome_name, "_pred")]
 
   } else {  # Factor outcome.
 
     if (factor_level) {
 
       # Binary accuracy/residual. A residual of 1 is an incorrect classification.
-      data$residual <- ifelse(data[, outcome_names] != data[, paste0(outcome_names, "_pred")], 1, 0)
+      data$residual <- ifelse(data[, outcome_name] != data[, paste0(outcome_name, "_pred")], 1, 0)
 
     } else {  # Class probabilities were predicted.
 
@@ -184,8 +184,8 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
       dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
                           .funs = error_functions,
                           x = rlang::quo(.data$residual),
-                          y = rlang::sym(outcome_names),
-                          z = rlang::sym(paste0(outcome_names, "_pred"))
+                          y = rlang::sym(outcome_name),
+                          z = rlang::sym(paste0(outcome_name, "_pred"))
                           )
 
     # Compute error metric by horizon and window length across all validation windows.
@@ -197,8 +197,8 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
       dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
                           .funs = error_functions,
                           x = rlang::quo(.data$residual),
-                          y = rlang::sym(outcome_names),
-                          z = rlang::sym(paste0(outcome_names, "_pred")))
+                          y = rlang::sym(outcome_name),
+                          z = rlang::sym(paste0(outcome_name, "_pred")))
 
     # Compute error metric by model.
     data_3 <- data %>%
@@ -209,8 +209,8 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
       dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
                           .funs = error_functions,
                           x = rlang::quo(.data$residual),
-                          y = rlang::sym(outcome_names),
-                          z = rlang::sym(paste0(outcome_names, "_pred")))
+                          y = rlang::sym(outcome_name),
+                          z = rlang::sym(paste0(outcome_name, "_pred")))
     #--------------------------------------------------------------------------
     } else if (!is_forecastML) {  # Error metrics for the forecast_results class which has no validation windows and slightly different grouping columns.
 
@@ -222,8 +222,8 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
         dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
                             .funs = error_functions,
                             x = rlang::quo(.data$residual),
-                            y = rlang::sym(outcome_names),
-                            z = rlang::sym(paste0(outcome_names, "_pred")))
+                            y = rlang::sym(outcome_name),
+                            z = rlang::sym(paste0(outcome_name, "_pred")))
 
       # Compute error metric by model.
       data_3 <- data %>%
@@ -231,8 +231,8 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
         dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
                             .funs = error_functions,
                             x = rlang::quo(.data$residual),
-                            y = rlang::sym(outcome_names),
-                            z = rlang::sym(paste0(outcome_names, "_pred")))
+                            y = rlang::sym(outcome_name),
+                            z = rlang::sym(paste0(outcome_name, "_pred")))
 
     } else {  # Final forecasts from combine_forecasts().
 
@@ -241,8 +241,8 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
         dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
                             .funs = error_functions,
                             x = rlang::quo(.data$residual),
-                            y = rlang::sym(outcome_names),
-                            z = rlang::sym(paste0(outcome_names, "_pred")))
+                            y = rlang::sym(outcome_name),
+                            z = rlang::sym(paste0(outcome_name, "_pred")))
 
     }  # End error metrics for forecast results.
   #----------------------------------------------------------------------------
@@ -308,7 +308,7 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
 
   type <- type[1]
 
-  outcome_names <- attributes(data_results)$outcome_names
+  outcome_name <- attributes(data_results)$outcome_name
   groups <- attributes(data_results)$groups
 
   error_metrics <- metric

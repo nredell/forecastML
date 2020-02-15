@@ -445,11 +445,13 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 
   data_out <- dplyr::bind_rows(data_model)
 
+  # For multi-output models, the data (a) need to be reshaped from a wide to long format
+  # and (b) the validation indices that represent the forecast origin need to be changed
+  # to the index for the predicted time period.
   if (method == "multi_output") {
 
     data_actual_temp <- dplyr::select(data_out, -dplyr::ends_with("_pred"))
     data_pred_temp <- dplyr::select(data_out, -!!outcome_names)
-
     data_actual_temp <- tidyr::pivot_longer(data_actual_temp, cols = !!outcome_names, names_to = "remove", values_to = outcome_name)
     data_actual_temp$remove <- NULL
     data_pred_temp <- tidyr::pivot_longer(data_pred_temp, cols = dplyr::ends_with("_pred"), values_to = paste0(outcome_name, "_pred"))
@@ -457,11 +459,21 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 
     data_out <- data_actual_temp
 
-    data_out <- data_out %>%
-      dplyr::group_by(.data$model, .data$valid_indices) %>%
-      dplyr::mutate("model_forecast_horizon" = rank(.data$valid_indices, ties.method = "first"))
+    data_out$model_forecast_horizon <- horizons
+
+    data_out$valid_indices <- data_out$model_forecast_horizon + data_out$valid_indices
+
+    data_out$horizons <- NULL
 
     names(data_out)[names(data_out) == "model_forecast_horizon"] <- "horizon"
+
+    if (!is.null(date_indices)) {
+
+      data_out$date_indices <- as.Date(
+        unlist(purrr::map(1:nrow(data_out),
+                          function(i){base::seq(data_out$date_indices[i], by = frequency, length.out = data_out$horizon[i] + 1)[data_out$horizon[i] + 1]})),
+        origin = "1970-01-01")
+    }
 
     data_out <- dplyr::arrange(data_out, model, valid_indices, horizon)
   }
@@ -546,11 +558,12 @@ plot.training_results <- function(x,
   frequency <- attributes(data)$frequency
   groups <- attributes(data)$group
   window_custom <- all(data$window_length == "custom")
+  method <- attributes(data)$method
 
   if (isFALSE(keep_missing)) {
     # Set the predicted values to NA to keep any missing data in the actual
     # time series so gaps in data collection are not connected with a line in the plot.
-    data[is.na(data[, outcome_names]), paste0(outcome_names, "_pred")] <- NA
+    data[is.na(data[, outcome_name]), paste0(outcome_name, "_pred")] <- NA
   }
 
   facets <- forecastML_facet_plot(facet, groups)  # Function in zzz.R.
@@ -560,7 +573,7 @@ plot.training_results <- function(x,
   # For factor outcomes, is the prediction a factor level or probability.
   if (!is.null(outcome_levels)) {
 
-    factor_level <- if (any(names(data) %in% paste0(outcome_names, "_pred"))) {TRUE} else {FALSE}
+    factor_level <- if (any(names(data) %in% paste0(outcome_name, "_pred"))) {TRUE} else {FALSE}
     factor_prob <- !factor_level
 
     if (type == "residual" && factor_prob) {
@@ -575,14 +588,14 @@ plot.training_results <- function(x,
   # Residual calculations.
   if (is.null(outcome_levels)) {  # Numeric outcome.
 
-    data$residual <- data[, outcome_names] - data[, paste0(outcome_names, "_pred")]
+    data$residual <- data[, outcome_name] - data[, paste0(outcome_name, "_pred")]
 
   } else {  # Factor outcome.
 
     if (factor_level) {
 
       # Binary accuracy/residual. A residual of 1 is an incorrect classification.
-      data$residual <- ifelse(data[, outcome_names] != data[, paste0(outcome_names, "_pred")], 1, 0)
+      data$residual <- ifelse(data[, outcome_name] != data[, paste0(outcome_name, "_pred")], 1, 0)
 
     } else {  # Class probabilities were predicted.
 
@@ -595,7 +608,11 @@ plot.training_results <- function(x,
   #----------------------------------------------------------------------------
   # Filtering results based on user input.
   models <- if (is.null(models)) {unique(data$model)} else {models}
-  horizons <- if (is.null(horizons)) {unique(data$model_forecast_horizon)} else {horizons}
+  if (method == "direct") {
+    horizons <- if (is.null(horizons)) {unique(data$model_forecast_horizon)} else {horizons}
+  } else {
+    horizons <- if (is.null(horizons)) {unique(data$horizon)} else {horizons}
+  }
   windows <- if (is.null(windows)) {unique(data$window_number)} else {windows}
 
   if (is.null(date_indices)) {
@@ -610,8 +627,10 @@ plot.training_results <- function(x,
   data_plot <- data
 
   # Rename for consistency with plotting code.
-  data_plot$horizon <- data_plot$model_forecast_horizon
-  data_plot$model_forecast_horizon <- NULL
+  if (method == "direct") {
+    data_plot$horizon <- data_plot$model_forecast_horizon
+    data_plot$model_forecast_horizon <- NULL
+  }
 
   data_plot <- data_plot[data_plot$model %in% models & data_plot$horizon %in% horizons & data_plot$window_number %in% windows, ]
 
@@ -686,8 +705,8 @@ plot.training_results <- function(x,
       # Points are needed because ggplot will not plot a 1-instance geom_line().
       data_plot_point <- data_plot %>%
         dplyr::group_by(.data$ggplot_color) %>%
-        dplyr::mutate("lag" = dplyr::lag(eval(parse(text = outcome_names)), 1),
-                      "lead" = dplyr::lead(eval(parse(text = outcome_names)), 1)) %>%
+        dplyr::mutate("lag" = dplyr::lag(eval(parse(text = outcome_name)), 1),
+                      "lead" = dplyr::lead(eval(parse(text = outcome_name)), 1)) %>%
         dplyr::filter(is.na(.data$lag) & is.na(.data$lead))
 
       data_plot <- data_plot[data_plot$date_indices %in% valid_indices, ]
@@ -710,19 +729,19 @@ plot.training_results <- function(x,
     if (is.null(outcome_levels)) {  # Numeric outcome.
 
       data_plot <- tidyr::gather(data_plot, "outcome", "value",
-                                 -!!names(data_plot)[!names(data_plot) %in% c(outcome_names, paste0(outcome_names, "_pred"))])
+                                 -!!names(data_plot)[!names(data_plot) %in% c(outcome_name, paste0(outcome_name, "_pred"))])
 
     } else {  # Factor outcome.
 
-      if (any(names(data) %in% paste0(outcome_names, "_pred"))) {  # A factor level was predicted.
+      if (any(names(data) %in% paste0(outcome_name, "_pred"))) {  # A factor level was predicted.
 
         data_plot <- tidyr::gather(data_plot, "outcome", "value",
-                                   -!!names(data_plot)[!names(data_plot) %in% c(outcome_names, paste0(outcome_names, "_pred"))])
+                                   -!!names(data_plot)[!names(data_plot) %in% c(outcome_name, paste0(outcome_name, "_pred"))])
 
       } else {  # Class probabilities were predicted.
 
         data_plot <- suppressWarnings(tidyr::gather(data_plot, "outcome", "value",
-                                                    -!!names(data_plot)[!names(data_plot) %in% c(outcome_names, outcome_levels)]))
+                                                    -!!names(data_plot)[!names(data_plot) %in% c(outcome_name, outcome_levels)]))
       }
     }
     #--------------------------------------------------------------------------
@@ -730,7 +749,6 @@ plot.training_results <- function(x,
     if (!is.null(date_indices)) {
       data_plot$index <- data_plot$date_indices
     }
-
     #--------------------------------------------------------------------------
     if (type == "prediction") {
 
@@ -742,7 +760,7 @@ plot.training_results <- function(x,
         # Plot actuals on the first or lowest layer.
         if (is.null(groups)) {  # Single time series.
 
-          p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
+          p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_name, ],
                              aes(x = .data$index, y = .data$value), color = "grey50")
 
         } else {  # Actuals, grouped time series.
@@ -751,12 +769,12 @@ plot.training_results <- function(x,
           # will be the default grey so as not to double encode the plot data.
           if (any(facet_names %in% groups)) {
 
-            p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
+            p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_name, ],
                                aes(x = .data$index, y = .data$value), color = "grey50")
 
           } else {
 
-            p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_names, ],
+            p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_name, ],
                                aes(x = .data$index, y = .data$value,
                                    group = .data$ggplot_group,
                                    color = .data$ggplot_color), linetype = 2)
@@ -770,13 +788,13 @@ plot.training_results <- function(x,
         # We'll add the shading in a lower ggplot layer so the point forecasts are on top in the final plot.
         if (all(any(grepl("_pred_lower", names(data_plot))), any(grepl("_pred_upper", names(data_plot))))) {
 
-          p <- p + geom_ribbon(data = data_plot[data_plot$outcome == outcome_names, ],
-                               aes(x = .data$index, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
-                                   ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
+          p <- p + geom_ribbon(data = data_plot[data_plot$outcome == outcome_name, ],
+                               aes(x = .data$index, ymin = eval(parse(text = paste0(outcome_name, "_pred_lower"))),
+                                   ymax = eval(parse(text = paste0(outcome_name, "_pred_upper"))),
                                    fill = .data$ggplot_color, group = .data$ggplot_group, color = NULL), alpha = .25, show.legend = FALSE)
         }
 
-        p <- p + geom_line(data = data_plot[data_plot$outcome != outcome_names, ],  # Predictions in melted data.
+        p <- p + geom_line(data = data_plot[data_plot$outcome != outcome_name, ],  # Predictions in melted data.
                            aes(x = .data$index, y = .data$value, group = .data$ggplot_group, color = .data$ggplot_color),
                            size = 1.05, linetype = 1)
 
@@ -792,9 +810,9 @@ plot.training_results <- function(x,
         if (is.null(groups)) {
 
           # Only 1 actual needs to be plotted.
-          data_plot$ggplot_color_group[data_plot$outcome == outcome_names] <- "Actual"
+          data_plot$ggplot_color_group[data_plot$outcome == outcome_name] <- "Actual"
 
-          data_actual <- data_plot[data_plot$outcome %in% outcome_names, ]
+          data_actual <- data_plot[data_plot$outcome %in% outcome_name, ]
           data_pred <- data_plot[data_plot$outcome %in% outcome_levels, ]
 
           data_actual$value <- factor(data_actual$value, levels = outcome_levels, ordered = TRUE)
@@ -820,7 +838,7 @@ plot.training_results <- function(x,
         if (is.null(groups)) {
 
           # Only 1 actual needs to be plotted.
-          data_plot$ggplot_color_group[data_plot$outcome == outcome_names] <- "Actual"
+          data_plot$ggplot_color_group[data_plot$outcome == outcome_name] <- "Actual"
 
           data_plot$value <- factor(data_plot$value, levels = c(outcome_levels), ordered = TRUE)
 
@@ -841,7 +859,7 @@ plot.training_results <- function(x,
       if (is.null(outcome_levels)) {  # Numeric outcome.
 
         # Plot historical predictions.
-        p <- ggplot(data_plot[data_plot$outcome != outcome_names, ],
+        p <- ggplot(data_plot[data_plot$outcome != outcome_name, ],
                     aes(x = .data$index, y = .data$residual,
                         group = .data$ggplot_group, color = .data$ggplot_color))
 
@@ -858,14 +876,14 @@ plot.training_results <- function(x,
           data_plot$ggplot_color_group <- factor(as.character(data_plot$ggplot_color_group), ordered = TRUE,
                                                  levels = c(unique(as.character(data_plot$ggplot_color_group)), "Actual"))
 
-          data_plot$ggplot_color_group[data_plot$outcome == outcome_names] <- "Actual"
+          data_plot$ggplot_color_group[data_plot$outcome == outcome_name] <- "Actual"
 
         }
 
         p <- ggplot()
 
         # Plot predictions to avoid duplicate residuals in plots.
-        p <- p + geom_tile(data = data_plot[data_plot$outcome != outcome_names, ], aes(x = .data$index, y = .data$ggplot_color_group,
+        p <- p + geom_tile(data = data_plot[data_plot$outcome != outcome_name, ], aes(x = .data$index, y = .data$ggplot_color_group,
                                                  fill = ordered(.data$residual)))
         p <- p + theme_bw()
       }
@@ -944,7 +962,7 @@ plot.training_results <- function(x,
     # Plotting the original time-series in each facet. Because the plot is faceted by valid_indices, we'll do a bit of a hack here to create
     # the same line plot for each facet.
     data_outcome <- data_plot %>%
-      dplyr::select(valid_indices, !!outcome_names) %>%
+      dplyr::select(valid_indices, !!outcome_name) %>%
       dplyr::distinct(valid_indices, .keep_all = TRUE)
     data_outcome$index <- data_outcome$valid_indices
     data_outcome$valid_indices <- NULL  # remove to avoid confusion in facet_wrap()
@@ -954,19 +972,19 @@ plot.training_results <- function(x,
     p <- ggplot()
     if (max(data_plot$horizon) != 1) {
       p <- p + geom_line(data = data_plot, aes(x = .data$forecast_origin,
-                                               y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                                               y = eval(parse(text = paste0(outcome_name, "_pred"))),
                                                color = factor(.data$model)), size = 1, linetype = 1, show.legend = FALSE)
     }
     p <- p + geom_point(data = data_plot, aes(x = .data$forecast_origin,
-                                              y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                                              y = eval(parse(text = paste0(outcome_name, "_pred"))),
                                               color = factor(.data$model)))
     p <- p + geom_point(data = data_plot, aes(x = .data$valid_indices,
-                                              y = eval(parse(text = outcome_names)), fill = "Actual"))
+                                              y = eval(parse(text = outcome_name)), fill = "Actual"))
     p <- p + scale_color_viridis_d()
     p <- p + facet_wrap(~ valid_indices)
 
     p <- p + geom_line(data = data_outcome, aes(x = .data$index,
-                                                y = eval(parse(text = outcome_names))), color = "gray50")
+                                                y = eval(parse(text = outcome_name))), color = "gray50")
     p <- p + theme_bw()
     p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Model") + labs(fill = NULL) +
       ggtitle("Rolling Origin Forecast Stability - Faceted by dataset index")
@@ -1016,7 +1034,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
   type <- "forecast"  # Only one plot option at present.
 
   outcome_col <- attributes(data_forecast)$outcome_col
-  outcome_names <- attributes(data_forecast)$outcome_names
+  outcome_name <- attributes(data_forecast)$outcome_name
   forecast_horizons <- sort(unique(data_forecast$model_forecast_horizon))
   outcome_levels <- attributes(data_forecast)$outcome_levels
   date_indices <- attributes(data_forecast)$date_indices
@@ -1029,7 +1047,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
 
   # For factor outcomes, is the prediction a factor level or probability.
   if (!is.null(outcome_levels)) {
-    factor_level <- if (any(names(data_forecast) %in% paste0(outcome_names, "_pred"))) {TRUE} else {FALSE}
+    factor_level <- if (any(names(data_forecast) %in% paste0(outcome_name, "_pred"))) {TRUE} else {FALSE}
     factor_prob <- !factor_level
   }
   #----------------------------------------------------------------------------
@@ -1039,7 +1057,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
   #----------------------------------------------------------------------------
   if (!is.null(data_actual)) {
 
-    data_actual <- data_actual[, c(outcome_names, groups), drop = FALSE]
+    data_actual <- data_actual[, c(outcome_name, groups), drop = FALSE]
 
     data_actual$index <- actual_indices
 
@@ -1128,14 +1146,14 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
 
           # geom_ribbon() does not work with a single data point when forecast bounds are plotted.
           p <- p + geom_linerange(data = data_plot[data_plot$horizon == 1, ],
-                                  aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
-                                      ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
+                                  aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_name, "_pred_lower"))),
+                                      ymax = eval(parse(text = paste0(outcome_name, "_pred_upper"))),
                                       color = .data$ggplot_color, group = .data$ggplot_group), alpha = .25, size = 3, show.legend = FALSE)
 
         }
 
         p <- p + geom_point(data = data_plot[data_plot$horizon == 1, ],
-                            aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                            aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_name, "_pred"))),
                             color = .data$ggplot_color, group = .data$ggplot_group))
       }
 
@@ -1145,13 +1163,13 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
         if (all(any(grepl("_pred_lower", names(data_plot))), any(grepl("_pred_upper", names(data_plot))))) {
 
           p <- p + geom_ribbon(data = data_plot[data_plot$horizon != 1, ],
-                               aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_names, "_pred_lower"))),
-                                   ymax = eval(parse(text = paste0(outcome_names, "_pred_upper"))),
+                               aes(x = .data$forecast_period, ymin = eval(parse(text = paste0(outcome_name, "_pred_lower"))),
+                                   ymax = eval(parse(text = paste0(outcome_name, "_pred_upper"))),
                                    fill = .data$ggplot_color, group = .data$ggplot_group, color = NULL), alpha = .25, show.legend = FALSE)
         }
 
         p <- p + geom_line(data = data_plot[data_plot$horizon != 1, ],
-                           aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_names, "_pred"))),
+                           aes(x = .data$forecast_period, y = eval(parse(text = paste0(outcome_name, "_pred"))),
                                color = .data$ggplot_color, group = .data$ggplot_group))
       }
 
@@ -1164,23 +1182,23 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
         if (is.null(groups)) {
 
           p <- p + geom_line(data = data_actual, aes(x = .data$index,
-                                                     y = eval(parse(text = outcome_names))), color = "grey50")
+                                                     y = eval(parse(text = outcome_name))), color = "grey50")
         } else {
 
           # If faceting by group, this reduces to the single time series case so the actuals
           # will be the default grey so as not to double encode the plot data.
           if (any(facet_names %in% groups)) {
 
-            p <- p + geom_line(data = data_actual, aes(x = .data$index, y = eval(parse(text = outcome_names))), color = "grey50", show.legend = FALSE)
+            p <- p + geom_line(data = data_actual, aes(x = .data$index, y = eval(parse(text = outcome_name))), color = "grey50", show.legend = FALSE)
 
           } else if (facet_names != c("model", "horizon") || facet_names != c("horizon", "model")) {  # The actuals colors cannot be uniquely mapped to the forecast plot colors.
 
-            p <- p + geom_line(data = data_actual, aes(x = .data$index, y = eval(parse(text = outcome_names))), color = "grey50", show.legend = FALSE)
+            p <- p + geom_line(data = data_actual, aes(x = .data$index, y = eval(parse(text = outcome_name))), color = "grey50", show.legend = FALSE)
 
           } else if (facet_names == c("model", "horizon") || facet_names == c("horizon", "model")) {  # The actuals can be uniquely mapped to the forecasts given the faceting.
 
             p <- p + geom_line(data = data_actual, aes(x = .data$index,
-                                                       y = eval(parse(text = outcome_names)),
+                                                       y = eval(parse(text = outcome_name)),
                                                        color = .data$ggplot_color,
                                                        group = .data$ggplot_group), show.legend = FALSE)
           }
@@ -1213,7 +1231,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
             data_actual$actual_or_forecast <- "actual"
             # historical, test, or model_forecast: these may be any combination of historical data and a holdout test dataset.
             data_actual$time_series_type <- with(data_actual, ifelse(index <= attributes(data_forecast)$data_stop, "historical", "test"))
-            names(data_actual)[names(data_actual) == outcome_names] <- "outcome"  # Standardize before concat with forecasts.
+            names(data_actual)[names(data_actual) == outcome_name] <- "outcome"  # Standardize before concat with forecasts.
             data_actual$ggplot_color_group <- "Actual"  # Actuals will be plotted in the top plot facet.
             data_actual$value <- 1  # Plot a solid bar with probability 1 in geom_col().
 
@@ -1265,7 +1283,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
               data_actual$actual_or_forecast <- "actual"
               # historical, test, or model_forecast: these may be any combination of historical data and a holdout test dataset.
               data_actual$time_series_type <- with(data_actual, ifelse(index <= attributes(data_forecast)$data_stop, "historical", "test"))
-              names(data_actual)[names(data_actual) == outcome_names] <- "outcome"  # Standardize before concat with forecasts.
+              names(data_actual)[names(data_actual) == outcome_name] <- "outcome"  # Standardize before concat with forecasts.
               data_actual$ggplot_color_group <- "Actual"  # Actuals will be plotted in the top plot facet.
               data_actual$value <- 1  # Plot a solid bar with probability 1 in geom_col().
 
@@ -1285,7 +1303,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
 
             # Standardize names for plotting and before any concatenation with data_actual.
             names(data_plot)[names(data_plot) == "forecast_period"] <- "index"
-            names(data_plot)[names(data_plot) == paste0(outcome_names, "_pred")] <- "outcome"
+            names(data_plot)[names(data_plot) == paste0(outcome_name, "_pred")] <- "outcome"
             data_plot$value <- 1
             data_plot$actual_or_forecast <- "forecast"
             data_plot$time_series_type <- "model_forecast"
