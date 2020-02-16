@@ -39,6 +39,8 @@ forecastML_create_multi_outcome <- function(data, outcome_name, horizons, groups
 
   names(data_outcomes) <- paste0(outcome_name, "_", horizons)
 
+  data_outcomes <- data_outcomes[, 1:length(horizons) , drop = FALSE]
+
   return(data_outcomes)
 }
 #------------------------------------------------------------------------------
