@@ -270,6 +270,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
   outcome_levels <- attributes(model_list[[1]])$outcome_levels
   row_indices <- attributes(model_list[[1]])$row_indices
   date_indices <- attributes(model_list[[1]])$date_indices
+  frequency <- attributes(model_list[[1]])$frequency
   groups <- attributes(model_list[[1]])$groups
 
   if (type == "train") {
@@ -512,7 +513,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
   attr(data_out, "outcome_levels") <- outcome_levels
   attr(data_out, "row_indices") <- row_indices
   attr(data_out, "date_indices") <- date_indices
-  attr(data_out, "frequency") <- attributes(model_list[[1]])$frequency
+  attr(data_out, "frequency") <- frequency
   attr(data_out, "data_stop") <- data_stop
   attr(data_out, "groups") <- groups
 
@@ -743,7 +744,7 @@ plot.training_results <- function(x,
       data_plot <- data_plot[data_plot$date_indices %in% valid_indices, ]
       # This may be an empty data.frame if every time series has 2 or more contiguous records, and
       # suppressWarnings() suppresses a forcats warning.
-      data_plot_point <- suppressWarnings(data_plot_point[data_plot_point$date_indices %in% date_indices[valid_indices], ])
+      data_plot_point <- suppressWarnings(data_plot_point[data_plot_point$date_indices %in% date_indices, ])
     }
     #--------------------------------------------------------------------------
   } else {  # Factor outcomes.
