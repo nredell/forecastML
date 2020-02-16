@@ -674,14 +674,14 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
             } else {  # Dynamic features.
 
-              data_x <- data.frame("row_number" = n_instances + 1:forecast_horizon, "horizon" = 1:forecast_horizon)
-
               if (method == "direct") {
 
+                data_x <- data.frame("row_number" = n_instances + 1:forecast_horizon, "horizon" = 1:forecast_horizon)
                 data_x[, var_names[j]] <- NA  # This is direct forecasting without predicting the predictors.
 
               } else if (method == "multi_output") {  # Without groups, this value is in the last row of the input data.
 
+                data_x <- data.frame("row_number" = n_instances, "horizon" = horizons[1])
                 data_x[, var_names[j]] <- data[n_instances, var_names[j], drop = TRUE]
               }
             }

@@ -77,6 +77,8 @@ plot(data_forecasts, data_actual = data_seatbelts[-(1:100), ], actual_indices = 
 * **[FAQ](#faq)**
 * **Examples**
     + **[Forecasting numeric outcomes](#examples---numeric-outcomes-with-r-and-python)**
+        + **[Direct forecasting](#direct-forecast-in-r)**
+        + **[Multi-output forecasting](#multi-output-forecast-in-r)**
     + **[Forecasting factor outcomes (forecasting sequences)](#examples---factor-outcomes-with-r-and-python)**
 * **[Roadmap](#roadmap)**
 
@@ -189,7 +191,7 @@ the validation window number from `forecastML::create_windows()`.
 
 ## Examples - Numeric Outcomes with R and Python
 
-### R
+### Direct forecast in R
 
 Below is an example of how to create 12 horizon-specific ML models to forecast the number of `DriversKilled` 
 12 time periods into the future using the `Seatbelts` dataset. Notice in the last plot that there are multiple forecasts; 
@@ -298,7 +300,7 @@ plot(data_forecasts,
 
 ***
 
-### R & Python
+### Direct forecast in R & Python
 
 Now we'll look at an example similar to above. The main difference is that our user-defined modeling 
 and prediction functions are now written in `Python`. Thanks to the [reticulate](https://github.com/rstudio/reticulate) 
@@ -437,6 +439,107 @@ plot(data_forecasts, data_actual = data_seatbelts[-(1:150), ],
 ![](./tools/forecasts_python.png)
 
 ***
+
+### Multi-output forecast in R
+
+* This is the same seatbelt dataset example except now, instead of 1 model for each 
+forecast horizon, we'll build 1 multi-ouput neural network model that forecasts 12 
+steps into the future.
+
+* Given that this is a small dataset, the multi-output approach would require a decent 
+amount of tuning to produce accurate results. An alterative would be to forecast, say, 
+horizons 6 through 12 if longer term forecasts were of interest to reduce the number of 
+parameters; the output neurons do not have to start at a horizon of 1 or even be contiguous.
+
+``` r
+library(forecastML)
+library(keras)  # Using the TensorFlow 2.0 backend.
+
+data("data_seatbelts", package = "forecastML")
+
+data_seatbelts[] <- lapply(data_seatbelts, function(x) {
+  (x - mean(x, na.rm = TRUE)) / sd(x, na.rm = TRUE)
+})
+
+date_frequency <- "1 month"
+dates <- seq(as.Date("1969-01-01"), as.Date("1984-12-01"), by = date_frequency)
+
+data_train <- forecastML::create_lagged_df(data_seatbelts, type = "train", method = "multi_output",
+                                           outcome_col = 1, lookback = 1:15, horizons = 1:12,
+                                           dates = dates, frequency = date_frequency,
+                                           dynamic_features = "law")
+
+# 'window_length = 0' creates 1 historical training dataset with no external validation datasets. 
+# Set it to, say, 24 to see the model and forecast stability when trained across different slices 
+# of historical data.
+windows <- forecastML::create_windows(data_train, window_length = 0)
+
+#------------------------------------------------------------------------------
+# 'data_y' consists of 1 column for each forecast horizon--here, 12.
+model_fun <- function(data, horizons) {  # 'horizons' is passed in train_model().
+
+  data_x <- apply(as.matrix(data[, -(1:length(horizons))]), 2, function(x){ifelse(is.na(x), 0, x)})
+  data_y <- apply(as.matrix(data[, 1:length(horizons)]), 2, function(x){ifelse(is.na(x), 0, x)})
+
+  layers_x_input <- keras::layer_input(shape = ncol(data_x))
+
+  layers_x_output <- layers_x_input %>%
+    keras::layer_dense(ncol(data_x), activation = "relu") %>%
+    keras::layer_dense(ncol(data_x), activation = "relu") %>%
+    keras::layer_dense(length(horizons))
+
+  model <- keras::keras_model(inputs = layers_x_input, outputs = layers_x_output) %>%
+    keras::compile(optimizer = 'adam', loss = 'mean_absolute_error')
+
+  early_stopping <- callback_early_stopping(monitor = 'val_loss', patience = 2)
+
+  tensorflow::tf$random$set_seed(224)
+
+  model_results <- model %>%
+    keras::fit(x = list(as.matrix(data_x)), y = list(as.matrix(data_y)),
+               validation_split = 0.2, callbacks = c(early_stopping), verbose = FALSE)
+
+  return(list("model" = model, "model_results" = model_results))
+}
+#------------------------------------------------------------------------------
+# The predict() wrapper function will return a data.frame with a number of columns 
+# equaling the number of forecast horizons.
+prediction_fun <- function(model, data_features) {
+
+  data_features[] <- lapply(data_features, function(x){ifelse(is.na(x), 0, x)})
+  data_features <- list(as.matrix(data_features, ncol = ncol(data_features)))
+
+  data_pred <- data.frame(predict(model$model, data_features))
+  names(data_pred) <- paste0("y_pred_", 1:ncol(data_pred))
+
+  return(data_pred)
+}
+#------------------------------------------------------------------------------
+
+model_results <- forecastML::train_model(data_train, windows, model_name = "Multi-Output NN",
+                                         model_function = model_fun,
+                                         horizons = 1:12)
+
+data_valid <- predict(model_results, prediction_function = list(prediction_fun), data = data_train)
+
+# We'll plot select forecast horizons to reduce visual clutter.
+plot(data_valid, facet = ~ model, horizons = c(1, 3, 6, 12))
+```
+![](./tools/multi_outcome_train_plot.png)
+
+* Forecast combinations from `combine_forecasts()` aren't necessary as we've trained only 1 model.
+
+``` r
+data_forecast <- forecastML::create_lagged_df(data_seatbelts, type = "forecast", method = "multi_output",
+                                              outcome_col = 1, lookback = 1:15, horizons = 1:12,
+                                              dates = dates, frequency = date_frequency,
+                                              dynamic_features = "law")
+
+data_forecasts <- predict(model_results, prediction_function = list(prediction_fun), data = data_forecast)
+
+plot(data_forecasts, facet = NULL, data_actual = data_seatbelts[-(1:100), ], actual_indices = dates[-(1:100)])
+```
+![](./tools/multi_outcome_forecast_plot.png)
 
 
 ## Examples - Factor Outcomes with R and Python
@@ -593,8 +696,6 @@ plot(data_forecasts_prob)
 
 
 ## Roadmap
-
-* Refactor to incorporate `tsibble` time series datasets and principles.
 
 * Add more forecast error metrics.
 

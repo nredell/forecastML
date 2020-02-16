@@ -402,7 +402,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
         if (type == "train") {  # Nested cross-validation.
 
           data_temp <- data.frame("model" = model_name,
-                                  "model_forecast_horizon" = attributes(model_list[[i]][[j]])$horizon,
+                                  "model_forecast_horizon" = horizons[j],
                                   "window_length" = data_results$window_length,
                                   "window_number" = data_results$window,
                                   "valid_indices" = data_results$valid_indices)
