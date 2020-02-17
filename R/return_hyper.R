@@ -111,13 +111,16 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
 
   type <- type[1]
 
-  # Change the name of "horizon", which, although it makes sense from a naming perspective, will reduce the amount of code below.
-  data_results$horizon <- data_results$model_forecast_horizon
-  data_results$model_forecast_horizon <- NULL
-
+  method <- attributes(data_results)$method
   outcome_col <- attributes(data_plot)$outcome_col
   outcome_name <- attributes(data_plot)$outcome_name
   hyper_names <- attributes(data_plot)$hyper_names
+
+  if (method == "direct") {
+    # Change the name of "horizon", which, although it makes sense from a naming perspective, will reduce the amount of code below.
+    data_results$horizon <- data_results$model_forecast_horizon
+    data_results$model_forecast_horizon <- NULL
+  }
 
   hyper_num <- unlist(lapply(data_plot[, hyper_names], function(x) {inherits(x, c("numeric", "double", "integer"))}))
   hyper_num <- hyper_names[hyper_num]
@@ -202,7 +205,9 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
     }
 
     p <- ggplot()
+
     if (length(hyper_num) > 0) {
+
       if (length(unique(data_hyper_num$window_number)) > 1) {
         p <- p + geom_line(data = data_hyper_num,
                            aes(x = .data$value,
@@ -223,6 +228,7 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
     }  # End numeric hyperparameter plot.
 
     if (length(hyper_cat) > 0) {
+
       p_cat <- ggplot()
       p_cat <- p_cat + geom_col(data = data_hyper_cat,
                                 aes(x = ordered(.data$value), y = .data$error,

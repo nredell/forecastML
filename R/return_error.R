@@ -83,6 +83,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
   data <- data_results
   rm(data_results)
 
+  method <- attributes(data)$method
   outcome_name <- attributes(data)$outcome_name
   outcome_levels <- attributes(data)$outcome_levels
   groups <- attributes(data)$groups
@@ -121,8 +122,10 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
   if (methods::is(data, "training_results")) {
     # Change the forecast horizon name to "horizon", which, although it makes sense from a naming perspective,
     # will reduce the amount of code below.
-    data$horizon <- data$model_forecast_horizon
-    data$model_forecast_horizon <- NULL
+    if (method == "direct") {
+      data$horizon <- data$model_forecast_horizon
+      data$model_forecast_horizon <- NULL
+    }
   }
   #----------------------------------------------------------------------------
   # Residual calculations
@@ -308,6 +311,7 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
 
   type <- type[1]
 
+  method <- attributes(data_results)$method
   outcome_name <- attributes(data_results)$outcome_name
   groups <- attributes(data_results)$groups
 
@@ -361,13 +365,22 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
   #----------------------------------------------------------------------------
   # Filter the datasets based on user input.
   models <- if (is.null(models)) {unique(data_results$model)} else {models}
-  horizons <- if (is.null(horizons)) {unique(data_results$model_forecast_horizon)} else {horizons}
+  horizons <- if (is.null(horizons)) {
+    if (method == "direct") {
+      unique(data_results$model_forecast_horizon)
+    } else if (method == "multi_output") {
+      unique(data_results$horizon)
+    }} else {
+      horizons
+      }
   windows <- if (is.null(windows)) {unique(data_results$window_number)} else {windows}
 
   data_plot <- data_plot[data_plot$horizon %in% horizons & data_plot$model %in% models & data_plot$window_number %in% windows, ]
 
-  data_results$horizon <- data_results$model_forecast_horizon
-  data_results$model_forecast_horizon <- NULL
+  if (method == "direct") {
+    data_results$horizon <- data_results$model_forecast_horizon
+    data_results$model_forecast_horizon <- NULL
+  }
 
   data_results <- data_results[data_results$horizon %in% horizons & data_results$model %in% models & data_results$window_number %in% windows, ]
   #----------------------------------------------------------------------------
