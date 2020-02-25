@@ -88,7 +88,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
   outcome_levels <- attributes(data)$outcome_levels
   groups <- attributes(data)$groups
   #----------------------------------------------------------------------------
-  # For factor outcomes, is the prediction a factor level or probability.
+  # For factor outcomes, is the prediction a factor level or probability?
   if (!is.null(outcome_levels)) {
 
     factor_level <- if (any(names(data) %in% paste0(outcome_name, "_pred"))) {TRUE} else {FALSE}
@@ -114,9 +114,15 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 
     data_test$forecast_period <- test_indices
 
-    data_test <- dplyr::select(data_test, .data$forecast_period, outcome_name, !!groups)
+    data_test <- dplyr::select(data_test, .data$forecast_period, !!outcome_name, !!groups)
+
+    data$model_forecast_horizon <- data$horizon  # Added to use the same dplyr code as direct forecasting.
 
     data <- dplyr::inner_join(data, data_test, by = c("forecast_period", groups))
+
+    if (nrow(data) == 0) {
+      stop("The test dataset in 'data_test' does not overlap with the forecast period in 'data_results'.")
+    }
   }
 
   if (methods::is(data, "training_results")) {
