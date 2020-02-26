@@ -4,9 +4,15 @@
 \alias{plot.forecast_model_hyper}
 \title{Plot hyperparameters}
 \usage{
-\method{plot}{forecast_model_hyper}(x, data_results, data_error,
-  type = c("stability", "error"), horizons = NULL, windows = NULL,
-  ...)
+\method{plot}{forecast_model_hyper}(
+  x,
+  data_results,
+  data_error,
+  type = c("stability", "error"),
+  horizons = NULL,
+  windows = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{An object of class 'forecast_model_hyper' from \code{return_hyper()}.}

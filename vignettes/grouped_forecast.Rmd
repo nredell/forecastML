@@ -17,13 +17,10 @@ knitr::opts_knit$set(fig.width = 7.15, fig.height = 4)
 
 # Purpose
 
-The purpose of this vignette is to provide an overview of forecasting with multiple time series in 
+The purpose of this vignette is to provide an overview of direct multi-step-ahead forecasting with multiple time series in 
 `forecastML`. The benefits to modeling multiple time series in one go with a single model or ensemble of 
 models include (a) modeling simplicity, (b) potentially more robust results from pooling data across time series, 
 and (c) solving the cold-start problem when few data points are available for a given time series.
-
-We won't concern ourselves with error metrics or hyperparameter evaluation which can be assessed with the 
-`return_error()` and `return_hyper()` functions. This functionality is covered in the package overview vignette.
 
 
 # Setup
@@ -148,7 +145,7 @@ p
 ```
 
 
-## Modeling Setup
+## Model Training with Nested CV
 
 * We'll simply and incorrectly set our grouping column, `buoy_id`, to numeric to work smoothly with `xgboost`. 
 Better alternatives include [feature embedding](https://arxiv.org/abs/1604.06737), 
@@ -163,7 +160,10 @@ data$buoy_id <- as.numeric(factor(data$buoy_id))
 ```
 
 
-* Inputs for dataset creation with `create_lagged_df()`.
+### Training dataset - forecastML::create_lagged_df
+
+* We have 3 datasets for training models that forecast 1, 1 to 7, and 1 to 30 days into 
+the future. We'll view the 1-day-ahead training data below.
 
 ```{r}
 outcome_col <- 1  # The column position of our 'wind_spd' outcome.
@@ -184,13 +184,6 @@ groups <- "buoy_id"  # 1 forecast for each group or buoy.
 static_features <- c("lat", "lon")  # Features that do not change through time.
 ```
 
-
-## Model Training with Nested CV
-
-### Training dataset
-
-* We have 3 datasets for training models that forecast 1, 1 to 7, and 1 to 30 days into 
-the future. We'll view the 1-day-ahead training data below.
 
 ```{r}
 type <- "train"  # Create a model-training dataset.
@@ -218,7 +211,8 @@ p <- p + geom_tile(NULL)  # Remove the gray border for a cleaner plot.
 p
 ```
 
-### CV setup
+
+### CV setup - forecastML::create_windows
 
 * We'll model with **3 validation datasets**. Given that our measurements are taken daily, we'll set 
 the `skip = 730` argument to skip 2 years between validation datasets. Custom validation windows could 
@@ -299,7 +293,7 @@ model_function <- function(data, outcome_col = 1) {
 ```
 
 
-### Model training
+### Model training - forecastML::train_model
 
 * This should take ~1 minute to train our '3 forecast horizons' * '3 validation datasets' = *9 models*.
 
@@ -379,8 +373,35 @@ and `facet` arguments to focus on specific buoys.
 plot(data_pred_cv, facet = group ~ model, group_filter = "buoy_id %in% c(1, 2, 3)", windows = 1) 
 ```
 
+<br>
 
-### Forecasting
+* Here is another plot of the same historical predictions but with `facet = group ~ horizon`. 
+Use different combinations of `model`, `horizon`, `group`, along with `.` (on the right hand side of `~`) 
+in a formula with `~` to quickly explore results.
+
+```{r, message = FALSE, warning = FALSE}
+plot(data_pred_cv, facet = group ~ horizon, group_filter = "buoy_id %in% c(1, 2, 3)", windows = 1) 
+```
+<br>
+
+### Historical prediction error - forecastML::return_error
+
+* Let's take a quick look at our historical forecast error for buoys 1:3.
+
+* We'll look at mean absolute error (a) for each validation window, (b) for each of the direct forecast horizons 
+(collapsed across validation windows), and global error collapsed across validation windows and 
+direct forecast horizons.
+
+```{r, message = FALSE, warning = FALSE}
+data_error <- forecastML::return_error(data_pred_cv)
+
+plot(data_error, data_pred_cv, type = "time", group_filter = "buoy_id %in% c(1, 2, 3)", metric = "mae")
+plot(data_error, data_pred_cv, type = "horizon", group_filter = "buoy_id %in% c(1, 2, 3)", metric = "mae")
+plot(data_error, data_pred_cv, type = "global", group_filter = "buoy_id %in% c(1, 2, 3)", metric = "mae")
+```
+
+
+### Forecasting with multiple models from nested CV
 
 * We have 3 datasets that support forecasting 1, 1 to 7, and 1 to 30 days into 
 the future. We'll view the 1-day-ahead forecasting data below.
@@ -481,7 +502,7 @@ DT::datatable(head(data_forecasts), options = list(scrollX = TRUE))
 ```
 
 
-## Forecast Combination
+## Forecast Combination - forecastML::combine_forecasts
 
 * The **final step in the `forecastML` framework** is to combine multiple direct-horizon forecast 
 models with `combine_forecasts()` to produce a single h-step-ahead forecast.
@@ -492,8 +513,6 @@ This implies that, for our 30-day-ahead forecast,
     + The 1-step-ahead model forecasts the next day,
     + The 7-step-ahead model forecasts from days 2 through 7, and
     + The 30-step-ahead model forecasts from days 8 through 30.
-<br>
-* Plot all forecasts.
 
 ```{r, message = FALSE, warning = FALSE}
 data_combined <- forecastML::combine_forecasts(data_forecasts)
@@ -504,6 +523,17 @@ actual_indices <- dates[dates >= as.Date("2018-11-01")]
 
 # Plot all final forecasts plus historical data.
 plot(data_combined, data_actual = data_actual, actual_indices = actual_indices)
+```
+
+<br>
+
+* Below we'll get a closer look at the actuals and forecasts by setting `facet = ~ group`. 
+We'll also filter to examine buoys 1, 11, and 12 because they have different historical patterns 
+of missing data.
+
+```{r, message = FALSE, warning = FALSE}
+plot(data_combined, data_actual = data_actual, actual_indices = actual_indices, 
+     facet = ~ group, group_filter = "buoy_id %in% c(1, 11, 12)")
 ```
 
 <br>

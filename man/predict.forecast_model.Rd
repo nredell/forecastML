@@ -4,8 +4,7 @@
 \alias{predict.forecast_model}
 \title{Predict on validation datasets or forecast}
 \usage{
-\method{predict}{forecast_model}(..., prediction_function = list(NULL),
-  data)
+\method{predict}{forecast_model}(..., prediction_function = list(NULL), data)
 }
 \arguments{
 \item{...}{One or more trained models from \code{train_model()}.}

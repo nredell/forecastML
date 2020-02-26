@@ -4,8 +4,14 @@
 \alias{create_windows}
 \title{Create time-contiguous validation datasets for model evaluation}
 \usage{
-create_windows(lagged_df, window_length = 12L, window_start = NULL,
-  window_stop = NULL, skip = 0, include_partial_window = TRUE)
+create_windows(
+  lagged_df,
+  window_length = 12L,
+  window_start = NULL,
+  window_stop = NULL,
+  skip = 0,
+  include_partial_window = TRUE
+)
 }
 \arguments{
 \item{lagged_df}{An object of class 'lagged_df' or 'grouped_lagged_df' from \code{\link{create_lagged_df}}.}

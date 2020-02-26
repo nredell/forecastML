@@ -4,8 +4,7 @@
 \alias{plot.windows}
 \title{Plot validation datasets}
 \usage{
-\method{plot}{windows}(x, lagged_df, show_labels = TRUE,
-  group_filter = NULL, ...)
+\method{plot}{windows}(x, lagged_df, show_labels = TRUE, group_filter = NULL, ...)
 }
 \arguments{
 \item{x}{An object of class 'windows' from \code{create_windows()}.}

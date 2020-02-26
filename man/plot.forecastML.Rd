@@ -4,8 +4,16 @@
 \alias{plot.forecastML}
 \title{Plot an object of class 'forecastML'}
 \usage{
-\method{plot}{forecastML}(x, data_actual = NULL, actual_indices = NULL,
-  models = NULL, group_filter = NULL, drop_facet = FALSE, ...)
+\method{plot}{forecastML}(
+  x,
+  data_actual = NULL,
+  actual_indices = NULL,
+  facet = ~model,
+  models = NULL,
+  group_filter = NULL,
+  drop_facet = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{An object of class 'forecastML' from \code{combine_forecasts()}.}
@@ -16,6 +24,10 @@ The data can be historical actuals and/or holdout/test data.}
 \item{actual_indices}{Required if \code{data_actual} is given. A vector or 1-column data.frame
 of numeric row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_actual)}.
 The data can be historical actuals and/or holdout/test data.}
+
+\item{facet}{Optional. A formula with any combination of \code{model}, or \code{group} (for grouped time series)
+passed to \code{ggplot2::facet_wrap()} internally (e.g., \code{~ model}, \code{model ~ .}, \code{~ model + group}).
+Can be \code{NULL}.}
 
 \item{models}{Optional. Filter results by user-defined model name from \code{train_model()}.}
 
