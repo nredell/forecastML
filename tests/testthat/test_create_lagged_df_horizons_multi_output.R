@@ -119,5 +119,5 @@ test_that("multi_output, lagged_df, forecasting data, dynamic features are missi
   data_out_no_groups <- data.frame(data_out_no_groups$horizon_3)
   data_out_groups <- data.frame(data_out_groups$horizon_3)
 
-  all(is.na(data_out_no_groups$feature), is.na(data_out_groups$feature))
+  all(!is.na(data_out_no_groups$feature), !is.na(data_out_groups$feature))
 })

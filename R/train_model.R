@@ -480,7 +480,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
           origin = "1970-01-01")
       }
 
-      data_out <- dplyr::arrange(data_out, model, valid_indices, forecast_indices, horizon)
+      data_out <- dplyr::arrange(data_out, .data$model, .data$valid_indices, .data$forecast_indices, .data$horizon)
 
     } else if (type == "forecast") {
 

@@ -141,11 +141,11 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
     stop("Enter an argument for either `lookback`--a feature lag vector--or `lookback_control`--a list of feature lag vectors.")
   }
 
-  if (!is.null(lookback) && (!length(lookback) >= 1 || !all(lookback > 0) || !methods::is(lookback, "numeric"))) {
+  if (!is.null(lookback) && (!length(lookback) >= 1 || !all(lookback > 0) || !methods::is(lookback, c("numeric")))) {
     stop("The 'lookback' argument needs to be a numeric vector of positive integers of length >= 1.")
   }
 
-  if (method == "direct" && !is.null(lookback) && !max(lookback) >= min(horizons)) {
+  if (method[1] == "direct" && !is.null(lookback) && !max(lookback) >= min(horizons)) {
     stop("The highest lookback needs to be >= the shortest forecast horizons to allow for direct forecasting with lagged features.")
   }
 
@@ -234,6 +234,8 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
     dates <- data$forecastML_dates
     data$forecastML_dates <- NULL
+
+    data <- as.data.frame(data)
   }
   #----------------------------------------------------------------------------
   # Outcome data.

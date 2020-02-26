@@ -83,7 +83,7 @@ test_that("lagged_df, forecasting data, non-grouped with dates is correct", {
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-test_that("lagged_df, forecasting data, dynamic features are not missing", {
+test_that("lagged_df, forecasting data, dynamic features are missing", {
 
   #------------------------------------------------------------------------------
   # Create a simple data.frame with 1 feature.
@@ -117,5 +117,5 @@ test_that("lagged_df, forecasting data, dynamic features are not missing", {
   data_out_no_groups <- data.frame(data_out_no_groups$horizon_3)
   data_out_groups <- data.frame(data_out_groups$horizon_3)
 
-  all(!is.na(data_out_no_groups$feature), !is.na(data_out_groups$feature))
+  all(is.na(data_out_no_groups$feature), is.na(data_out_groups$feature))
 })

@@ -18,6 +18,12 @@ test_that("lagged_df, training data, grouped with dates is correct", {
 
   # create_lagged_df(data_test) should equal the constructed data.
   data_test <- data
+
+  # We will pass an unsorted data_test into create_lagged_df() and if we sort data now,
+  # the results should match the output of create_lagged_df().
+  data$dates <- dates
+  data <- dplyr::arrange(data, group, !!dates)
+  data$dates <- NULL
   #------------------------------------------------------------------------------
   # data is the ground truth dataset.
   data <- data %>%

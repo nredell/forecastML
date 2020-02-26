@@ -63,7 +63,7 @@ create_windows <- function(lagged_df, window_length = 12L,
   window_start <- if (is.null(window_start)) {data_start} else {window_start}
   window_stop <- if (is.null(window_stop)) {data_stop} else {window_stop}
 
-  if (!is.null(date_indices) && !xor(methods::is(window_start, "Date") && methods::is(window_stop, "Date"), (methods::is(window_start, "POSIXt") && methods::is(window_stop, "POSIXt")))) {
+  if (!is.null(date_indices) && !xor((methods::is(window_start, "Date") && methods::is(window_stop, "Date")), ((methods::is(window_start, "POSIXt") && methods::is(window_stop, "POSIXt"))))) {
     stop("Dates were provided with the input dataset created with 'create_lagged_df()'; Enter a vector of window start dates of class 'Date' or 'POSIXt'.")
   }
 
