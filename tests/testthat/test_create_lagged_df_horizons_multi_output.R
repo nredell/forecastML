@@ -4,7 +4,7 @@
 library(forecastML)
 library(dplyr)
 
-test_that("lagged_df, training data, non-grouped with dates is correct", {
+test_that("multi_output, lagged_df, training data, non-grouped with dates is correct", {
 
   #------------------------------------------------------------------------------
   # Create a simple data.frame with 1 feature.
@@ -19,21 +19,23 @@ test_that("lagged_df, training data, non-grouped with dates is correct", {
   data_test <- data
   #------------------------------------------------------------------------------
   # data is the ground truth dataset.
-  data$outcome_lag_1 <- dplyr::lag(data$outcome, 1)
+  outcome_1 <- dplyr::lead(data$outcome, 1)  # Horizon 1 outcome
+  outcome_3 <- dplyr::lead(data$outcome, 3)  # Horizon 3 outcome
+  outcome_lag_1 <- dplyr::lag(data$outcome, 1 - 1)
+  outcome_lag_3 <- dplyr::lag(data$outcome, 3 - 1)
 
-  data$feature_lag_1 <- dplyr::lag(data$feature, 1)
+  feature_lag_1 <- dplyr::lag(data$feature, 1 - 1)
+  feature_lag_3 <- dplyr::lag(data$feature, 3 - 1)
 
-  data$feature <- NULL
-
-  data <- data[complete.cases(data), ]
+  data <- data.frame(outcome_1, outcome_3, outcome_lag_1, outcome_lag_3, feature_lag_1, feature_lag_3)
   #------------------------------------------------------------------------------
 
-  data_out <- forecastML::create_lagged_df(data = data_test, type = "train",
-                                           outcome_col = 1, horizons = 1,
-                                           lookback = 1, dates = dates,
+  data_out <- forecastML::create_lagged_df(data = data_test, type = "train", method = "multi_output",
+                                           outcome_col = 1, horizons = c(1, 3),
+                                           lookback = c(1, 3), dates = dates,
                                            frequency = "1 month")
 
-  data_out <- data.frame(data_out$horizon_1)
+  data_out <- data.frame(data_out$horizon_1_3)
 
   identical(data, data_out)
 })
@@ -41,7 +43,7 @@ test_that("lagged_df, training data, non-grouped with dates is correct", {
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-test_that("lagged_df, forecasting data, non-grouped with dates is correct", {
+test_that("multi_output, lagged_df, forecasting data, non-grouped with dates is correct", {
 
   #------------------------------------------------------------------------------
   # Create a simple data.frame with 1 feature.
@@ -56,34 +58,34 @@ test_that("lagged_df, forecasting data, non-grouped with dates is correct", {
   data_test <- data
   #------------------------------------------------------------------------------
   # data is the ground truth dataset.
-  data$outcome_lag_1 <- dplyr::lag(data$outcome, 0)
+  outcome_lag_1 <- data$outcome[nrow(data)]
+  feature_lag_1 <- data$feature[nrow(data)]
 
-  data$feature_lag_1 <- dplyr::lag(data$feature, 0)
-
-  data$feature <- NULL
-
-  data <- data[nrow(data), , drop = FALSE]
-
-  data$outcome <- NULL
-
-  attr(data, "row.names") <- 1L
+  data <- data.frame(outcome_lag_1, feature_lag_1)
   #------------------------------------------------------------------------------
 
-  data_out <- forecastML::create_lagged_df(data = data_test, type = "forecast",
-                                           outcome_col = 1, horizons = 1,
+  data_out <- forecastML::create_lagged_df(data_test, type = "forecast", method = "multi_output",
+                                           outcome_col = 1, horizons = c(1, 3),
                                            lookback = 1, dates = dates,
                                            frequency = "1 month")
 
-  data_out <- data.frame(data_out$horizon_1)
+  data_out <- data.frame(data_out$horizon_1_3)
+
+  data_out_index <- data_out$index
+  data_out_horizon <- data_out$horizon
 
   data_out[, c("index", "horizon")] <- NULL
 
-  identical(data, data_out)
+  all(
+    data_out_index == "2021-01-01, 2021-03-01", # Are the nested forecast date indices correct?
+    data_out_horizon == "1, 3", # Are the nested forecast date indices correct?
+    identical(data, data_out)
+  )
 })
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-test_that("lagged_df, forecasting data, dynamic features are not missing", {
+test_that("multi_output, lagged_df, forecasting data, dynamic features are missing", {
 
   #------------------------------------------------------------------------------
   # Create a simple data.frame with 1 feature.
@@ -97,7 +99,7 @@ test_that("lagged_df, forecasting data, dynamic features are not missing", {
   data_test <- data
   #------------------------------------------------------------------------------
 
-  data_out_no_groups <- forecastML::create_lagged_df(data = data_test, type = "forecast",
+  data_out_no_groups <- forecastML::create_lagged_df(data = data_test, type = "forecast", method = "multi_output",
                                                      outcome_col = 1, horizons = 3,
                                                      lookback = 3,
                                                      dynamic_features = "feature",
@@ -106,7 +108,7 @@ test_that("lagged_df, forecasting data, dynamic features are not missing", {
 
   data_test$group <- "A"
 
-  data_out_groups <- forecastML::create_lagged_df(data = data_test, type = "forecast",
+  data_out_groups <- forecastML::create_lagged_df(data = data_test, type = "forecast", method = "multi_output",
                                                   outcome_col = 1, horizons = 3,
                                                   lookback = 3,
                                                   dynamic_features = "feature",
@@ -117,5 +119,5 @@ test_that("lagged_df, forecasting data, dynamic features are not missing", {
   data_out_no_groups <- data.frame(data_out_no_groups$horizon_3)
   data_out_groups <- data.frame(data_out_groups$horizon_3)
 
-  all(!is.na(data_out_no_groups$feature), !is.na(data_out_groups$feature))
+  all(is.na(data_out_no_groups$feature), is.na(data_out_groups$feature))
 })

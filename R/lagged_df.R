@@ -141,11 +141,11 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
     stop("Enter an argument for either `lookback`--a feature lag vector--or `lookback_control`--a list of feature lag vectors.")
   }
 
-  if (!is.null(lookback) && (!length(lookback) >= 1 || !all(lookback > 0) || !methods::is(lookback, c("numeric")))) {
+  if (!is.null(lookback) && (!length(lookback) >= 1 || !all(lookback > 0) || !methods::is(lookback, "numeric"))) {
     stop("The 'lookback' argument needs to be a numeric vector of positive integers of length >= 1.")
   }
 
-  if (!is.null(lookback) && !max(lookback) >= min(horizons)) {
+  if (method == "direct" && !is.null(lookback) && !max(lookback) >= min(horizons)) {
     stop("The highest lookback needs to be >= the shortest forecast horizons to allow for direct forecasting with lagged features.")
   }
 
@@ -221,10 +221,21 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
   # Group column indices to keep grouping columns when checking the 'lookback_cotrol' argument--the value of which should be 0 for grouping columns.
   if (!is.null(groups)) {
+
     group_cols <- which(names(data) %in% groups)
+
     static_feature_cols <- which(names(data) %in% static_features)
+
+    # This block of code ensures that unsorted data.frames will return the correct lagged feature values.
+    data$forecastML_dates <- dates  # Adding to the data temporarily for sorting.
+
+    data <- data %>%
+      dplyr::arrange(!!rlang::sym(groups), .data$forecastML_dates)
+
+    dates <- data$forecastML_dates
+    data$forecastML_dates <- NULL
   }
-  #--------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # Outcome data.
   if (method == "direct") {  # An nrow(data) by 1 data.frame.
 
@@ -234,7 +245,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
     data_y <- forecastML_create_multi_outcome(data, outcome_name, horizons, groups)
   }
-  #--------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # If the outcome is a factor, save the levels out as an attribute.
   if (methods::is(data[, outcome_col], "factor")) {
 

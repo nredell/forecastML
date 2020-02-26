@@ -49,8 +49,8 @@ create_windows <- function(lagged_df, window_length = 12L,
   data <- lagged_df
   rm(lagged_df)
 
-  if (length(window_length) != 1 || !methods::is(window_length, c("numeric"))) {
-    stop("The 'window_length' argument needs to be a positive integer of length 1.")
+  if (length(window_length) != 1 || !methods::is(window_length, "numeric")) {
+    stop("The 'window_length' argument needs to be a single positive integer.")
   }
 
   outcome_col <- attributes(data)$outcome_col
@@ -63,14 +63,8 @@ create_windows <- function(lagged_df, window_length = 12L,
   window_start <- if (is.null(window_start)) {data_start} else {window_start}
   window_stop <- if (is.null(window_stop)) {data_stop} else {window_stop}
 
-  if (!is.null(date_indices) && !methods::is(window_start, "Date") && !methods::is(window_start, "POSIXt")) {
-    stop("Dates were provided with the input dataset created with 'create_lagged_df()';
-         Enter a vector of window start dates of class 'Date' or 'POSIXt'.")
-  }
-
-  if (!is.null(date_indices) && !methods::is(window_stop, "Date") && !methods::is(window_stop, "POSIXt")) {
-    stop("Dates were provided with the input dataset created with 'create_lagged_df()';
-         Enter a vector of window stop dates of class 'Date' or 'POSIXt'.")
+  if (!is.null(date_indices) && !xor(methods::is(window_start, "Date") && methods::is(window_stop, "Date"), (methods::is(window_start, "POSIXt") && methods::is(window_stop, "POSIXt")))) {
+    stop("Dates were provided with the input dataset created with 'create_lagged_df()'; Enter a vector of window start dates of class 'Date' or 'POSIXt'.")
   }
 
   if (length(window_start) == 1 && length(window_stop) == 1) {  # A single start and stop date.
