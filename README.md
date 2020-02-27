@@ -126,13 +126,15 @@ probabilities 12 steps ahead.
 ![](./tools/forecastML_factor_plot.png)
 
 
-### Multi-putput forecasting
+### Multi-output forecasting
 
 The multi-output forecasting approach used in `forecastML` involves the following steps:
 
 **1.** Build a single multi-output model that simultaneously forecasts over both short- and long-term forecast horizons.
 
 **2.** Assess model generalization peformance across a variety of heldout datasets through time.
+
+**3.** Select the hyperparamters that minimize forecast error overall the relevant forecast horizons and re-train.
 
 
 ## Vignettes
