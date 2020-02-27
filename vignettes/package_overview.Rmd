@@ -118,7 +118,7 @@ knitr::opts_knit$set(fig.width = 7.15, fig.height = 4)
 
 <br>
 
-# Example - Direct Forecastiing
+# Example - Direct Forecasting
 
 In this walkthrough of `forecastML` we'll compare the forecast performance of two machine learning 
 methods, LASSO and Random Forest, across forecast horizons using the Seatbelts dataset from the `datasets` package.
