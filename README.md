@@ -11,26 +11,25 @@ Status](https://travis-ci.org/nredell/forecastML.svg?branch=master)](https://tra
 # package::forecastML <img src="./man/figures/forecastML_logo.png" alt="forecastML logo" align="right" height="138.5" style="display: inline-block;">
 
 The purpose of `forecastML` is to provide a series of functions and visualizations that simplify the process of 
-**multi-step-ahead direct forecasting with standard machine learning algorithms**. It's a wrapper package aimed at providing maximum flexibility in model-building--**choose any machine learning algorithm from any `R` or `Python` package**--while helping the user quickly assess the (a) accuracy, (b) stability, and (c) generalizability of grouped (i.e., 
-multiple related time series) and ungrouped single-outcome forecasts produced from potentially high-dimensional modeling datasets.
+**multi-step-ahead forecasting with standard machine learning algorithms**. It's a wrapper package aimed at providing maximum flexibility in model-building--**choose any machine learning algorithm from any `R` or `Python` package**--while helping the user quickly assess the (a) accuracy, (b) stability, and (c) generalizability of grouped (i.e., 
+multiple related time series) and ungrouped forecasts produced from potentially high-dimensional modeling datasets.
 
 This package is inspired by Bergmeir, Hyndman, and Koo's 2018 paper 
 [A note on the validity of cross-validation for evaluating autoregressive time series prediction](https://doi.org/10.1016/j.csda.2017.11.003). 
-In particular, `forecastML` makes use of 
-
-* **lagged, grouped, dynamic,** and **static features**,
-* **simple wrapper functions that support models from any `R` or `Python` package**,
-* **nested cross-validation** with (a) user-specified standard cross-validation in the inner loop and (b) block-contiguous validation 
-datasets in the outer loop, and
-* **parallel processing** with the `future` package 
-
-to build and evaluate high-dimensional forecast models **without having to use methods that are time series specific**. 
+which supports--under certain conditions--forecasting with high-dimensional ML models **without having to use methods that are time series specific**. 
 
 The following quote from Bergmeir et al.'s article nicely sums up the aim of this package:
 
 > "When purely (non-linear, nonparametric) autoregressive methods are applied to forecasting problems, as is often the case
 > (e.g., when using Machine Learning methods), the aforementioned problems of CV are largely
 > irrelevant, and CV can and should be used without modification, as in the independent case."
+
+At a glance, `forecastML` supports the following approaches when forecasting with machine learning methods:
+
+<p align="center">
+  <img src="./tools/features_table.png" width="715px" height="400px"></img>
+</p>
+
 
 ## Lightning Example
 
@@ -102,7 +101,9 @@ library(forecastML)
 
 ## Approach to Forecasting
 
-The forecasting approach used in `forecastML` involves the following steps:
+### Direct forecasting
+
+The direct forecasting approach used in `forecastML` involves the following steps:
 
 **1.** Build a series of horizon-specific short-, medium-, and long-term forecast models.
 
@@ -123,6 +124,15 @@ represents a distinct horizon-specific ML model. From left to right these models
 probabilities 12 steps ahead.
 
 ![](./tools/forecastML_factor_plot.png)
+
+
+### Multi-putput forecasting
+
+The multi-output forecasting approach used in `forecastML` involves the following steps:
+
+**1.** Build a single multi-output model that simultaneously forecasts over both short- and long-term forecast horizons.
+
+**2.** Assess model generalization peformance across a variety of heldout datasets through time.
 
 
 ## Vignettes
