@@ -95,10 +95,6 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
                                       horizons = NULL,
                                       windows = NULL, ...) { # nocov start
 
-  if(!methods::is(x, "forecast_model_hyper")) {
-    stop("The 'x' argument takes an object of class 'forecast_model_hyper' as input. Run return_hyper() first.")
-  }
-
   if(!methods::is(data_results, "training_results")) {
     stop("The 'data_results' argument takes an object of class 'training_results' as input. Run predict.forecast_model() first.")
   }

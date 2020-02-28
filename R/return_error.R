@@ -10,7 +10,7 @@
 #' @param test_indices Required if \code{data_test} is given. A vector or 1-column data.frame of numeric
 #' row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_test)}.
 #' @param metrics A character vector of common forecast error metrics. The default behavior is to return all metrics.
-#' @param models Optional. A character vector of user-defined model names supplied to \code{train_model()}.
+#' @param models Optional. A character vector of user-defined model names supplied to \code{train_model()} to filter results.
 #' @param horizons Optional. A numeric vector to filter results by horizon.
 #' @param windows Optional. A numeric vector to filter results by validation window number.
 #' @param group_filter Optional. A string for filtering plot results for grouped time-series
@@ -19,7 +19,7 @@
 #' @return An S3 object of class 'validation_error' or 'forecast_error': A list of data.frames
 #' of error metrics for the validation datasets or forecast dataset depending
 #' on the \code{data_test} argument. An input to \code{data_results} from \code{combine_forecasts()} will return
-#' a single data.frame with results for each model passed in \code{...}. \cr
+#' a single data.frame with results for each model passed in \code{combine_forecasts(...)}. \cr
 #'
 #' A list containing: \cr
 #'
@@ -31,7 +31,7 @@
 #' @section Error Metrics:
 #'
 #' \itemize{
-#'   \item \code{mae}: Mean absolute error
+#'   \item \code{mae}: Mean absolute error (works with factor outcomes)
 #'   \item \code{mape}: Mean absolute percentage error
 #'   \item \code{mdape}: Median absolute percentage error
 #'   \item \code{smape}: Symmetrical mean absolute percentage error
@@ -305,10 +305,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 plot.validation_error <- function(x, data_results, type = c("time", "horizon", "global"), metric = NULL,
                                   facet = NULL, models = NULL, horizons = NULL, windows = NULL, group_filter = NULL, ...) { # nocov start
 
-  if (!methods::is(x, "validation_error")) {
-    stop("The 'x' argument takes an object of class 'validation_error' as input. Run return_error() first.")
-  }
-
+  #----------------------------------------------------------------------------
   data_error <- x
 
   if (!methods::is(data_results, "training_results")) {
@@ -328,9 +325,8 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
   }
 
   if (!error_metrics %in% attributes(data_error)$error_metrics) {
-    stop("The error metric in 'metric' is not the the validation error dataset 'x'.")
+    stop("The error metric in 'metric' is not in the validation error dataset 'x'; re-run return_error() with this metric.")
   }
-
   #----------------------------------------------------------------------------
   # Set default plot facets for each plot type.
   if (is.null(facet)) {

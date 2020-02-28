@@ -28,7 +28,7 @@ row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_test
 
 \item{metrics}{A character vector of common forecast error metrics. The default behavior is to return all metrics.}
 
-\item{models}{Optional. A character vector of user-defined model names supplied to \code{train_model()}.}
+\item{models}{Optional. A character vector of user-defined model names supplied to \code{train_model()} to filter results.}
 
 \item{horizons}{Optional. A numeric vector to filter results by horizon.}
 
@@ -41,7 +41,7 @@ row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_test
 An S3 object of class 'validation_error' or 'forecast_error': A list of data.frames
 of error metrics for the validation datasets or forecast dataset depending
 on the \code{data_test} argument. An input to \code{data_results} from \code{combine_forecasts()} will return
-a single data.frame with results for each model passed in \code{...}. \cr
+a single data.frame with results for each model passed in \code{combine_forecasts(...)}. \cr
 
 A list containing: \cr
 
@@ -58,7 +58,7 @@ Compute forecast error metrics on the validation datasets or a new test dataset.
 
 
 \itemize{
-  \item \code{mae}: Mean absolute error
+  \item \code{mae}: Mean absolute error (works with factor outcomes)
   \item \code{mape}: Mean absolute percentage error
   \item \code{mdape}: Median absolute percentage error
   \item \code{smape}: Symmetrical mean absolute percentage error

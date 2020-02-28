@@ -22,7 +22,7 @@ train_model(
 
 \item{model_function}{A user-defined wrapper function for model training that takes the following
 arguments: (1) a horizon-specific data.frame made with \code{create_lagged_df(..., type = "train")}
-(i.e., the datasets stored in \code{lagged_df}) and, optionally, (2) any number of additional named arguments
+(i.e., the dataset(s) stored in \code{lagged_df}) and, optionally, (2) any number of additional named arguments
 which can be passed in \code{...} in this function.}
 
 \item{...}{Optional. Named arguments passed into the user-defined \code{model_function}.}
@@ -39,10 +39,10 @@ An S3 object of class 'forecast_model': A nested list of trained models. Models 
 the validation dataset window number from \code{create_windows()}.
 }
 \description{
-Train a user-defined forecast model for each horizon, h, and across the validation
-datasets, d. A total of h * d models are trained--more if the user-defined modeling function
-performs any inner-loop cross-validation. These models can, however, be trained in parallel
-with the \code{future} package.
+Train a user-defined forecast model for each horizon, 'h', and across the validation
+datasets, 'd'. If \code{method = "direct"}, a total of 'h' * 'd' models are trained.
+If \code{method = "multi_output"}, a total of 1 * 'd' models are trained.
+These models can be trained in parallel with the \code{future} package.
 }
 \section{Methods and related functions}{
 

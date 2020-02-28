@@ -1,16 +1,16 @@
 #' Train a model across horizons and validation datasets
 #'
-#' Train a user-defined forecast model for each horizon, h, and across the validation
-#' datasets, d. A total of h * d models are trained--more if the user-defined modeling function
-#' performs any inner-loop cross-validation. These models can, however, be trained in parallel
-#' with the \code{future} package.
+#' Train a user-defined forecast model for each horizon, 'h', and across the validation
+#' datasets, 'd'. If \code{method = "direct"}, a total of 'h' * 'd' models are trained.
+#' If \code{method = "multi_output"}, a total of 1 * 'd' models are trained.
+#' These models can be trained in parallel with the \code{future} package.
 #'
 #' @param lagged_df An object of class 'lagged_df' from \code{\link{create_lagged_df}}.
 #' @param windows An object of class 'windows' from \code{\link{create_windows}}.
 #' @param model_name A name for the model.
 #' @param model_function A user-defined wrapper function for model training that takes the following
 #' arguments: (1) a horizon-specific data.frame made with \code{create_lagged_df(..., type = "train")}
-#' (i.e., the datasets stored in \code{lagged_df}) and, optionally, (2) any number of additional named arguments
+#' (i.e., the dataset(s) stored in \code{lagged_df}) and, optionally, (2) any number of additional named arguments
 #' which can be passed in \code{...} in this function.
 #' @param ... Optional. Named arguments passed into the user-defined \code{model_function}.
 #' @param use_future Boolean. If \code{TRUE}, the \code{future} package is used for training models in parallel.
@@ -195,14 +195,16 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
 #' @param prediction_function A list of user-defined prediction functions with length equal to
 #' the number of models supplied in \code{...}. The prediction functions
 #' take 2 required positional arguments--(1) a 'forecast_model' object from \code{train_model()} and (2) a
-#' data.frame of model features from \code{create_lagged_df()}. For numeric outcomes, the function should \code{return()}
+#' data.frame of model features from \code{create_lagged_df()}. For numeric outcomes and \code{method = "direct"}, the function should \code{return()}
 #' 1- or 3-column data.frame of model predictions. If the prediction function returns a 1-column data.frame, point forecasts are assumed.
 #' If the prediction function returns a 3-column data.frame, lower and upper forecast bounds are assumed (the
-#' order and names of the 3 columns does not matter). For factor oucomes, the function should \code{return()}
+#' order and names of the 3 columns does not matter). For factor outcomes and \code{method = "direct"}, the function should \code{return()}
 #' (1) 1-column data.frame of the model-predicted factor level or (2) an L-column data.frame of class probabilities where
 #' 'L' equals the number of levels in the outcome; columns should be ordered, from left to right, the same as
 #' \code{levels(data$outcome)} which is the default behavior for most \code{predict(..., type = "prob")} functions.
-#' Column names do not matter.
+#' Column names do not matter. For numeric outcomes and \code{method = "multi_output"}, the function should \code{return()} and
+#' h-column data.frame of model predictions--1 column for each horizon. Forecast intervals and factor outcomes are not currently
+#' supported with \code{method = "multi_output"}.
 #' @param data If \code{data} is a training dataset from \code{create_lagged_df(..., type = "train")}, validation dataset
 #' predictions are returned; else, if \code{data} is a forecasting dataset from \code{create_lagged_df(..., type = "forecast")},
 #' forecasts from horizons 1:h are returned.
@@ -216,18 +218,21 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
 #'       \item \code{window_length}: Validation window length measured in dataset rows.
 #'       \item \code{window_number}: Validation dataset number.
 #'       \item \code{valid_indices}: Validation dataset row names from \code{attributes(create_lagged_df())$row_indices}.
-#'       \item \code{date_indices}: If given, validation dataset date indices from \code{attributes(create_lagged_df())$date_indices}.
+#'       \item \code{date_indices}: If given and \code{method = "direct"}, validation dataset date indices from \code{attributes(create_lagged_df())$date_indices}.
+#'       If given and \code{method = "multi_output"}, date_indices represents the date of the forecast.
 #'       \item \code{"groups"}: If given, the user-supplied groups in \code{create_lagged_df()}.
 #'       \item \code{"outcome_name"}: The target being forecasted.
 #'       \item \code{"outcome_name"_pred}: The model predictions.
 #'       \item \code{"outcome_name"_pred_lower}: If given, the lower prediction bounds returned by the user-supplied prediction function.
 #'       \item \code{"outcome_name"_pred_upper}: If given, the upper prediction bounds returned by the user-supplied prediction function.
+#'       \item \code{forecast_indices}: If \code{method = "multi_output"}, the validation index of the h-step-ahead forecast.
+#'       \item \code{forecast_date_indices}: If \code{method = "multi_output"}, the validation date index of the h-step-ahead forecast.
 #'    }
 #'
 #'    \strong{Columns in returned 'forecast_results' data.frame:}
 #'     \itemize{
 #'       \item \code{model}: User-supplied model name in \code{train_model()}.
-#'       \item \code{model_forecast_horizon}: The direct-forecasting time horizon that the model was trained on.
+#'       \item \code{model_forecast_horizon}: If \code{method = "direct"}, the direct-forecasting time horizon that the model was trained on.
 #'       \item \code{horizon}: Forecast horizons, 1:h, measured in dataset rows.
 #'       \item \code{window_length}: Validation window length measured in dataset rows.
 #'       \item \code{forecast_period}: The forecast period in row indices or dates. The forecast period starts at either \code{attributes(create_lagged_df())$data_stop + 1} for row indices or \code{attributes(create_lagged_df())$data_stop + 1 * frequency} for date indices.
@@ -235,8 +240,7 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
 #'       \item \code{"outcome_name"}: The target being forecasted.
 #'       \item \code{"outcome_name"_pred}: The model forecasts.
 #'       \item \code{"outcome_name"_pred_lower}: If given, the lower forecast bounds returned by the user-supplied prediction function.
-#'       \item \code{"outcome_name"_pred_upper}: If given, the upper forecast bounds returned by
-#'       the user-supplied prediction function.
+#'       \item \code{"outcome_name"_pred_upper}: If given, the upper forecast bounds returned by the user-supplied prediction function.
 #'    }
 #'
 #' @example /R/examples/example_predict_train_model.R
@@ -260,8 +264,12 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
     stop("The 'data' argument takes a training or forecasting dataset of class 'lagged_df' from create_lagged_df().")
   }
 
-  type <- attributes(data)$type  # train or forecast.
+  if (unique(unlist(lapply(model_list, function(x){attributes(x)$method}))) > 1) {
+    stop("Side-by-side predictions and comparisons of direct and multi-output forecast models are not currently supported.")
+  }
   #----------------------------------------------------------------------------
+  type <- attributes(data)$type  # train or forecast.
+
   method <- attributes(model_list[[1]])$method
   horizons <- attributes(model_list[[1]])$horizons
   outcome_col <- attributes(model_list[[1]])$outcome_col
@@ -284,7 +292,6 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
   }
   #----------------------------------------------------------------------------
   # Seq along forecast model > model forecast horizon > validation window number.
-  i <- j <- k <- 1
   data_model <- lapply(seq_along(model_list), function(i) {
 
     prediction_fun <- prediction_function[[i]]
@@ -543,9 +550,8 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 #' @param valid_indices Optional. A numeric or date vector to filter results by validation row indices or dates.
 #' @param group_filter Optional. A string for filtering plot results for grouped time series
 #' (e.g., \code{"group_col_1 == 'A'"}). The results are passed to \code{dplyr::filter()} internally.
-#' @param facet Optional. A formula with any combination of \code{horizon}, \code{model}, or \code{group} (for grouped time series)
+#' @param facet Optional. For numeric outcomes, a formula with any combination of \code{horizon}, \code{model}, or \code{group} (for grouped time series)
 #' passed to \code{ggplot2::facet_grid()} internally (e.g., \code{horizon ~ model}, \code{horizon + model ~ .}, \code{~ horizon + group}).
-#' Can be \code{NULL}.
 #' @param keep_missing Boolean. If \code{TRUE}, predictions are plotted for indices/dates where the outcome is missing.
 #' @param ... Not used.
 #' @return Diagnostic plots of class 'ggplot'.
@@ -1106,13 +1112,12 @@ plot.training_results <- function(x,
 #' @param actual_indices Required if \code{data_actual} is given. A vector or 1-column data.frame
 #' of numeric row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_actual)}.
 #' The data can be historical actuals and/or holdout/test data.
-#' @param facet Optional. A formula with any combination of \code{horizon}, \code{model}, or \code{group} (for grouped time series)
+#' @param facet Optional. For numeric outcomes, a formula with any combination of \code{horizon}, \code{model}, or \code{group} (for grouped time series)
 #' passed to \code{ggplot2::facet_grid()} internally (e.g., \code{horizon ~ model}, \code{horizon + model ~ .}, \code{~ horizon + group}).
 #' Can be \code{NULL}.
 #' @param models Optional. Filter results by user-defined model name from \code{train_model()}.
 #' @param horizons Optional. Filter results by horizon.
 #' @param windows Optional. Filter results by validation window number.
-#' \code{facet_plot = NULL} plots results in one facet.
 #' @param group_filter Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"});
 #' passed to \code{dplyr::filter()} internally.
 #' @param ... Not used.

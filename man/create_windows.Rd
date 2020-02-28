@@ -39,7 +39,7 @@ in \code{create_lagged_df()}, the time between validation windows is \code{skip}
 An S3 object of class 'windows': A data.frame giving the indices for the validation datasets.
 }
 \description{
-Flexibly ceate blocks of time-contiguous validation datasets to assess forecast accuracy
+Flexibly create blocks of time-contiguous validation datasets to assess the forecast accuracy
 of trained models at various times in the past. These validation datasets are similar to
 the outer loop of a nested cross-validation model training setup.
 }

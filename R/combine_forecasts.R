@@ -65,12 +65,16 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
            the optimal model at each direct forecast horizon from the models passed in '...', e.g., 'mae'.")
     }
   }
+
+  if (unique(unlist(lapply(data_forecast_list, function(x){attributes(x)$method}))) > 1) {
+    stop("Combining forecasts from direct and multi-output forecast models is not currently supported.")
+  }
   #----------------------------------------------------------------------------
+  method <- attributes(data_forecast_list[[1]])$method
   outcome_name <- attributes(data_forecast_list[[1]])$outcome_name
   outcome_levels <- attributes(data_forecast_list[[1]])$outcome_levels
   groups <- attributes(data_forecast_list[[1]])$groups
   data_stop <- attributes(data_forecast_list[[1]])$data_stop
-  method <- attributes(data_forecast_list[[1]])$method
 
   data_forecast <- dplyr::bind_rows(data_forecast_list)  # Collapse the forecast_results list(...).
   data_forecast <- dplyr::as_tibble(data_forecast)
@@ -209,8 +213,7 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
 #' of numeric row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_actual)}.
 #' The data can be historical actuals and/or holdout/test data.
 #' @param facet Optional. A formula with any combination of \code{model}, or \code{group} (for grouped time series)
-#' passed to \code{ggplot2::facet_wrap()} internally (e.g., \code{~ model}, \code{model ~ .}, \code{~ model + group}).
-#' Can be \code{NULL}.
+#' passed to \code{ggplot2::facet_grid()} internally (e.g., \code{~ model}, \code{model ~ .}, \code{~ model + group}).
 #' @param models Optional. Filter results by user-defined model name from \code{train_model()}.
 #' @param group_filter Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"});
 #' passed to \code{dplyr::filter()} internally.

@@ -26,7 +26,7 @@ The data can be historical actuals and/or holdout/test data.}
 of numeric row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_actual)}.
 The data can be historical actuals and/or holdout/test data.}
 
-\item{facet}{Optional. A formula with any combination of \code{horizon}, \code{model}, or \code{group} (for grouped time series)
+\item{facet}{Optional. For numeric outcomes, a formula with any combination of \code{horizon}, \code{model}, or \code{group} (for grouped time series)
 passed to \code{ggplot2::facet_grid()} internally (e.g., \code{horizon ~ model}, \code{horizon + model ~ .}, \code{~ horizon + group}).
 Can be \code{NULL}.}
 
@@ -34,8 +34,7 @@ Can be \code{NULL}.}
 
 \item{horizons}{Optional. Filter results by horizon.}
 
-\item{windows}{Optional. Filter results by validation window number.
-\code{facet_plot = NULL} plots results in one facet.}
+\item{windows}{Optional. Filter results by validation window number.}
 
 \item{group_filter}{Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"});
 passed to \code{dplyr::filter()} internally.}

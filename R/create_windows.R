@@ -1,6 +1,6 @@
 #' Create time-contiguous validation datasets for model evaluation
 #'
-#' Flexibly ceate blocks of time-contiguous validation datasets to assess forecast accuracy
+#' Flexibly create blocks of time-contiguous validation datasets to assess the forecast accuracy
 #' of trained models at various times in the past. These validation datasets are similar to
 #' the outer loop of a nested cross-validation model training setup.
 #'
@@ -42,6 +42,7 @@ create_windows <- function(lagged_df, window_length = 12L,
                            window_start = NULL, window_stop = NULL, skip = 0,
                            include_partial_window = TRUE) {
 
+  #----------------------------------------------------------------------------
   if (!methods::is(lagged_df, "lagged_df")) {
     stop("This function takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
   }
@@ -52,14 +53,14 @@ create_windows <- function(lagged_df, window_length = 12L,
   if (length(window_length) != 1 || !methods::is(window_length, "numeric")) {
     stop("The 'window_length' argument needs to be a single positive integer.")
   }
-
+  #----------------------------------------------------------------------------
   outcome_col <- attributes(data)$outcome_col
   outcome_name <- attributes(data)$outcome_name
   date_indices <- attributes(data)$date_indices
   frequency <- attributes(data)$frequency
   data_start <- attributes(data)$data_start
   data_stop <- attributes(data)$data_stop
-
+  #----------------------------------------------------------------------------
   window_start <- if (is.null(window_start)) {data_start} else {window_start}
   window_stop <- if (is.null(window_stop)) {data_stop} else {window_stop}
 
