@@ -425,8 +425,8 @@ are not currently supported. Additional error metrics will continue to be added 
 ```{r, message = FALSE, warning = FALSE}
 data_error <- forecastML::return_error(data_pred_level, metric = "mae")
 
-plot(data_error, data_pred_cv, type = "horizon", metric = "mae")
-plot(data_error, data_pred_cv, type = "global", metric = "mae")
+plot(data_error, data_pred_level, type = "horizon", metric = "mae")
+plot(data_error, data_pred_level, type = "global", metric = "mae")
 ```
 
 

@@ -35,7 +35,7 @@ Collate:
     'data_buoy_gaps.R'
     'zzz.R'
 Depends: 
-    R (>= 3.4.2),
+    R (>= 3.5.0),
     dplyr (>= 0.8.3)
 Suggests: 
     glmnet (>= 2.0.16),
