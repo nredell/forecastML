@@ -2,10 +2,10 @@
 .onLoad <- function(...) {
   requireNamespace("dplyr")
 }
-
+#------------------------------------------------------------------------------
 # Function in lagged_df.R. for create_lagged_df(method = "multi_outcome").
 # The output is an nrow(data) by length(horizons) data.frame of outcome values.
-forecastML_create_multi_outcome <- function(data, outcome_name, horizons, groups) {
+forecastML_create_multi_outcome <- function(data, outcome_name, horizons, groups, outcome_levels) {
 
   outcome_indices <- purrr::map(1:nrow(data), function(x) {x + horizons})
 
@@ -35,7 +35,11 @@ forecastML_create_multi_outcome <- function(data, outcome_name, horizons, groups
     }
   })
 
-  data_outcomes <- dplyr::bind_rows(data_outcomes)
+  data_outcomes <- suppressWarnings(dplyr::bind_rows(data_outcomes))
+
+  if (!is.null(outcome_levels)) {
+    data_outcomes[] <- lapply(data_outcomes, function(x) {factor(x, levels = outcome_levels)})
+  }
 
   names(data_outcomes) <- paste0(outcome_name, "_", horizons)
 
@@ -66,11 +70,12 @@ forecastML_smape <- function(x, y, z, ...) {
   error_var <- if (is.infinite(error_var) || is.nan(error_var)) {NA} else {error_var}
 }
 #------------------------------------------------------------------------------
-# Function for ggplot2 faceting in train_model.R and return_error.R. The input is (1) a formula
+# Function for ggplot2 faceting in train_model.R, return_error.R, and combine_forecasts.R. The input is (1) a formula
 # with any of 'horizon', 'model', 'group', or '.' and (2) a string identifying the grouping column,
 # if any, in the input dataset. The output is a list containing (1) a formula where any
 # groups in the modeling dataset are substituted for "~ group" and (2) facet names
-# for use with ggplot2 geom objects
+# for use with ggplot2 geom objects. Plot aesthetics like color and group are adjusted automatically
+# based on the facet names which helps avoid double encoding plot data.
 forecastML_facet_plot <- function(facet, groups) {
 
   facet_names <- all.vars(facet)
@@ -176,5 +181,5 @@ forecastML_filter_lookback_control <- function(lookback_control, horizons, group
     })  # Impossible lags for lagged features have been removed.
   }  # Impossible lags in 'lookback_control' have been removed.
 }
-
+#------------------------------------------------------------------------------
 # nocov end

@@ -1,5 +1,5 @@
 ---
-title: "Forecasting with Multiple Time Series"
+title: "Direct Forecasting with Multiple Time Series"
 author: "Nickalus Redell"
 date: "`r lubridate::today()`"
 output: rmarkdown::html_vignette
@@ -46,7 +46,7 @@ target being forecasted and any dynamic features can be done (a) prior to `creat
 in the user-defined model training function.
 
 
-# Example
+# Example - Direct Forecasting
 
 To illustrate forecasting with multiple time series, we'll use the `data_buoy` dataset that comes 
 with the package. This dataset consists of daily sensor measurements of several environmental 
@@ -300,7 +300,7 @@ model_function <- function(data, outcome_col = 1) {
 * The user-defined modeling wrapper function could be much more elaborate, in which case many more models 
 could potentially be trained here.
 
-* These models could be trained in parallel on any OS with the very flexible `future` package by uncommenting the code below and 
+* These models could be trained in parallel on any OS with the very flexible `future` package by un-commenting the code below and 
 setting `use_future = TRUE`. To avoid nested parallelization, models are either trained in parallel across forecast horizons or 
 validation windows, whichever is longer (when equal, the default is parallel across forecast horizons).
 

@@ -76,17 +76,17 @@ represents a distinct horizon-specific ML model. From left to right these models
 
 ## Multi-Output Forecasting
 
+<p align="center">
+  <img src="./multi_output_forecast.png"></img>
+</p>
+
 The multi-output forecasting approach used in `forecastML` involves the following steps:
 
 **1.** Build a single multi-output model that simultaneously forecasts over both short- and long-term forecast horizons.
 
-**2.** Assess model generalization peformance across a variety of heldout datasets through time.
+**2.** Assess model generalization performance across a variety of heldout datasets through time.
 
-**3.** Select the hyperparamters that minimize forecast error over the relevant forecast horizons and re-train.
-
-<p align="center">
-  <img src="./multi_output_forecast.png"></img>
-</p>
+**3.** Select the hyperparameters that minimize forecast error over the relevant forecast horizons and re-train.
 
 <br>
 
@@ -247,7 +247,7 @@ plot(data_list)
 
 `create_windows()` creates indices for partitioning the training dataset in the outer loop of a nested 
 cross-validation setup. The validation datasets are created in contiguous blocks of `window_length`, as opposed to 
-randomly seleted rows, to mimic forecasting over multi-step-ahead forecast horizons. The `skip`, 
+randomly selected rows, to mimic forecasting over multi-step-ahead forecast horizons. The `skip`, 
 `window_start`, and `window_stop` arguments take dataset indices--or dates if a vector of dates is supplied to 
 `create_lagged_df()`--that allow the user to adjust the number and placement of outer loop validation datasets.
 
@@ -341,7 +341,7 @@ For each modeling approach, LASSO and Random Forest, a total of `N forecast hori
 models are trained. In this example, that means training **`r length(data_list) * nrow(windows)` models** 
 for each algorithm.
 
-These models could be trained in parallel on any OS with the very flexible `future` package by uncommenting the code below and 
+These models could be trained in parallel on any OS with the very flexible `future` package by un-commenting the code below and 
 setting `use_future = TRUE`. To avoid nested parallelization, models are either trained in parallel across forecast horizons or 
 validation windows, whichever is longer (when equal, the default is parallel across forecast horizons).
 
@@ -396,7 +396,7 @@ prediction_function_2 <- function(model, data_features) {
 The `predict.forecast_model()` S3 method takes any number of trained models from `train_model()` and a 
 list of user-defined prediction functions. The list of prediction functions should appear in the same order 
 as the models. Note that the `prediction_function` and `data` arguments need to be named because the first 
-function argumet is `...`.
+function argument is `...`.
 
 Outer loop nested cross-validation forecasts are returned for each user-defined model, forecast horizon, and 
 validation window.
@@ -613,7 +613,7 @@ DT::datatable(head(data_forecast, 10), options = list(scrollX = TRUE))
 
 Below is a plot of the forecasts vs. the actuals for each model at select forecast horizons.
 
-Setting the `data_actual = ...` and `actual_indices = ...` arguments plots a background dataset (grey line in the plots below).
+Setting the `data_actual = ...` and `actual_indices = ...` arguments plots a background dataset (gray line in the plots below).
 
 It's clear from the plots that our Random Forest model is producing less accurate forecasts and is more 
 sensitive to the data on which it was trained--producing an erratic forecast when not trained on window 7.
@@ -660,7 +660,7 @@ DT::datatable(head(data_error$error_by_horizon, 10), options = list(scrollX = TR
 Because our LASSO model is both more stable and accurate, we'll re-train this model across 
 the entire training dataset to get our final `r length(horizons)` models--1 for each forecast horizon. 
 Note that for a real-world forecasting problem this is when we would do additional model tuning 
-to imrpove forecast accuracy across validation windows as well as narrow the hyperparameter search 
+to improve forecast accuracy across validation windows as well as narrow the hyperparameter search 
 in the user-specified modeling functions.
 
 ```{r}

@@ -144,7 +144,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
     if (factor_level) {
 
       # Binary accuracy/residual. A residual of 1 is an incorrect classification.
-      data$residual <- ifelse(data[, outcome_name] != data[, paste0(outcome_name, "_pred")], 1, 0)
+      data$residual <- ifelse(as.character(data[, outcome_name, drop = TRUE]) != as.character(data[, paste0(outcome_name, "_pred"), drop = TRUE]), 1, 0)
 
     } else {  # Class probabilities were predicted.
 

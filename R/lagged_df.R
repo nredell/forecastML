@@ -238,16 +238,6 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
     data <- as.data.frame(data)
   }
   #----------------------------------------------------------------------------
-  # Outcome data.
-  if (method == "direct") {  # An nrow(data) by 1 data.frame.
-
-    data_y <- data[, outcome_col, drop = FALSE]
-
-  } else if (method == "multi_output") {  # An nrow(data) by length(horizons) data.frame.
-
-    data_y <- forecastML_create_multi_outcome(data, outcome_name, horizons, groups)
-  }
-  #----------------------------------------------------------------------------
   # If the outcome is a factor, save the levels out as an attribute.
   if (methods::is(data[, outcome_col], "factor")) {
 
@@ -256,6 +246,16 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
   } else {
 
     outcome_levels <- NULL
+  }
+  #----------------------------------------------------------------------------
+  # Outcome data.
+  if (method == "direct") {  # An nrow(data) by 1 data.frame.
+
+    data_y <- data[, outcome_col, drop = FALSE]
+
+  } else if (method == "multi_output") {  # An nrow(data) by length(horizons) data.frame.
+
+    data_y <- forecastML_create_multi_outcome(data, outcome_name, horizons, groups, outcome_levels)
   }
   #--------------------------------------------------------------------------
   # For method = "direct", remove feature lags in lookback_control that don't support forecasting to the given horizon.

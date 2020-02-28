@@ -243,10 +243,8 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
 #' @export
 predict.forecast_model <- function(..., prediction_function = list(NULL), data) {
 
+  #----------------------------------------------------------------------------
   model_list <- list(...)
-  # model_list <- list(model_results)
-  # prediction_function <- list(prediction_function_prob)
-  # data <- data_train
 
   if (!all(unlist(lapply(model_list, function(x) {class(x)[1]})) %in% "forecast_model")) {
     stop("The '...' argument takes 1 or more objects of class 'forecast_model' as input. Run train_model() first.
@@ -263,7 +261,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
   }
 
   type <- attributes(data)$type  # train or forecast.
-
+  #----------------------------------------------------------------------------
   method <- attributes(model_list[[1]])$method
   horizons <- attributes(model_list[[1]])$horizons
   outcome_col <- attributes(model_list[[1]])$outcome_col
@@ -275,7 +273,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
   date_indices <- attributes(model_list[[1]])$date_indices
   frequency <- attributes(model_list[[1]])$frequency
   groups <- attributes(model_list[[1]])$groups
-
+  #----------------------------------------------------------------------------
   if (type == "train") {
 
     data_stop <- attributes(model_list[[1]])$data_stop
@@ -284,9 +282,9 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 
     data_stop <- attributes(data)$data_stop
   }
-
+  #----------------------------------------------------------------------------
+  # Seq along forecast model > model forecast horizon > validation window number.
   i <- j <- k <- 1
-  # Seq along model > forecast model horizon > validation window number.
   data_model <- lapply(seq_along(model_list), function(i) {
 
     prediction_fun <- prediction_function[[i]]
@@ -557,6 +555,7 @@ plot.training_results <- function(x,
                                   facet = horizon ~ model, models = NULL, horizons = NULL,
                                   windows = NULL, valid_indices = NULL, group_filter = NULL, keep_missing = FALSE, ...) { # nocov start
 
+  #----------------------------------------------------------------------------
   data <- x
   rm(x)
 
@@ -575,7 +574,7 @@ plot.training_results <- function(x,
   if (!is.null(attributes(data)$outcome_levels) & !type %in% c("prediction", "residual")) {
     stop("Only 'prediction' and 'residual' plots are currently available for models with factors as outcomes.")
   }
-
+  #----------------------------------------------------------------------------
   method <- attributes(data)$method
   outcome_col <- attributes(data)$outcome_col
   outcome_name <- attributes(data)$outcome_name
@@ -584,7 +583,7 @@ plot.training_results <- function(x,
   frequency <- attributes(data)$frequency
   groups <- attributes(data)$group
   window_custom <- all(data$window_length == "custom")
-
+  #----------------------------------------------------------------------------
   if (method == "multi_output") {
 
     data$valid_indices <- data$forecast_indices  # The plot indices are the forecast period, not the forecast origin.
@@ -594,13 +593,6 @@ plot.training_results <- function(x,
       data$date_indices <- data$forecast_date_indices  # The plot indices are the forecast period, not the forecast origin.
     }
   }
-
-  if (isFALSE(keep_missing) && is.null(outcome_levels)) {
-    # Set the predicted values to NA to keep any missing data in the actual
-    # time series so gaps in data collection are not connected with a line in the plot.
-    data[is.na(data[, outcome_name]), paste0(outcome_name, "_pred")] <- NA
-  }
-
   #----------------------------------------------------------------------------
   facets <- forecastML_facet_plot(facet, groups)  # Function in zzz.R.
   facet <- facets[[1]]
@@ -615,10 +607,20 @@ plot.training_results <- function(x,
     if (type == "residual" && factor_prob) {
       stop("Residual plots with predicted class probabilities are not currently supported.")
     }
+
+    if (type == "residual" && !is.null(groups)) {
+      stop("Residual plots with grouped data are not currently supported.")
+    }
   }
   #----------------------------------------------------------------------------
-  if (!is.null(groups) && !is.null(outcome_levels)) {
-    stop("Plots are currently not available for grouped data with factor outcomes.")
+  if (isFALSE(keep_missing) && is.null(outcome_levels)) {
+    # Set the predicted values to NA to keep any missing data in the actual
+    # time series so gaps in data collection are not connected with a line in the plot.
+    data[is.na(data[, outcome_name]), paste0(outcome_name, "_pred")] <- NA
+
+  } else if (isFALSE(keep_missing) && !is.null(outcome_levels)) {
+
+    data <- data[!is.na(data[, outcome_name]), ]
   }
   #----------------------------------------------------------------------------
   # Residual calculations.
@@ -631,7 +633,7 @@ plot.training_results <- function(x,
     if (factor_level) {
 
       # Binary accuracy/residual. A residual of 1 is an incorrect classification.
-      data$residual <- ifelse(data[, outcome_name] != data[, paste0(outcome_name, "_pred")], 1, 0)
+      data$residual <- ifelse(as.character(data[, outcome_name, drop = TRUE]) != as.character(data[, paste0(outcome_name, "_pred"), drop = TRUE]), 1, 0)
 
     } else {  # Class probabilities were predicted.
 
@@ -824,7 +826,7 @@ plot.training_results <- function(x,
             p <- p + scale_color_viridis_d()
           }
         }
-        #--------------------------------------------------------------------------
+        #----------------------------------------------------------------------
         # Plot predictions.
 
         # If the plotting data.frame has both lower and upper forecasts plot these bounds.
@@ -845,10 +847,13 @@ plot.training_results <- function(x,
           p <- p + facet_grid(facet, drop = TRUE)
         }
         p <- p + theme_bw()
+
     #--------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
+
     } else {  # Factor outcome.
 
-      if (factor_prob) {  # Plot class probabilities
+      if (factor_prob) {  # Plot class probabilities with un-grouped data.
 
         if (is.null(groups)) {
 
@@ -874,11 +879,40 @@ plot.training_results <- function(x,
           p <- p + scale_fill_viridis_d(drop = FALSE)
           p <- p + facet_wrap(~ ggplot_color_group, ncol = 1, scales = "free_y")
           p <- p + theme_bw()
-        }
-      #------------------------------------------------------------------------
-      } else {  # Plot predicted factor level.
 
-        if (is.null(groups)) {
+        } else {  # Plot class probabilities with grouped data.
+
+          data_plot$actual_or_pred <- NA
+          data_plot$actual_or_pred[data_plot$outcome == outcome_name] <- "Actual"
+          data_plot$actual_or_pred[data_plot$outcome != outcome_name] <- "Prediction"
+
+          data_plot$y_value <- NA
+          data_plot$y_value[data_plot$outcome == outcome_name] <- 1
+          data_plot$y_value[data_plot$outcome != outcome_name] <- data_plot$value[data_plot$outcome != outcome_name]
+          data_plot$y_value <- as.numeric(data_plot$y_value)
+
+          data_plot$plot_color <- NA
+          data_plot$plot_color[data_plot$outcome == outcome_name] <- data_plot$value[data_plot$outcome == outcome_name]
+          data_plot$plot_color[data_plot$outcome != outcome_name] <- data_plot$outcome[data_plot$outcome != outcome_name]
+
+          data_plot$plot_color <- factor(data_plot$plot_color, levels = outcome_levels, ordered = TRUE)
+
+          p <- ggplot()
+          p <- p + geom_col(data = data_plot,
+                            aes(x = .data$index, y = .data$y_value, color = .data$plot_color, fill = .data$plot_color),
+                            position = position_stack(reverse = TRUE))
+          p <- p + scale_y_continuous(limits = 0:1, breaks = c(0, .5, 1))
+          p <- p + scale_color_viridis_d(drop = FALSE)
+          p <- p + scale_fill_viridis_d(drop = FALSE)
+          p <- p + facet_grid(ggplot_color_group + actual_or_pred ~ ., scales = "free_y")
+          p <- p + theme_bw() + theme(panel.spacing = unit(0, "lines"))
+        }  # End plot class probabilities with grouped data.
+
+      #------------------------------------------------------------------------
+
+      } else {  # Plot class levels.
+
+        if (is.null(groups)) {  # Plot class levels with un-grouped data.
 
           # Only 1 actual needs to be plotted.
           data_plot$ggplot_color_group[data_plot$outcome == outcome_name] <- "Actual"
@@ -893,6 +927,24 @@ plot.training_results <- function(x,
           p <- p + scale_fill_viridis_d(drop = FALSE)
           p <- p + facet_wrap(~ ggplot_color_group, ncol = 1, scales = "free_y")
           p <- p + theme_bw() + theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
+
+        } else {  # Plot class levels with grouped data.
+
+          data_plot$actual_or_pred <- NA
+          data_plot$actual_or_pred[data_plot$outcome == outcome_name] <- "Actual"
+          data_plot$actual_or_pred[data_plot$outcome != outcome_name] <- "Prediction"
+
+          data_plot$value <- factor(data_plot$value, levels = outcome_levels, ordered = TRUE)
+
+          p <- ggplot()
+          p <- p + geom_col(data = data_plot,
+                            aes(x = .data$index, y = 1, color = .data$value, fill = .data$value),
+                            position = position_stack(reverse = TRUE))
+          p <- p + scale_y_continuous(limits = 0:1, breaks = c(0, .5, 1))
+          p <- p + scale_color_viridis_d(drop = FALSE)
+          p <- p + scale_fill_viridis_d(drop = FALSE)
+          p <- p + facet_grid(ggplot_color_group + actual_or_pred ~ ., scales = "free_y")
+          p <- p + theme_bw() + theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(), panel.spacing = unit(0, "lines"))
         }
       }
     }  # End prediction plots for numeric and factor outcomes.
@@ -1031,7 +1083,8 @@ plot.training_results <- function(x,
     p <- p + theme_bw()
     p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Model") + labs(fill = NULL) +
       ggtitle("Rolling Origin Forecast Stability - Faceted by dataset index")
-    return(p)
+
+    return(suppressWarnings(p))
   }
 } # nocov end
 #------------------------------------------------------------------------------
@@ -1063,6 +1116,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
                                   models = NULL, horizons = NULL, windows = NULL,
                                   group_filter = NULL, ...) { # nocov start
 
+  #----------------------------------------------------------------------------
   if(xor(is.null(data_actual), is.null(actual_indices))) {
     stop("If plotting a hold-out or comparison dataset, both 'data_actual' and 'actual_indices' need to be specified.")
   }
@@ -1071,7 +1125,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
   rm(x)
 
   type <- "forecast"  # Only one plot option at present.
-
+  #----------------------------------------------------------------------------
   method <- attributes(data_forecast)$method
   forecast_horizons <- attributes(data_forecast)$horizons
   outcome_col <- attributes(data_forecast)$outcome_col
@@ -1080,13 +1134,13 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
   date_indices <- attributes(data_forecast)$date_indices
   groups <- attributes(data_forecast)$group
   data_stop <- attributes(data_forecast)$data_stop
+
+  if (!is.null(outcome_levels) && !is.null(groups) && !is.null(data_actual)) {
+    stop("Plotting forecasts from grouped time series with an actuals dataset is not currently supported.")
+  }
   #----------------------------------------------------------------------------
   names(data_forecast)[names(data_forecast) == "forecast_period"] <- "index"  # For code uniformity.
   #----------------------------------------------------------------------------
-  if (all(!is.null(outcome_levels), !is.null(groups))) {
-    stop("Forecast plots are not yet available for factor outcomes with multiple time series.")
-  }
-
   # For factor outcomes, is the prediction a factor level or probability.
   if (!is.null(outcome_levels)) {
     factor_level <- if (any(names(data_forecast) %in% paste0(outcome_name, "_pred"))) {TRUE} else {FALSE}
@@ -1114,8 +1168,8 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
   horizons <- if (is.null(horizons)) {forecast_horizons} else {horizons}
   windows <- if (is.null(windows)) {unique(data_forecast$window_number)} else {windows}
 
-  if (method == "multi_output") {  # Used for filtering below.
-    data_forecast$model_forecast_horizon <- data_forecast$horizon
+  if (method == "multi_output") {
+    data_forecast$model_forecast_horizon <- data_forecast$horizon  # Used for filtering below.
   }
 
   data_forecast <- data_forecast[data_forecast$model %in% models &
@@ -1300,6 +1354,8 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
       p <- p + facet_grid(facet, scales = "free_y")
 
     #--------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
+
     } else {  # Factor outcome.
 
       data_plot <- data_forecast
@@ -1362,22 +1418,23 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
       data_plot$value <- as.numeric(data_plot$value)
       data_plot$outcome <- factor(data_plot$outcome, levels = outcome_levels, ordered = TRUE)
       #------------------------------------------------------------------------
+      p <- ggplot()
+      p <- p + geom_col(data = data_plot,
+                        aes(x = .data$index, y = .data$value, color = .data$outcome, fill = .data$outcome),
+                        position = position_stack(reverse = TRUE))
+      p <- p + scale_y_continuous(limits = 0:1, breaks = c(0, .5, 1))
+      p <- p + scale_color_viridis_d(drop = FALSE)
+      p <- p + scale_fill_viridis_d(drop = FALSE)
       if (is.null(groups)) {
+        p <- p + facet_wrap(~ ggplot_color_group, scales = "free_y")
+      } else {
+        p <- p + facet_grid(ggplot_color_group ~ ., scales = "free_y")
+      }
+      p <- p + theme_bw() + theme(panel.spacing = unit(0, "lines"))
 
-        p <- ggplot()
-        p <- p + geom_col(data = data_plot,
-                          aes(x = .data$index, y = .data$value, color = .data$outcome, fill = .data$outcome),
-                          position = position_stack(reverse = TRUE))
-        p <- p + scale_y_continuous(limits = 0:1)
-        p <- p + scale_color_viridis_d(drop = FALSE)
-        p <- p + scale_fill_viridis_d(drop = FALSE)
-        p <- p + facet_wrap(~ ggplot_color_group, ncol = 1, scales = "free_y")
-        p <- p + theme_bw()
-
-        if (factor_level) {
-          p <- p + theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
-        }
-      }  # End factor level prediction plots.
+      if (factor_level) {
+        p <- p + theme(axis.text.y = element_blank(), axis.ticks.y = element_blank(), panel.spacing = unit(0, "lines"))
+      }
     }  # End numeric and factor outcome plot setup.
     #--------------------------------------------------------------------------
     # Add a vertical line to mark the beginning of the forecast period.

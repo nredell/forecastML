@@ -195,10 +195,7 @@ create_windows <- function(lagged_df, window_length = 12L,
 #' @export
 plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, ...) { # nocov start
 
-  if (!methods::is(x, "windows")) {
-    stop("The 'x' argument takes an object of class 'windows' as input. Run create_windows() first.")
-  }
-
+  #----------------------------------------------------------------------------
   if (!methods::is(lagged_df, "lagged_df")) {
     stop("The 'lagged_df' argument takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
   }
@@ -208,7 +205,7 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
 
   data <- lagged_df
   rm(lagged_df)
-
+  #----------------------------------------------------------------------------
   method <- attributes(data)$method
   outcome <- attributes(data)$outcome
   outcome_col <- attributes(data)$outcome_col
@@ -217,7 +214,7 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
   row_indices <- attributes(data)$row_indices
   date_indices <- attributes(data)$date_indices
   groups <- attributes(data)$groups
-
+  #----------------------------------------------------------------------------
   # If there are multiple horizons in the lagged_df, select the first dataset and columns for plotting.
   if (method == "direct") {
 
@@ -242,7 +239,6 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
     data_plot <- dplyr::filter(data_plot, eval(parse(text = group_filter)))
   }
   #----------------------------------------------------------------------------
-
   # Create different line segments in ggplot with `color = ggplot_color_group`.
   data_plot$ggplot_color_group <- apply(data_plot[, groups, drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
 
@@ -275,7 +271,7 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
 
     data_plot <- dplyr::left_join(data_plot_template, data_plot, by = c("index", "ggplot_color_group"))
 
-    data_plot$ggplot_color_group <- ordered(data_plot$ggplot_color_group)
+    data_plot$ggplot_color_group <- factor(data_plot$ggplot_color_group, levels = unique(data_plot$ggplot_color_group), ordered = TRUE)
 
     # Create a dataset of points for those instances where there the outcomes are NA before and after a given instance.
     # Points are needed because ggplot will not plot a 1-instance geom_line().
@@ -285,11 +281,11 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
                     "lead" = dplyr::lead(eval(parse(text = outcome_name)), 1)) %>%
       dplyr::filter(is.na(.data$lag) & is.na(.data$lead))
 
-    data_plot_point$ggplot_color_group <- factor(data_plot_point$ggplot_color_group, ordered = TRUE, levels(data_plot$ggplot_color_group))
+    data_plot_point$ggplot_color_group <- factor(data_plot_point$ggplot_color_group, levels = levels(data_plot$ggplot_color_group), ordered = TRUE)
 
-  } else {
+  } else {  # Grouped time series.
 
-    data_plot$ggplot_color_group <- ordered(data_plot$ggplot_color_group)
+    data_plot$ggplot_color_group <- factor(data_plot$ggplot_color_group, levels = unique(data_plot$ggplot_color_group), ordered = TRUE)
   }
   #----------------------------------------------------------------------------
 
@@ -304,8 +300,11 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
 
   } else {  # Factor outcome.
 
-    p <- p + geom_tile(data = data_plot, aes(x = .data$index, y = ordered(.data$ggplot_color_group),
-                                             fill = ordered(eval(parse(text = outcome_name)))))
+    data_plot <- data_plot[!is.na(data_plot[, outcome_name]), ]  # Removes NA from the legend from geom_tile().
+    data_plot[, outcome_name] <- factor(data_plot[, outcome_name], levels = outcome_levels, ordered = TRUE)
+
+    p <- p + geom_tile(data = data_plot, aes(x = .data$index, y = .data$ggplot_color_group,
+                                             fill = eval(parse(text = outcome_name))))
   }
 
   if (!is.null(groups) && is.null(outcome_levels)) {  # Numeric outcome with groups.
