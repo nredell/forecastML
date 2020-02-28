@@ -343,7 +343,9 @@ and a 3-column data.frame can be used to return point, lower, and upper forecast
 # If 'model' is passed as a named list, the prediction model would be accessed with model$model or model["model"].
 prediction_function <- function(model, data_features) {
   x <- xgboost::xgb.DMatrix(data = as.matrix(data_features))
-  data_pred <- data.frame("y_pred" = predict(model, x))
+  data_pred <- data.frame("y_pred" = predict(model, x),
+                          "y_pred_lower" = predict(model, x) - 2,
+                          "y_pred_upper" = predict(model, x) + 2)
   return(data_pred)
 }
 ```

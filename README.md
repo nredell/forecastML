@@ -53,7 +53,6 @@ model_fun <- function(data) {
 model_results <- forecastML::train_model(data_train, windows, model_name = "LASSO", model_function = model_fun)
 
 prediction_fun <- function(model, data_features) {
-  prediction_fun <- function(model, data_features) {
   data_pred <- data.frame("y_pred" = predict(model, as.matrix(data_features)),
                           "y_pred_lower" = predict(model, as.matrix(data_features)) - 30,
                           "y_pred_upper" = predict(model, as.matrix(data_features)) + 30)

@@ -618,6 +618,11 @@ plot.training_results <- function(x,
     # time series so gaps in data collection are not connected with a line in the plot.
     data[is.na(data[, outcome_name]), paste0(outcome_name, "_pred")] <- NA
 
+    if (all(any(grepl("_pred_lower", names(data))), any(grepl("_pred_upper", names(data))))) {
+      data[is.na(data[, outcome_name]), paste0(outcome_name, "_pred_lower")] <- NA
+      data[is.na(data[, outcome_name]), paste0(outcome_name, "_pred_upper")] <- NA
+    }
+
   } else if (isFALSE(keep_missing) && !is.null(outcome_levels)) {
 
     data <- data[!is.na(data[, outcome_name]), ]

@@ -91,7 +91,7 @@ forecastML_facet_plot <- function(facet, groups) {
   # Adjust the formula, substituting the group name from the data into the 'facet' input formula.
   if ("group" %in% facet_names) {
 
-    rhs <- try(labels(stats::terms(facet)))
+    rhs <- try(labels(stats::terms(facet)), silent = TRUE)
 
     if (methods::is(rhs, "try-error")) {
       rhs <- "."

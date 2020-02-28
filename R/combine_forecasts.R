@@ -442,12 +442,10 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
                                                        group = .data$ggplot_group), show.legend = FALSE)
           }
         }
-      }  # End plot of user-supplied historcal and/or test set actuals.
+      }  # End plot of user-supplied historical and/or test set actuals.
       #------------------------------------------------------------------------
       p <- p + scale_color_viridis_d()
-      #if (is.null(metric)) {  # combine_forecasts(type = "horizon")
-      p <- p + facet_wrap(facet, scales = "free_y")
-      #}
+      p <- p + facet_grid(facet, scales = "free_y")
       p <- p + theme_bw()
       #--------------------------------------------------------------------------
     } else {  # Factor outcome.
