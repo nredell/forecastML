@@ -418,8 +418,6 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
       # Add user-defined actuals data to the plots.
       if (!is.null(data_actual)) {
 
-        # data_actual$ggplot_group <- apply(data_actual[, groups, drop = FALSE], 1, paste, collapse = "-")
-
         if (is.null(groups)) {
 
           p <- p + geom_line(data = data_actual, aes(x = .data$index,

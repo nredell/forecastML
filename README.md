@@ -53,7 +53,10 @@ model_fun <- function(data) {
 model_results <- forecastML::train_model(data_train, windows, model_name = "LASSO", model_function = model_fun)
 
 prediction_fun <- function(model, data_features) {
-  data_pred <- data.frame("y_pred" = predict(model, as.matrix(data_features)))
+  prediction_fun <- function(model, data_features) {
+  data_pred <- data.frame("y_pred" = predict(model, as.matrix(data_features)),
+                          "y_pred_lower" = predict(model, as.matrix(data_features)) - 30,
+                          "y_pred_upper" = predict(model, as.matrix(data_features)) + 30)
 }
 
 data_forecast <- forecastML::create_lagged_df(data_seatbelts, type = "forecast", method = "direct",
@@ -107,7 +110,7 @@ The direct forecasting approach used in `forecastML` involves the following step
 
 **1.** Build a series of horizon-specific short-, medium-, and long-term forecast models.
 
-**2.** Assess model generalization peformance across a variety of heldout datasets through time.
+**2.** Assess model generalization performance across a variety of heldout datasets through time.
 
 **3.** Select those models that consistently performed the best at each forecast horizon and 
 combine them to produce a single ensemble forecast.
@@ -132,7 +135,7 @@ The multi-output forecasting approach used in `forecastML` involves the followin
 
 **1.** Build a single multi-output model that simultaneously forecasts over both short- and long-term forecast horizons.
 
-**2.** Assess model generalization peformance across a variety of heldout datasets through time.
+**2.** Assess model generalization performance across a variety of heldout datasets through time.
 
 **3.** Select the hyperparamters that minimize forecast error overall the relevant forecast horizons and re-train.
 
@@ -459,11 +462,11 @@ plot(data_forecasts, data_actual = data_seatbelts[-(1:150), ],
 ### Multi-output forecast in R
 
 * This is the same seatbelt dataset example except now, instead of 1 model for each 
-forecast horizon, we'll build 1 multi-ouput neural network model that forecasts 12 
+forecast horizon, we'll build 1 multi-output neural network model that forecasts 12 
 steps into the future.
 
 * Given that this is a small dataset, the multi-output approach would require a decent 
-amount of tuning to produce accurate results. An alterative would be to forecast, say, 
+amount of tuning to produce accurate results. An alternative would be to forecast, say, 
 horizons 6 through 12 if longer term forecasts were of interest to reduce the number of 
 parameters; the output neurons do not have to start at a horizon of 1 or even be contiguous.
 
