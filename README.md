@@ -146,7 +146,11 @@ The main functions covered in each vignette are shown below as `function()`.
 
 * **[Creating custom feature lags for model training](https://nredell.github.io/forecastML/doc/lagged_features.html)**. `create_lagged_df(lookback_control = ...)`
 
-* **[Forecasting with multiple or grouped time series](https://nredell.github.io/forecastML/doc/grouped_forecast.html)**. 
+* **[Direct Forecasting with multiple or grouped time series](https://nredell.github.io/forecastML/doc/grouped_forecast.html)**. 
+`fill_gaps()`, 
+`create_lagged_df(dates = ..., dynamic_features = ..., groups = ..., static_features = ...)`, `create_windows()`, `train_model()`, `combine_forecasts()`
+
+* **[Direct Forecasting with multiple or grouped time series - Sequences](https://nredell.github.io/forecastML/doc/grouped_forecast_sequences.html)**. 
 `fill_gaps()`, 
 `create_lagged_df(dates = ..., dynamic_features = ..., groups = ..., static_features = ...)`, `create_windows()`, `train_model()`, `combine_forecasts()`
 

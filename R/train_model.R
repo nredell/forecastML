@@ -677,7 +677,8 @@ plot.training_results <- function(x,
     data_plot$model_forecast_horizon <- NULL
   }
 
-  data_plot <- data_plot[data_plot$model %in% models & data_plot$horizon %in% horizons & data_plot$window_number %in% windows, ]
+  data_plot <- data_plot[data_plot$model %in% models & data_plot$horizon %in% horizons &
+                         data_plot$window_number %in% windows, ]
 
   if (!is.null(group_filter)) {
 
@@ -778,7 +779,7 @@ plot.training_results <- function(x,
 
     } else {  # Factor outcome.
 
-      if (any(names(data) %in% paste0(outcome_name, "_pred"))) {  # A factor level was predicted.
+      if (any(names(data_plot) %in% paste0(outcome_name, "_pred"))) {  # A factor level was predicted.
 
         data_plot <- tidyr::gather(data_plot, "outcome", "value",
                                    -!!names(data_plot)[!names(data_plot) %in% c(outcome_name, paste0(outcome_name, "_pred"))])

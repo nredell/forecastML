@@ -1,10 +1,10 @@
 ---
-title: "Direct Forecasting with Multiple Time Series"
+title: "Direct Forecasting with Multiple Time Series - Sequences"
 author: "Nickalus Redell"
 date: "`r lubridate::today()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Direct Forecasting with Multiple Time Series}
+  %\VignetteIndexEntry{Direct Forecasting with Multiple Time Series - Sequences}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -17,10 +17,11 @@ knitr::opts_knit$set(fig.width = 7.15, fig.height = 4)
 
 # Purpose
 
-The purpose of this vignette is to provide an overview of direct multi-step-ahead forecasting with multiple time series in 
-`forecastML`. The benefits to modeling multiple time series in one go with a single model or ensemble of 
-models include (a) modeling simplicity, (b) potentially more robust results from pooling data across time series, 
-and (c) solving the cold-start problem when few data points are available for a given time series.
+This vignette is a shorter version of the Direct Forecasting with Multiple Time Series vignette. The goal here is 
+to illustrate the workflow for forecasting factor outcomes. To keep this brief, we'll skip model exploration with 
+nested cross-validation by training 1 forecast model across the entire dataset for each direct forecast horizon.
+
+For this problem, the outcome will be artificially binned into 4 factor levels using `cut()`.
 
 
 # Setup
@@ -46,7 +47,7 @@ target being forecasted and any dynamic features can be done (a) prior to `creat
 in the user-defined model training function.
 
 
-# Example - Direct Forecasting
+# Example - Direct Forecasting with Factors
 
 To illustrate forecasting with multiple time series, we'll use the `data_buoy` dataset that comes 
 with the package. This dataset consists of daily sensor measurements of several environmental 
@@ -86,6 +87,9 @@ library(ggplot2)
 library(xgboost)
 
 data("data_buoy_gaps", package = "forecastML")
+
+data_buoy_gaps$wind_spd <- cut(data_buoy_gaps$wind_spd, breaks = c(-1, 3, 5, 8, 10),
+                               ordered_result = TRUE)  # Create the factor outcome.
 
 DT::datatable(head(data_buoy_gaps), options = list(scrollX = TRUE))
 ```
@@ -135,17 +139,16 @@ data$year <- lubridate::year(data$date)
 * Notice that buoy 45186 has only recently come online and would be difficult to forecast on its own.
 
 ```{r, message = FALSE, warning = FALSE}
-p <- ggplot(data, aes(x = date, y = wind_spd, color = ordered(buoy_id), group = year))
-p <- p + geom_line()
+p <- ggplot(data[!is.na(data$wind_spd), ], aes(x = date, y = 1, fill = wind_spd, color = wind_spd))
+p <- p + geom_tile()
 p <- p + facet_wrap(~ ordered(buoy_id), scales = "fixed")
-p <- p + theme_bw() + theme(
-  legend.position = "none"
-) + xlab(NULL)
+p <- p + theme_bw() + theme(axis.text.y = element_blank(), axis.ticks.y = element_blank()) + 
+  xlab(NULL) + ylab(NULL)
 p
 ```
 
 
-## Model Training with Nested CV
+## Model Training
 
 * We'll simply and incorrectly set our grouping column, `buoy_id`, to numeric to work smoothly with `xgboost`. 
 Better alternatives include [feature embedding](https://arxiv.org/abs/1604.06737), 
@@ -214,16 +217,12 @@ p
 
 ### CV setup - `forecastML::create_windows`
 
-* We'll model with **3 validation datasets**. Given that our measurements are taken daily, we'll set 
-the `skip = 730` argument to skip 2 years between validation datasets. Custom validation windows could 
-be defined with vectors of start and stop dates given to `window_start` and `window_stop`.
+* We'll model with **0 external validation datasets** and use a simple cross-validation setup in `train_model()`.
 
 ```{r, message = FALSE, warning = FALSE}
-windows <- forecastML::create_windows(data_train, window_length = 365, skip = 730,
-                                      include_partial_window = FALSE)
+windows <- forecastML::create_windows(data_train, window_length = 0)
 
-p <- plot(windows, data_train) + theme(legend.position = "none")
-p
+plot(windows, data_train)
 ```
 
 <br>
@@ -232,9 +231,7 @@ p
 1 of our 14 time series. The user-supplied filter is passed to `dplyr::filter()` internally.
 
 ```{r, message = FALSE, warning = FALSE}
-p <- plot(windows, data_train, group_filter = "buoy_id == 1") + 
-  theme(legend.position = "none")
-p
+plot(windows, data_train, group_filter = "buoy_id == 1") 
 ```
 
 
@@ -258,8 +255,13 @@ or hyperparameter results.
 # The value of outcome_col can also be set in train_model() with train_model(outcome_col = 1).
 model_function <- function(data, outcome_col = 1) {
   
-  # xgboost cannot handle missing outcomes data.
+  # xgboost cannot model factors directly so they'll be converted to numbers.
+  data[] <- lapply(data, as.numeric)
+  
+  # xgboost cannot handle missing outcomes data so we'll remove this.
   data <- data[!is.na(data[, outcome_col]), ]
+  
+  data[, outcome_col] <- data[, outcome_col] - 1  # xgboost needs factors to start at 0.
 
   indices <- 1:nrow(data)
   
@@ -277,7 +279,10 @@ model_function <- function(data, outcome_col = 1) {
                                     label = as.matrix(data[test_indices, 
                                                            outcome_col, drop = FALSE]))
 
-  params <- list("objective" = "reg:linear")
+  params <- list("objective" = "multi:softprob",
+                 "eval_metric" = "mlogloss",
+                 "num_class" = 4)  # Hard-coding the number of factor levels.
+
   watchlist <- list(train = data_train, test = data_test)
   
   set.seed(224)
@@ -294,7 +299,7 @@ model_function <- function(data, outcome_col = 1) {
 
 ### Model training - `forecastML::train_model`
 
-* This should take ~1 minute to train our '3 forecast horizons' * '3 validation datasets' = *9 models*.
+* This should take ~1 minute to train our '3 forecast horizons' * '1 validation datasets' = *3 models*.
 
 * The user-defined modeling wrapper function could be much more elaborate, in which case many more models 
 could potentially be trained here.
@@ -306,11 +311,11 @@ validation windows, whichever is longer (when equal, the default is parallel acr
 ```{r}
 #future::plan(future::multiprocess)  # Multi-core or multi-session parallel training.
 
-model_results_cv <- forecastML::train_model(lagged_df = data_train,
-                                            windows = windows,
-                                            model_name = "xgboost",
-                                            model_function = model_function, 
-                                            use_future = FALSE)
+model_results <- forecastML::train_model(lagged_df = data_train,
+                                         windows = windows,
+                                         model_name = "xgboost",
+                                         model_function = model_function, 
+                                         use_future = FALSE)
 ```
 
 
@@ -318,16 +323,11 @@ model_results_cv <- forecastML::train_model(lagged_df = data_train,
 we show a `summary()` of the 1-step-ahead model for the first validation window which is 2012.
 
 ```{r}
-summary(model_results_cv$horizon_1$window_1$model)
+summary(model_results$horizon_1$window_1$model)
 ```
 
 
-## Forecasting with Nested Models
-
-* First, we'll visually evaluate our model's performance across our validation datasets.
-
-* Then we'll forecast with each of our 9 models to get a sense of the stability of the forecasts 
-produced from models trained on different subsets of our historical data.
+## Forecast
 
 ### User-defined prediction function
 
@@ -339,11 +339,48 @@ The following user-defined prediction function is needed for each model:
 * and **returns** a `data.frame` of predictions with 1 or 3 columns. A 1-column data.frame will produce point forecasts, 
 and a 3-column data.frame can be used to return point, lower, and upper forecasts (column names and order do not matter).
 
+#### Function to predict class probabilities
+
+* Returns a 4-column data.frame of predicted probabilities--one for each factor.
+
 ```{r}
 # If 'model' is passed as a named list, the prediction model would be accessed with model$model or model["model"].
-prediction_function <- function(model, data_features) {
+prediction_function_prob <- function(model, data_features) {
+  
+  # xgboost cannot model factors directly so they'll be converted to numbers.
+  data_features[] <- lapply(data_features, as.numeric)
+  
   x <- xgboost::xgb.DMatrix(data = as.matrix(data_features))
-  data_pred <- data.frame("y_pred" = predict(model, x))
+  data_pred <- data.frame("y_pred" = predict(model, x, reshape = TRUE))  # 'reshape' returns a wide data.frame.
+  return(data_pred)
+}
+```
+
+
+#### Function to predict class levels
+
+* Returns a 1-column data.frame with the predicted factor level.
+
+```{r}
+# We'll define a global variable with the factor levels.
+factor_levels <- levels(data_buoy_gaps$wind_spd)
+
+# If 'model' is passed as a named list, the prediction model would be accessed with model$model or model["model"].
+prediction_function_level <- function(model, data_features) {
+  
+  # xgboost cannot model factors directly so they'll be converted to numbers.
+  data_features[] <- lapply(data_features, as.numeric)
+  
+  x <- xgboost::xgb.DMatrix(data = as.matrix(data_features))
+  data_pred <- data.frame("y_pred" = predict(model, x, reshape = TRUE))  # 'reshape' returns a wide data.frame.
+  
+  data_pred$y_pred <- apply(data_pred, 1, which.max)  # Find the column with the highest probability.
+  data_pred$y_pred <- dplyr::recode(data_pred$y_pred, `1` = factor_levels[1], `2` = factor_levels[2], 
+                                    `3` = factor_levels[3], `4` = factor_levels[4])
+
+  data_pred$y_pred <- factor(data_pred$y_pred, levels = factor_levels, ordered = TRUE)
+
+  data_pred <- data_pred[, "y_pred", drop = FALSE]
   return(data_pred)
 }
 ```
@@ -351,56 +388,49 @@ prediction_function <- function(model, data_features) {
 
 ### Historical model fit
 
-* Here, we're predicting on our 3 validation datasets.
+* Here, we're predicting on our validation dataset with predicted (a) probabilities and (b) factor levels.
 
 ```{r}
-data_pred_cv <- predict(model_results_cv, prediction_function = list(prediction_function), data = data_train)
+data_pred_prob <- predict(model_results, prediction_function = list(prediction_function_prob), data = data_train)
+
+data_pred_level <- predict(model_results, prediction_function = list(prediction_function_level), data = data_train)
 ```
 
-* We'll filter this plot for closer inspection below.
+* With 14 buoys and 3 direct forecast horizons, there are a total of 42 forecasts to plot. We'll filter these 
+in our plot to better see the actuals and predictions for 2 buoys at a direct forecast horizon of 7 days.
 
 ```{r, message = FALSE, warning = FALSE}
-plot(data_pred_cv) + theme(legend.position = "none")
+plot(data_pred_prob, horizons = 7, group_filter = "buoy_id %in% c(1, 2)")
 ```
 
 <br>
 
-* It's somewhat difficult to see how we've done here, so we'll use the `group_filter` 
-and `facet` arguments to focus on specific buoys.
+* Below are the factor level plots for the same buoys and horizon but zoomed in to 2018.
 
 ```{r, message = FALSE, warning = FALSE}
-plot(data_pred_cv, facet = group ~ model, group_filter = "buoy_id %in% c(1, 2, 3)", windows = 1) 
+inspect_dates <- seq(as.Date("2018-01-01"), as.Date("2018-12-31"), by = "1 day")
+
+plot(data_pred_level[data_pred_level$date_indices %in% inspect_dates, ], horizons = 7, group_filter = "buoy_id %in% c(1, 2)")
 ```
 
-<br>
-
-* Here is another plot of the same historical predictions but with `facet = group ~ horizon`. 
-Use different combinations of `model`, `horizon`, `group`, along with `.` (on the right hand side of `~`) 
-in a formula with `~` to quickly explore results.
-
-```{r, message = FALSE, warning = FALSE}
-plot(data_pred_cv, facet = group ~ horizon, group_filter = "buoy_id %in% c(1, 2, 3)", windows = 1) 
-```
-<br>
 
 ### Historical prediction error - `forecastML::return_error`
 
-* Let's take a quick look at our historical forecast error for buoys 1:3.
+* Let's take a quick look at our historical forecast error..
 
-* We'll look at mean absolute error (a) for each validation window, (b) for each of the direct forecast horizons 
-(collapsed across validation windows), and global error collapsed across validation windows and 
-direct forecast horizons.
+* At present, mean absolute error--based on the binary misclassification rate where 0 is a correct prediction and 1 is incorrect--is 
+the only error metric available for forecasting factor levels, and error metrics for predicted factor probabilities 
+are not currently supported. Additional error metrics will continue to be added to `forecastML`.
 
 ```{r, message = FALSE, warning = FALSE}
-data_error <- forecastML::return_error(data_pred_cv)
+data_error <- forecastML::return_error(data_pred_level, metric = "mae")
 
-plot(data_error, data_pred_cv, type = "time", group_filter = "buoy_id %in% c(1, 2, 3)", metric = "mae")
-plot(data_error, data_pred_cv, type = "horizon", group_filter = "buoy_id %in% c(1, 2, 3)", metric = "mae")
-plot(data_error, data_pred_cv, type = "global", group_filter = "buoy_id %in% c(1, 2, 3)", metric = "mae")
+plot(data_error, data_pred_cv, type = "horizon", metric = "mae")
+plot(data_error, data_pred_cv, type = "global", metric = "mae")
 ```
 
 
-### Forecasting with multiple models from nested CV
+### Forecast
 
 * We have 3 datasets that support forecasting 1, 1 to 7, and 1 to 30 days into 
 the future. We'll view the 1-day-ahead forecasting data below.
@@ -445,59 +475,21 @@ for (i in seq_along(data_forecast)) {
 12-31-2018 + 1 * '1 day' or 1-1-2019.
 
 ```{r}
-data_forecasts <- predict(model_results_cv, prediction_function = list(prediction_function), data = data_forecast)
+data_forecasts_prob <- predict(model_results, prediction_function = list(prediction_function_prob), data = data_forecast)
+
+data_forecasts_level <- predict(model_results, prediction_function = list(prediction_function_level), data = data_forecast)
 ```
 
 
-* Plots for each model--just `xgboost` here--and direct forecast horizon. Because there are 3 
-`xgboost` models for each direct forecast horizon there are 3 points/lines for each buoy within 
-each direct forecast horizon.
+* We'll focus on 2 buoys in our plots.
 
 ```{r, message = FALSE, warning = FALSE}
-plot(data_forecasts)
+plot(data_forecasts_prob, group_filter = "buoy_id %in% c(1, 2)")
 ```
 
 
 ```{r, message = FALSE, warning = FALSE}
-plot(data_forecasts, facet = group ~ model, group_filter = "buoy_id %in% 1:3")
-```
-
-
-## Model Training with All Data
-
-* The modeling steps are more or less the same as in the nested cross-validation modeling described 
-above so we'll skip the explanations from here on out.
-
-* Notice that by this point in the modeling process, the optimal hyperparameters that gave the best performance on 
-the outer-loop validation datasets have already been identified (see the package overview vignette). Incorporating the 
-optimal hyperparameters in a final model would occur in a new user-defined modeling wrapper function.
-
-* Train across all data by setting **`window_length = 0`**.
-
-```{r, message = FALSE, warning = FALSE}
-windows <- forecastML::create_windows(data_train, window_length = 0)
-
-p <- plot(windows, data_train) + theme(legend.position = "none")
-p
-```
-
-
-```{r}
-# Un-comment the code below and set 'use_future' to TRUE.
-#future::plan(future::multiprocess)
-
-model_results_no_cv <- forecastML::train_model(lagged_df = data_train, 
-                                               windows = windows,
-                                               model_name = "xgboost",
-                                               model_function = model_function,
-                                               use_future = FALSE)
-```
-
-
-```{r}
-data_forecasts <- predict(model_results_no_cv, prediction_function = list(prediction_function), data = data_forecast)
-
-DT::datatable(head(data_forecasts), options = list(scrollX = TRUE))
+plot(data_forecasts_level, group_filter = "buoy_id %in% c(1, 2)")
 ```
 
 
@@ -512,37 +504,22 @@ This implies that, for our 30-day-ahead forecast,
     + The 1-step-ahead model forecasts the next day,
     + The 7-step-ahead model forecasts from days 2 through 7, and
     + The 30-step-ahead model forecasts from days 8 through 30.
+<p>
+*  Note: Plotting actuals alongside grouped time series with factor outcomes is not currently supported.
 
 ```{r, message = FALSE, warning = FALSE}
-data_combined <- forecastML::combine_forecasts(data_forecasts)
+data_combined_prob <- forecastML::combine_forecasts(data_forecasts_prob)
+data_combined_level <- forecastML::combine_forecasts(data_forecasts_level)
 
-# Plot a background dataset of actuals using the most recent data.
-data_actual <- data[dates >= as.Date("2018-11-01"), ]
-actual_indices <- dates[dates >= as.Date("2018-11-01")]
-
-# Plot all final forecasts plus historical data.
-plot(data_combined, data_actual = data_actual, actual_indices = actual_indices)
+# Plot the final forecasts.
+plot(data_combined_prob, group_filter = "buoy_id %in% c(1, 2)")
+plot(data_combined_level, group_filter = "buoy_id %in% c(1, 2)")
 ```
 
 <br>
 
-* Below we'll get a closer look at the actuals and forecasts by setting `facet = ~ group`. 
-We'll also filter to examine buoys 1, 11, and 12 because they have different historical patterns 
-of missing data.
 
-```{r, message = FALSE, warning = FALSE}
-plot(data_combined, data_actual = data_actual, actual_indices = actual_indices, 
-     facet = group ~ ., group_filter = "buoy_id %in% c(1, 11, 12)")
-```
 
-<br>
 
-* Plot a single forecast.
-
-```{r}
-# Plot final forecasts for a single buoy plus historical data.
-plot(data_combined, data_actual = data_actual, actual_indices = actual_indices,
-     group_filter = "buoy_id == 10")
-```
-
-***
+ ***
+ 
