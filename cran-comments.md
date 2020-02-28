@@ -1,7 +1,7 @@
 ## Test environments
 
 * local Windows install, R 3.5.3, 3.6.2, and devel
-* ubuntu 16.04 (on travis-ci), R 3.6.1
+* ubuntu 16.04 (on travis-ci), R 3.6.2
 
 ## R CMD check results
 
@@ -17,6 +17,7 @@
         + Added a new vignette for forecasting grouped time series with factors.
     + Bug fixes
         + Forecast combinations with grouped time series and factors now works.
+        + Set required R version to 3.5.0
     + Internals
         + Substantial code refactor
         + Unit test code coverage = 82%.
