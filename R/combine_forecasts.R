@@ -350,46 +350,46 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
         #----------------------------------------------------------------------------------
         # If the plotting data.frame has both lower and upper forecasts, plot these bounds.
         if (all(any(grepl("_pred_lower", names(data_forecast))), any(grepl("_pred_upper", names(data_forecast))))) {
-#
-#           # For geom_ribbon(), rows need to be added to the plotting dataset to remove gaps in the colored
-#           # ribbons so that they touch each other when changing from one model forecast horizon to the next.
-#           # dplyr::distinct() keep the first distinct row which is the desired behavior.
-#           if (is.null(groups)) {  # Single time series.
-#
-#             data_fill <- dplyr::distinct(data_forecast, .data$model, .data$model_forecast_horizon, .keep_all = TRUE)
-#
-#             data_fill <- data_forecast %>%
-#               dplyr::group_by_at(dplyr::vars(.data$model)) %>%
-#               dplyr::mutate("model_forecast_horizon" = dplyr::lag(.data$model_forecast_horizon, 1)) %>%
-#               dplyr::filter(!is.na(.data$model_forecast_horizon))
-#
-#             data_fill <- dplyr::bind_rows(data_forecast, data_fill)
-#
-#             p <- p + geom_ribbon(data = data_fill,
-#                                  aes(x = .data$index, ymin = eval(parse(text = paste0(outcome_name, "_pred_lower"))),
-#                                      ymax = eval(parse(text = paste0(outcome_name, "_pred_upper"))),
-#                                      color = ordered(.data$model_forecast_horizon),
-#                                      fill = ordered(.data$model_forecast_horizon)),
-#                                  linetype = 0, alpha = .25, show.legend = FALSE)
-#
-#           } else {  # Grouped time series.
-#
-#             data_fill <- dplyr::distinct(data_forecast, .data$model, .data$model_forecast_horizon, .data$ggplot_group, .keep_all = TRUE)
-#
-#             data_fill <- data_forecast %>%
-#               dplyr::group_by_at(dplyr::vars(.data$model, .data$ggplot_group)) %>%
-#               dplyr::mutate("model_forecast_horizon" = dplyr::lag(.data$model_forecast_horizon, 1)) %>%
-#               dplyr::filter(!is.na(.data$model_forecast_horizon))
-#
-#             data_fill <- dplyr::bind_rows(data_forecast, data_fill)
-#
-#             p <- p + geom_ribbon(data = data_fill,
-#                                  aes(x = .data$index, ymin = eval(parse(text = paste0(outcome_name, "_pred_lower"))),
-#                                      ymax = eval(parse(text = paste0(outcome_name, "_pred_upper"))),
-#                                      color = .data$ggplot_group,
-#                                      fill = .data$ggplot_group),
-#                                  linetype = 0, alpha = .25, show.legend = FALSE)
-#           }
+
+          # For geom_ribbon(), rows need to be added to the plotting dataset to remove gaps in the colored
+          # ribbons so that they touch each other when changing from one model forecast horizon to the next.
+          # dplyr::distinct() keep the first distinct row which is the desired behavior.
+          if (is.null(groups)) {  # Single time series.
+
+            data_fill <- dplyr::distinct(data_forecast, .data$model, .data$model_forecast_horizon, .keep_all = TRUE)
+
+            data_fill <- data_forecast %>%
+              dplyr::group_by_at(dplyr::vars(.data$model)) %>%
+              dplyr::mutate("model_forecast_horizon" = dplyr::lag(.data$model_forecast_horizon, 1)) %>%
+              dplyr::filter(!is.na(.data$model_forecast_horizon))
+
+            data_fill <- dplyr::bind_rows(data_forecast, data_fill)
+
+            p <- p + geom_ribbon(data = data_fill,
+                                 aes(x = .data$index, ymin = eval(parse(text = paste0(outcome_name, "_pred_lower"))),
+                                     ymax = eval(parse(text = paste0(outcome_name, "_pred_upper"))),
+                                     color = ordered(.data$model_forecast_horizon),
+                                     fill = ordered(.data$model_forecast_horizon)),
+                                 linetype = 0, alpha = .25, show.legend = FALSE)
+
+          } else {  # Grouped time series.
+
+            data_fill <- dplyr::distinct(data_forecast, .data$model, .data$model_forecast_horizon, .data$ggplot_group, .keep_all = TRUE)
+
+            data_fill <- data_forecast %>%
+              dplyr::group_by_at(dplyr::vars(.data$model, .data$ggplot_group)) %>%
+              dplyr::mutate("model_forecast_horizon" = dplyr::lag(.data$model_forecast_horizon, 1)) %>%
+              dplyr::filter(!is.na(.data$model_forecast_horizon))
+
+            data_fill <- dplyr::bind_rows(data_forecast, data_fill)
+
+            p <- p + geom_ribbon(data = data_fill,
+                                 aes(x = .data$index, ymin = eval(parse(text = paste0(outcome_name, "_pred_lower"))),
+                                     ymax = eval(parse(text = paste0(outcome_name, "_pred_upper"))),
+                                     color = .data$ggplot_group,
+                                     fill = .data$ggplot_group),
+                                 linetype = 0, alpha = .25, show.legend = FALSE)
+          }
         }  # End plotting lower and upper forecast bounds.
         #----------------------------------------------------------------------
 
