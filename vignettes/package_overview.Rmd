@@ -49,6 +49,8 @@ For reference, below are some resources for learning more about multi-step-ahead
   <img src="./direct_forecast.png"></img>
 </p>
 
+<br>
+
 In contrast to the recursive or iterated method for producing multi-step-ahead forecasts used in traditional forecasting 
 methods like ARIMA, direct forecasting involves creating a series of distinct horizon-specific models. Though 
 several hybrid methods exist for producing multi-step forecasts, the simple direct forecasting method 
@@ -79,6 +81,8 @@ represents a distinct horizon-specific ML model. From left to right these models
 <p align="center">
   <img src="./multi_output_forecast.png"></img>
 </p>
+
+<br>
 
 The multi-output forecasting approach used in `forecastML` involves the following steps:
 

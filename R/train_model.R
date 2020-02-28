@@ -263,10 +263,6 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
   if (!methods::is(data, "lagged_df")) {
     stop("The 'data' argument takes a training or forecasting dataset of class 'lagged_df' from create_lagged_df().")
   }
-
-  if (unique(unlist(lapply(model_list, function(x){attributes(x)$method}))) > 1) {
-    stop("Side-by-side predictions and comparisons of direct and multi-output forecast models are not currently supported.")
-  }
   #----------------------------------------------------------------------------
   type <- attributes(data)$type  # train or forecast.
 
@@ -1429,11 +1425,15 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
       data_plot$value <- as.numeric(data_plot$value)
       data_plot$outcome <- factor(data_plot$outcome, levels = outcome_levels, ordered = TRUE)
       #------------------------------------------------------------------------
+
+      if (!is.null(groups)) {
+        data_plot <- dplyr::distinct(data_plot, .data$ggplot_color_group, .data$index, .data$outcome, .keep_all = TRUE)
+      }
+
       p <- ggplot()
       p <- p + geom_col(data = data_plot,
                         aes(x = .data$index, y = .data$value, color = .data$outcome, fill = .data$outcome),
                         position = position_stack(reverse = TRUE))
-      p <- p + scale_y_continuous(limits = 0:1, breaks = c(0, .5, 1))
       p <- p + scale_color_viridis_d(drop = FALSE)
       p <- p + scale_fill_viridis_d(drop = FALSE)
       if (is.null(groups)) {

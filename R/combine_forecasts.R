@@ -65,10 +65,6 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
            the optimal model at each direct forecast horizon from the models passed in '...', e.g., 'mae'.")
     }
   }
-
-  if (unique(unlist(lapply(data_forecast_list, function(x){attributes(x)$method}))) > 1) {
-    stop("Combining forecasts from direct and multi-output forecast models is not currently supported.")
-  }
   #----------------------------------------------------------------------------
   method <- attributes(data_forecast_list[[1]])$method
   outcome_name <- attributes(data_forecast_list[[1]])$outcome_name
@@ -512,11 +508,14 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
             data_plot <- data_plot[!grepl("Actual", data_plot$ggplot_color_group), ]
           }
 
+          if (!is.null(groups)) {
+            data_plot <- dplyr::distinct(data_plot, .data$ggplot_color_group, .data$index, .data$outcome, .keep_all = TRUE)
+          }
+
           p <- ggplot()
           p <- p + geom_col(data = data_plot,
                             aes(x = .data$index, y = .data$value, color = .data$outcome, fill = .data$outcome),
                             position = position_stack(reverse = TRUE))
-          p <- p + scale_y_continuous(limits = 0:1)
           p <- p + scale_color_viridis_d(drop = FALSE)
           p <- p + scale_fill_viridis_d(drop = FALSE)
           if (is.null(groups)) {

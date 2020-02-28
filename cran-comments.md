@@ -9,6 +9,19 @@
 
 ## Submission history
 
+* **02-28-2020**
+* This is a minor version update, 0.7.0 to 0.8.0, for an existing CRAN package.
+    + User-visible new features
+        + Support forecasting with multi-output models (e.g., multi-output neural networks).
+        + Refined plot API including support for pivoting results with formulas.
+        + Added a new vignette for forecasting grouped time series with factors.
+    + Bug fixes
+        + Forecast combinations with grouped time series and factors now works.
+    + Internals
+        + Substantial code refactor
+        + Unit test code coverage = 82%.
+<br>
+
 * **01-06-2020**
 * This is a minor version update, 0.6.0 to 0.7.0, for an existing CRAN package.
     + User-visible new features
