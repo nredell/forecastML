@@ -402,7 +402,7 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
   if (is.null(groups)) {
     data_plot <- dplyr::arrange(data_plot, .data$model, .data$horizon, .data$window_number)
   } else {
-    data_plot <- dplyr::arrange(data_plot, .data$model, .data$horizon, .data$window_number, !!rlang::sym(groups))
+    data_plot <- dplyr::arrange(data_plot, .data$model, .data$horizon, .data$window_number, !!!rlang::syms(groups))
   }
 
   if (type == "global") {

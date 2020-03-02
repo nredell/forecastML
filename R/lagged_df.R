@@ -228,8 +228,16 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
     # This block of code ensures that unsorted data.frames will return the correct lagged feature values.
     data$forecastML_dates <- dates  # Adding to the data temporarily for sorting.
 
-    data <- data %>%
-      dplyr::arrange(!!rlang::sym(groups), .data$forecastML_dates)
+    if (length(groups) == 1) {
+
+      data <- data %>%
+        dplyr::arrange(!!rlang::sym(groups), .data$forecastML_dates)
+
+    } else {
+
+      data <- data %>%
+        dplyr::arrange(!!!rlang::syms(groups), .data$forecastML_dates)
+    }
 
     dates <- data$forecastML_dates
     data$forecastML_dates <- NULL
