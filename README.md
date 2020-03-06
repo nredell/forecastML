@@ -7,7 +7,7 @@
 [![Travis Build
 Status](https://travis-ci.org/nredell/forecastML.svg?branch=master)](https://travis-ci.org/nredell/forecastML) 
 [![codecov](https://codecov.io/github/nredell/forecastML/branch/master/graphs/badge.svg)](https://codecov.io/github/nredell/forecastML)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/nredell/forecastML/master?filepath=https%3A%2F%2Fgithub.com%2Fnredell%2FforecastML%2Ftree%2Fmaster%2Fnotebooks)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/nredell/forecastML/master?urlpath=https%3A%2F%2Fgithub.com%2Fnredell%2FforecastML%2Ftree%2Fmaster%2Fnotebooks%2F)
 
 # package::forecastML <img src="./man/figures/forecastML_logo.png" alt="forecastML logo" align="right" height="138.5" style="display: inline-block;">
 
