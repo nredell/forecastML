@@ -8,3 +8,4 @@
 ^Meta$
 ^codecov\.yml$
 ^cran-comments\.md$
+^notebooks$
