@@ -204,6 +204,13 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
   #--------------------------------------------------------------------------
   data <- as.data.frame(data)
 
+  # The outcomes will always be moved to the front of the dataset and eventually more than one
+  # outcome will be supported.
+  if (outcome_col != 1) {
+    data <- cbind(data[, outcome_col, drop = FALSE], data[, -(outcome_col), drop = FALSE])
+    outcome_col <- 1
+  }
+
   outcome_name <- names(data)[outcome_col]
 
   type <- type[1]  # Model-training datasets are the default.
@@ -516,7 +523,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
               lookback_over_horizon <- (lookback_control[[i]][[j]] - 1)[(lookback_control[[i]][[j]] - 1) >= 0]
             }
           }
-        }  # End lookback_control lag adjustment
+        }  # End lookback_control lag adjustment.
         #----------------------------------------------------------------------
         # If there are no feature-level lags suitable for the forecast horizons, return NULL for this feature-level lagged data.frame.
         # However, grouping features will pass through and be added to the output dataset without lags.

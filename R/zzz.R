@@ -71,7 +71,7 @@ forecastML_smape <- function(x, y, z, ...) {
 }
 #------------------------------------------------------------------------------
 # Function for ggplot2 faceting in train_model.R, return_error.R, and combine_forecasts.R. The input is (1) a formula
-# with any of 'horizon', 'model', 'group', or '.' and (2) a string identifying the grouping column,
+# with any of 'horizon', 'model', 'group', or '.' and (2) a string identifying the grouping columns,
 # if any, in the input dataset. The output is a list containing (1) a formula where any
 # groups in the modeling dataset are substituted for "~ group" and (2) facet names
 # for use with ggplot2 geom objects. Plot aesthetics like color and group are adjusted automatically
@@ -88,7 +88,7 @@ forecastML_facet_plot <- function(facet, groups) {
     stop("One or more of the plot facets is not in 'horizon', 'model', or 'group'.")
   }
 
-  # Adjust the formula, substituting the group name from the data into the 'facet' input formula.
+  # Adjust the formula, substituting the group names from the data into the 'facet' input formula.
   if ("group" %in% facet_names) {
 
     rhs <- try(labels(stats::terms(facet)), silent = TRUE)
@@ -99,12 +99,26 @@ forecastML_facet_plot <- function(facet, groups) {
 
     lhs <- facet_names[!facet_names %in% rhs]
 
-    lhs[lhs %in% "group"] <- groups
-    rhs[rhs %in% "group"] <- groups
+    if (length(groups) == 1) {
+
+      lhs[lhs %in% "group"] <- groups
+      rhs[rhs %in% "group"] <- groups
+
+    } else {
+
+      if (lhs %in% "group") {
+        lhs <- c(lhs, groups)
+        lhs <- lhs[!lhs %in% "group"]
+      }
+
+      if (rhs %in% "group") {
+        rhs <- c(rhs, groups)
+        rhs <- rhs[!rhs %in% "group"]
+      }
+    }
 
     facet <- as.formula(paste(paste(lhs, collapse = "+"), "~", paste(rhs, collapse = "+")))
-
-    facet_names[facet_names %in% "group"] <- groups
+    facet_names <- c(facet_names[!facet_names %in% "group"], groups)
   }
   return(list(facet, facet_names))
 }

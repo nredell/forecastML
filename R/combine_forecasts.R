@@ -445,7 +445,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
       #------------------------------------------------------------------------
       p <- p + scale_color_viridis_d()
       p <- p + facet_grid(facet, scales = "free_y")
-      p <- p + theme_bw()
+      p <- p + theme_bw() + theme(panel.spacing = unit(0, "lines"))
       #--------------------------------------------------------------------------
     } else {  # Factor outcome.
 

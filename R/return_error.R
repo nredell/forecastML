@@ -333,7 +333,7 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
 
     if (type == "time") {
 
-      facet <- ~ horizon ~ model
+      facet <- horizon ~ model
 
     } else if (type == "horizon") {
 
@@ -394,10 +394,10 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
   #----------------------------------------------------------------------------
   # Melt the data for plotting.
   data_plot <- tidyr::gather(data_plot, "error_metric", "value", -!!names(data_plot)[!names(data_plot) %in% error_metrics])
-  #--------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
   # ggplot colors and facets are complimentary: all facets, same color; all colors, no facet.
   ggplot_color <- c(c("model", "horizon", groups)[!c("model", "horizon", groups) %in% facet_names])
-  #--------------------------------------------------------------------------
+  #----------------------------------------------------------------------------
 
   if (is.null(groups)) {
     data_plot <- dplyr::arrange(data_plot, .data$model, .data$horizon, .data$window_number)
@@ -411,13 +411,16 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
   }
 
   data_plot$horizon <- factor(data_plot$horizon, levels = unique(data_plot$horizon), ordered = TRUE)
-  data_plot[, groups] <- factor(data_plot[, groups], levels = unique(data_plot[, groups]), ordered = TRUE)
+
+  data_plot[, groups] <- lapply(seq_along(data_plot[, groups, drop = FALSE]), function(i) {
+    factor(data_plot[, groups[i]], levels = unique(data_plot[, groups[i]]), ordered = TRUE)
+  })
 
   data_plot$ggplot_color <- apply(data_plot[,  ggplot_color, drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
 
   data_plot$ggplot_color <- factor(data_plot$ggplot_color, levels = unique(data_plot$ggplot_color), ordered = TRUE)
 
-  # Give predictions a name in the legend if plot is faceted by model and horizon (and group if groups are given).
+  # Give error a name in the legend if plot is faceted by model and horizon (and group if groups are given).
   if (length(ggplot_color) == 0) {
     data_plot$ggplot_color <- "Error"
     data_plot$ggplot_color <- ordered(data_plot$ggplot_color)
@@ -428,6 +431,8 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
   x_axis_title <- paste(temp_1, temp_2, sep = "")
   x_axis_title <- paste(x_axis_title, collapse = " + ")
 
+  #----------------------------------------------------------------------------
+  # Create plots.
   if (type == "time") {
 
     p <- ggplot()
@@ -448,7 +453,7 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
                                               ))
     p <- p + scale_color_viridis_d()
     p <- p + facet_grid(facet, scales = "free")
-    p <- p + theme_bw()
+    p <- p + theme_bw() + theme(panel.spacing = unit(0, "lines"))
     p <- p + xlab("Dataset index") + ylab(paste0("Forecast error metric (", error_metrics, ")")) + labs(color = x_axis_title) +
       ggtitle("Forecast Error by Validation Window")
 
@@ -466,6 +471,7 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
     p <- p + facet_grid(facet, scales = "free_y")
     p <- p + scale_color_viridis_d()
     p <- p + theme_bw() + theme(
+      panel.spacing = unit(0, "lines"),
       axis.text.x = element_blank()
     )
     p <- p + xlab(x_axis_title) + ylab(paste0("Forecast error metric (", error_metrics, ")")) + labs(fill = x_axis_title, alpha = NULL) +
@@ -487,6 +493,7 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
     p <- p + scale_fill_viridis_d()
     p <- p + facet_grid(facet, scales = "free")
     p <- p + theme_bw() + theme(
+      panel.spacing = unit(0, "lines"),
       axis.text.x = element_blank()
     )
     p <- p + xlab(x_axis_title) + ylab(paste0("Forecast error metric (", error_metrics, ")")) + labs(fill = x_axis_title, alpha = NULL) +

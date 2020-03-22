@@ -166,7 +166,7 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
                         position = position_dodge(), alpha = .5)
     }
     p <- p + facet_grid(hyper ~ horizon, scales = "free")
-    p <- p + theme_bw()
+    p <- p + theme_bw() + theme(panel.spacing = unit(0, "lines"))
     p <- p + xlab("Window number") + ylab("Hyperparameter value/count") +
       labs(color = "Horizon - Window", fill = "Hyper") + ggtitle("Hyperparameter Stability Across Validation Windows")
     return(p)
@@ -218,7 +218,7 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
       p <- p + scale_color_viridis_d()
       p <- p + scale_fill_viridis_d()
       p <- p + facet_grid(error_metric ~ hyper, scales = "free")
-      p <- p + theme_bw()
+      p <- p + theme_bw() + theme(panel.spacing = unit(0, "lines"))
       p <- p + xlab("Hyperparameter value") + ylab("Error metric") +
         labs(color = "Horizon") + ggtitle("Forecast Error and Hyperparameter Values")
     }  # End numeric hyperparameter plot.
@@ -233,7 +233,7 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
                                 position = position_dodge())
       p_cat <- p_cat + scale_fill_viridis_d()
       p_cat <- p_cat + facet_grid(error_metric ~ hyper, scales = "free")
-      p_cat <- p_cat + theme_bw()
+      p_cat <- p_cat + theme_bw() + theme(panel.spacing = unit(0, "lines"))
       p_cat <- p_cat + xlab("Hyperparameter value") + ylab("Error metric") +
         labs(fill = "Horizon + validation window") + ggtitle("Forecast Error and Hyperparameter Values")
     }  # End categorical hyperparameter plot.

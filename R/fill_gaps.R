@@ -88,12 +88,12 @@ fill_gaps <- function(data, date_col = 1L, frequency, groups = NULL,
   } else {
 
     data <- data %>%
-      dplyr::arrange(eval(parse(text = groups)), eval(parse(text = date_name)))
+      dplyr::arrange(eval(parse(text = date_name)), eval(parse(text = groups)))
   }
 
   # Create a merge template giving the date bounds for non-grouped or grouped data.
   data_template <- data %>%
-    dplyr::group_by_at(dplyr::vars(groups)) %>%
+    dplyr::group_by_at(dplyr::vars(!!!groups)) %>%
     dplyr::summarize("date_min" = min(eval(parse(text = date_name)), na.rm = TRUE)) %>%
     dplyr::ungroup()
 
@@ -106,7 +106,7 @@ fill_gaps <- function(data, date_col = 1L, frequency, groups = NULL,
     # guards against static features that are mostly static or have not changed recently but that may
     # have changed in the distant past. The user will be made aware of this in the help docs.
     data_static <- data %>%
-      dplyr::group_by_at(dplyr::vars(groups)) %>%
+      dplyr::group_by_at(dplyr::vars(!!!groups)) %>%
       dplyr::mutate("date_max" = max(eval(parse(text = date_name)), na.rm = TRUE)) %>%
       dplyr::filter(eval(parse(text = date_name)) == .data$date_max) %>%
       dplyr::select_at(dplyr::vars(groups, static_features))
@@ -163,7 +163,7 @@ fill_gaps <- function(data, date_col = 1L, frequency, groups = NULL,
   } else {
 
     data_out <- data_out %>%
-      dplyr::arrange(eval(parse(text = groups)), eval(parse(text = date_name)))
+      dplyr::arrange(eval(parse(text = date_name)), eval(parse(text = groups)))
   }
 
   # Re-order the complete dataset to have the same column order as the input dataset.

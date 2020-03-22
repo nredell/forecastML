@@ -854,7 +854,7 @@ plot.training_results <- function(x,
         if (!is.null(facet)) {
           p <- p + facet_grid(facet, drop = TRUE)
         }
-        p <- p + theme_bw()
+        p <- p + theme_bw() + theme(panel.spacing = unit(0, "lines"))
 
     #--------------------------------------------------------------------------
     #--------------------------------------------------------------------------
@@ -886,7 +886,7 @@ plot.training_results <- function(x,
           p <- p + scale_color_viridis_d(drop = FALSE)
           p <- p + scale_fill_viridis_d(drop = FALSE)
           p <- p + facet_wrap(~ ggplot_color_group, ncol = 1, scales = "free_y")
-          p <- p + theme_bw()
+          p <- p + theme_bw() + theme(panel.spacing = unit(0, "lines"))
 
         } else {  # Plot class probabilities with grouped data.
 
@@ -970,7 +970,7 @@ plot.training_results <- function(x,
         p <- p + geom_hline(yintercept = 0)
         p <- p + scale_color_viridis_d()
         p <- p + facet_grid(facet, drop = TRUE)
-        p <- p + theme_bw()
+        p <- p + theme_bw() + theme(panel.spacing = unit(0, "lines"))
 
       } else {  # Factor outcome.
 
@@ -988,7 +988,7 @@ plot.training_results <- function(x,
         # Plot predictions to avoid duplicate residuals in plots.
         p <- p + geom_tile(data = data_plot[data_plot$outcome != outcome_name, ], aes(x = .data$index, y = .data$ggplot_color_group,
                                                  fill = ordered(.data$residual)))
-        p <- p + theme_bw()
+        p <- p + theme_bw() + theme(panel.spacing = unit(0, "lines"))
       }
     }  # End residual plot.
     #--------------------------------------------------------------------------
@@ -1088,7 +1088,7 @@ plot.training_results <- function(x,
 
     p <- p + geom_line(data = data_outcome, aes(x = .data$index,
                                                 y = eval(parse(text = outcome_name))), color = "gray50")
-    p <- p + theme_bw()
+    p <- p + theme_bw() + theme(panel.spacing = unit(0, "lines"))
     p <- p + xlab("Dataset index") + ylab("Outcome") + labs(color = "Model") + labs(fill = NULL) +
       ggtitle("Rolling Origin Forecast Stability - Faceted by dataset index")
 
@@ -1357,7 +1357,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
       }
 
       p <- p + scale_color_viridis_d()
-      p <- p + theme_bw()
+      p <- p + theme_bw() + theme(panel.spacing = unit(0, "lines"))
       p <- p + facet_grid(facet, scales = "free_y")
 
     #--------------------------------------------------------------------------
