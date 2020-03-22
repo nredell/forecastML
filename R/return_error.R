@@ -35,6 +35,7 @@
 #'   \item \code{mape}: Mean absolute percentage error
 #'   \item \code{mdape}: Median absolute percentage error
 #'   \item \code{smape}: Symmetrical mean absolute percentage error
+#'   \item \code{rmse}: Root mean square error
 #'}
 #' @section Methods and related functions:
 #'
@@ -46,7 +47,7 @@
 #' @example /R/examples/example_return_error.R
 #' @export
 return_error <- function(data_results, data_test = NULL, test_indices = NULL,
-                         metrics = c("mae", "mape", "mdape", "smape"),
+                         metrics = c("mae", "mape", "mdape", "smape", "rmse"),
                          models = NULL, horizons = NULL, windows = NULL, group_filter = NULL) {
 
   if (!(methods::is(data_results, "training_results") || methods::is(data_results, "forecast_results"))) {
@@ -67,13 +68,13 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 
   # The order of these available metrics should match the error_functions vector below. Only 'mae'
   # is available for factor outcomes at present; an error will be thrown below if this is not the case.
-  error_metrics <- c("mae", "mape", "mdape", "smape")
+  error_metrics <- c("mae", "mape", "mdape", "smape", "rmse")
 
   # Filter the user input error metrics to only those that are available.
   metrics <- metrics[metrics %in% error_metrics]
 
   if (length(metrics) == 0) {
-    stop("None of the error 'metrics' match any of 'mae', 'mape', 'mdape', or 'smape'.")
+    stop("None of the error 'metrics' match any of 'mae', 'mape', 'mdape', or 'smape', 'rmse'.")
   }
 
   # The return() from combine_forecasts(), 'forecastML', is also an object of class 'forecast_results' but does not need
@@ -171,7 +172,8 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
   #----------------------------------------------------------------------------
   # Select error functions. The forecastML internal error functions are in zzz.R.
   # The functions are called with named x, y, and z args in dplyr::summarize_at().
-  error_functions <- c(forecastML_mae, forecastML_mape, forecastML_mdape, forecastML_smape)
+  error_functions <- c(forecastML_mae, forecastML_mape, forecastML_mdape, forecastML_smape,
+                       forecastML_rmse)
   # The user-selected 'metrics' are used to select the appropriate error functions.
   select_error_funs <- sapply(metrics, function(x) {which(x == error_metrics)})
   error_functions <- error_functions[select_error_funs]

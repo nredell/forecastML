@@ -69,6 +69,11 @@ forecastML_smape <- function(x, y, z, ...) {
   error_var <- base::mean(2 * base::abs(x) / (base::abs(y) + base::abs(z)), na.rm = TRUE) * 100
   error_var <- if (is.infinite(error_var) || is.nan(error_var)) {NA} else {error_var}
 }
+
+forecastML_rmse <- function(x, ...) {
+  error_var <- base::sqrt(base::mean(x^2, na.rm = TRUE))
+  error_var <- if (is.infinite(error_var) || is.nan(error_var)) {NA} else {error_var}
+}
 #------------------------------------------------------------------------------
 # Function for ggplot2 faceting in train_model.R, return_error.R, and combine_forecasts.R. The input is (1) a formula
 # with any of 'horizon', 'model', 'group', or '.' and (2) a string identifying the grouping columns,

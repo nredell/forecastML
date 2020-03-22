@@ -8,7 +8,7 @@ return_error(
   data_results,
   data_test = NULL,
   test_indices = NULL,
-  metrics = c("mae", "mape", "mdape", "smape"),
+  metrics = c("mae", "mape", "mdape", "smape", "rmse"),
   models = NULL,
   horizons = NULL,
   windows = NULL,
@@ -62,6 +62,7 @@ Compute forecast error metrics on the validation datasets or a new test dataset.
   \item \code{mape}: Mean absolute percentage error
   \item \code{mdape}: Median absolute percentage error
   \item \code{smape}: Symmetrical mean absolute percentage error
+  \item \code{rmse}: Root mean square error
 }
 }
 
