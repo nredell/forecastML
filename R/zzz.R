@@ -74,6 +74,11 @@ forecastML_rmse <- function(x, ...) {
   error_var <- base::sqrt(base::mean(x^2, na.rm = TRUE))
   error_var <- if (is.infinite(error_var) || is.nan(error_var)) {NA} else {error_var}
 }
+
+# From the M5 competition. This metric is currently defined in return_error.R.
+forecastML_rmsse <- function(...) {
+  return(NA)
+}
 #------------------------------------------------------------------------------
 # Function for ggplot2 faceting in train_model.R, return_error.R, and combine_forecasts.R. The input is (1) a formula
 # with any of 'horizon', 'model', 'group', or '.' and (2) a string identifying the grouping columns,

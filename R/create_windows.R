@@ -278,8 +278,8 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
     # Points are needed because ggplot will not plot a 1-instance geom_line().
     data_plot_point <- data_plot %>%
       dplyr::group_by(.data$ggplot_color_group) %>%
-      dplyr::mutate("lag" = dplyr::lag(eval(parse(text = outcome_name)), 1),
-                    "lead" = dplyr::lead(eval(parse(text = outcome_name)), 1)) %>%
+      dplyr::mutate("lag" = dplyr::lag(!!rlang::sym(outcome_name), 1),
+                    "lead" = dplyr::lead(!!rlang::sym(outcome_name), 1)) %>%
       dplyr::filter(is.na(.data$lag) & is.na(.data$lead))
 
     data_plot_point$ggplot_color_group <- factor(data_plot_point$ggplot_color_group, levels = levels(data_plot$ggplot_color_group), ordered = TRUE)

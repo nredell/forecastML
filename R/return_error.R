@@ -47,15 +47,15 @@
 #' @example /R/examples/example_return_error.R
 #' @export
 return_error <- function(data_results, data_test = NULL, test_indices = NULL,
-                         metrics = c("mae", "mape", "mdape", "smape", "rmse"),
+                         metrics = c("mae", "mape", "mdape", "smape", "rmse", 'rmsse'),
                          models = NULL, horizons = NULL, windows = NULL, group_filter = NULL) {
 
   if (!(methods::is(data_results, "training_results") || methods::is(data_results, "forecast_results"))) {
     stop("The 'data_results' argument takes an object of class 'training_results' or 'forecast_results' as input. Run predict() on a 'forecast_model' object first.")
   }
 
-  if (methods::is(data_results, "training_results") && !is.null(data_test)) {
-    stop("The 'data_test' argument should be NULL when assessing validation error.")
+  if (methods::is(data_results, "training_results") && "rmsse" %in% metrics && any(is.null(data_test), is.null(test_indices))) {
+    warning("'rmsse' was not calculated. The 'rmsse' metric needs a dataset of actuals passed in 'data_test' and 'test_indices'.")
   }
 
   if (methods::is(data_results, "forecast_results") && is.null(data_test)) {
@@ -66,15 +66,22 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
     stop("If using a test dataset to assess forecast error, both 'data_test' and 'test_indices' need to be specified.")
   }
 
-  # The order of these available metrics should match the error_functions vector below. Only 'mae'
+  # The order of these available metrics should match the error_functions vector later in the script. Only 'mae'
   # is available for factor outcomes at present; an error will be thrown below if this is not the case.
-  error_metrics <- c("mae", "mape", "mdape", "smape", "rmse")
+  if (is.null(data_test)) {  # The M5 rmsse requires a dataset of actuals.
+
+    error_metrics <- c("mae", "mape", "mdape", "smape", "rmse")
+
+  } else {
+
+    error_metrics <- c("mae", "mape", "mdape", "smape", "rmse", 'rmsse')
+  }
 
   # Filter the user input error metrics to only those that are available.
   metrics <- metrics[metrics %in% error_metrics]
 
   if (length(metrics) == 0) {
-    stop("None of the error 'metrics' match any of 'mae', 'mape', 'mdape', or 'smape', 'rmse'.")
+    stop("None of the error 'metrics' match any of 'mae', 'mape', 'mdape', 'smape', 'rmse' or 'rmsse'.")
   }
 
   # The return() from combine_forecasts(), 'forecastML', is also an object of class 'forecast_results' but does not need
@@ -82,7 +89,6 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
   is_forecastML <- methods::is(data_results, "forecastML")
 
   data <- data_results
-  rm(data_results)
 
   method <- attributes(data)$method
   outcome_name <- attributes(data)$outcome_name
@@ -109,7 +115,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
   if (!is.null(data$date_indices)) {
     data$valid_indices <- data$date_indices
   }
-
+  #----------------------------------------------------------------------------
   # Merge user-supplied test data to the forecasts from predict.forecast_model()
   if (methods::is(data, "forecast_results")) {
 
@@ -125,13 +131,73 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
       stop("The test dataset in 'data_test' does not overlap with the forecast period in 'data_results'.")
     }
   }
-
+  #----------------------------------------------------------------------------
   if (methods::is(data, "training_results")) {
-    # Change the forecast horizon name to "horizon", which, although it makes sense from a naming perspective,
+    # Change the forecast horizon name to "horizon", which, although it may not be the best from a naming perspective,
     # will reduce the amount of code below.
     if (method == "direct") {
       data$horizon <- data$model_forecast_horizon
       data$model_forecast_horizon <- NULL
+    }
+  }
+  #----------------------------------------------------------------------------
+  # Special rmsse error metric from the M5 forecasting competition. This metric needs
+  # access to the actuals from the training data which is unique for the supported error metrics.
+  if (any(metrics %in% "rmsse")) {
+
+    data_test$index <- test_indices
+
+    data_test <- data_test %>% dplyr::select(.data$index, !!outcome_name, !!groups)
+
+    # Repeat prediction data for multiple windows.
+    n_windows <- length(unique(data_results$window_number))
+    n_windows <- if (n_windows == 0) {1}
+    n_rows <- nrow(data_test)
+
+    data_test <- data_test[rep(1:n_rows, n_windows), , drop = FALSE]
+
+    data_test$window_number <- rep(1:n_windows, each = n_rows)
+
+    if (methods::is(data_results, "training_results")) {
+
+      data_merge <- data %>% dplyr::select(.data$valid_indices, .data$window_number, !!groups)
+      names(data_merge)[names(data_merge) == "valid_indices"] <- "index"
+
+    }
+
+    if (methods::is(data_results, "training_results")) {
+
+      if (unique(data$window_length) != 0) {  # Validation rows need to be removed from training rows.
+
+        data_test <- dplyr::anti_join(data_test, data_merge, by = c("index", groups))
+
+      } else {  # All training rows are also validation rows--essentially model fit error.
+
+        data_test <- dplyr::left_join(data_test, data_merge, by = c("index", groups))
+      }
+
+    }
+
+    data_test <- data_test %>%
+      dplyr::arrange(!!!rlang::syms(groups), .data$window_number, .data$index) %>%
+      dplyr::group_by_at(dplyr::vars(window_number, !!groups)) %>%
+      dplyr::mutate("n" = sum(!is.na(!!rlang::sym(outcome_name))),
+                    "outcome_lag_1" = dplyr::lag(!!rlang::sym(outcome_name), 1),
+                    "outcome_minus_outcome_lag_1" = !!rlang::sym(outcome_name) - .data$outcome_lag_1,
+                    "sse_denom" = sum(.data$outcome_minus_outcome_lag_1^2, na.rm = TRUE),
+                    "n_check" = dplyr::n()) %>%
+      dplyr::filter(sum(is.na(outcome_minus_outcome_lag_1)) != n_check) %>%
+      dplyr::summarize("mse_denom" = sse_denom[1] / (n[1] - 1))
+
+    if (!is_forecastML) {
+
+      data <- dplyr::left_join(data, data_test, by = c("window_number", groups))
+
+    } else {
+
+      data$window_number <- 1
+
+      data <- dplyr::left_join(data, data_test, by = c("window_number", groups))
     }
   }
   #----------------------------------------------------------------------------
@@ -172,8 +238,16 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
   #----------------------------------------------------------------------------
   # Select error functions. The forecastML internal error functions are in zzz.R.
   # The functions are called with named x, y, and z args in dplyr::summarize_at().
-  error_functions <- c(forecastML_mae, forecastML_mape, forecastML_mdape, forecastML_smape,
-                       forecastML_rmse)
+  if (is.null(data_test)) {  # The M5 rmsse requires a dataset of actuals.
+
+    error_functions <- c(forecastML_mae, forecastML_mape, forecastML_mdape, forecastML_smape,
+                         forecastML_rmse)
+  } else {
+
+    error_functions <- c(forecastML_mae, forecastML_mape, forecastML_mdape, forecastML_smape,
+                         forecastML_rmse, forecastML_rmsse)
+  }
+
   # The user-selected 'metrics' are used to select the appropriate error functions.
   select_error_funs <- sapply(metrics, function(x) {which(x == error_metrics)})
   error_functions <- error_functions[select_error_funs]
@@ -181,80 +255,233 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
   #----------------------------------------------------------------------------
   # For all error function args: x = 'residual', y = 'actual', and z = 'prediction'. Unused
   # function args for a given metric are passed in ... and ignored. See zzz.R.
-  if (is.null(data_test)) {  # Error metrics for training data.
+  if (methods::is(data_results, "training_results")) {  # Error metrics for training data.
 
-    # Compute error metrics at the validation window level.
-    data_1 <- data %>%
-      dplyr::group_by_at(dplyr::vars(.data$model, .data$horizon, .data$window_number)) %>%
-      dplyr::mutate("window_start" = min(.data$valid_indices, na.rm = TRUE),
-                    "window_stop" = max(.data$valid_indices, na.rm = TRUE),
-                    "window_midpoint" = base::mean(.data$valid_indices, na.rm = TRUE)) %>%
-      dplyr::group_by_at(dplyr::vars(.data$model, .data$horizon,
-                                     .data$window_number, !!groups, .data$window_start,
-                                     .data$window_stop, .data$window_midpoint)) %>%
-      dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
-                          .funs = error_functions,
-                          x = rlang::quo(.data$residual),
-                          y = rlang::sym(outcome_name),
-                          z = rlang::sym(paste0(outcome_name, "_pred"))
-                          )
-
-    # Compute error metric by horizon and window length across all validation windows.
-    data_2 <- data %>%
-      dplyr::group_by_at(dplyr::vars(.data$model, .data$horizon)) %>%
-      dplyr::mutate("window_start" = min(.data$valid_indices, na.rm = TRUE),
-                    "window_stop" = max(.data$valid_indices, na.rm = TRUE)) %>%
-      dplyr::group_by_at(dplyr::vars(.data$model, .data$horizon, !!groups, .data$window_start, .data$window_stop)) %>%
-      dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
-                          .funs = error_functions,
-                          x = rlang::quo(.data$residual),
-                          y = rlang::sym(outcome_name),
-                          z = rlang::sym(paste0(outcome_name, "_pred")))
-
-    # Compute error metric by model.
-    data_3 <- data %>%
-      dplyr::group_by_at(dplyr::vars(.data$model)) %>%
-      dplyr::mutate("window_start" = min(.data$valid_indices, na.rm = TRUE),
-                    "window_stop" = max(.data$valid_indices, na.rm = TRUE)) %>%
-      dplyr::group_by_at(dplyr::vars(.data$model, !!groups, .data$window_start, .data$window_stop)) %>%
-      dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
-                          .funs = error_functions,
-                          x = rlang::quo(.data$residual),
-                          y = rlang::sym(outcome_name),
-                          z = rlang::sym(paste0(outcome_name, "_pred")))
     #--------------------------------------------------------------------------
-    } else if (!is_forecastML) {  # Error metrics for the forecast_results class which has no validation windows and slightly different grouping columns.
+    if (!all(metrics %in% "rmsse")) {
 
-      data_1 <- data.frame()
+      # Compute error metrics at the validation window level.
+      data_1 <- data %>%
+        dplyr::group_by_at(dplyr::vars(.data$model, .data$horizon, .data$window_number)) %>%
+        dplyr::mutate("window_start" = min(.data$valid_indices, na.rm = TRUE),
+                      "window_stop" = max(.data$valid_indices, na.rm = TRUE),
+                      "window_midpoint" = base::mean(.data$valid_indices, na.rm = TRUE)) %>%
+        dplyr::group_by_at(dplyr::vars(.data$model, .data$horizon,
+                                       .data$window_number, !!groups, .data$window_start,
+                                       .data$window_stop, .data$window_midpoint)) %>%
+        dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
+                            .funs = error_functions,
+                            x = rlang::quo(.data$residual),
+                            y = rlang::sym(outcome_name),
+                            z = rlang::sym(paste0(outcome_name, "_pred")))
+    }
+
+    if (any(metrics %in% "rmsse")) {
+
+      data_1_rmsse <- data %>%
+        dplyr::group_by_at(dplyr::vars(.data$model, .data$horizon, .data$window_number)) %>%
+        dplyr::mutate("window_start" = min(.data$valid_indices, na.rm = TRUE),
+                      "window_stop" = max(.data$valid_indices, na.rm = TRUE),
+                      "window_midpoint" = base::mean(.data$valid_indices, na.rm = TRUE)) %>%
+        dplyr::group_by_at(dplyr::vars(.data$model, .data$horizon,
+                                       .data$window_number, !!groups, .data$window_start,
+                                       .data$window_stop, .data$window_midpoint)) %>%
+        dplyr::summarize("h" = sum(!is.na(.data$residual)),
+                         "sse_num" = sum(.data$residual^2, na.rm = TRUE),
+                         "mse_denom" = .data$mse_denom[1])
+
+      data_1_rmsse$rmsse <- with(data_1_rmsse, sqrt((1 / h) * (sse_num / mse_denom)))
+
+      data_1_rmsse$h <- NULL
+      data_1_rmsse$sse_num <- NULL
+      data_1_rmsse$mse_denom <- NULL
+
+      if (all(metrics %in% "rmsse")) {
+
+        data_1 <- data_1_rmsse
+
+      } else {
+
+        data_1$rmsse <- data_1_rmsse$rmsse
+      }
+    }
+
+    #--------------------------------------------------------------------------
+    if (!all(metrics %in% "rmsse")) {
 
       # Compute error metric by horizon and window length across all validation windows.
       data_2 <- data %>%
-        dplyr::group_by_at(dplyr::vars(.data$model, !!groups, .data$model_forecast_horizon, .data$horizon)) %>%
+        dplyr::group_by_at(dplyr::vars(.data$model, .data$horizon)) %>%
+        dplyr::mutate("window_start" = min(.data$valid_indices, na.rm = TRUE),
+                      "window_stop" = max(.data$valid_indices, na.rm = TRUE)) %>%
+        dplyr::group_by_at(dplyr::vars(.data$model, .data$horizon, !!groups, .data$window_start, .data$window_stop)) %>%
         dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
                             .funs = error_functions,
                             x = rlang::quo(.data$residual),
                             y = rlang::sym(outcome_name),
                             z = rlang::sym(paste0(outcome_name, "_pred")))
+    }
 
-      # Compute error metric by model.
+    if (any(metrics %in% "rmsse")) {
+
+      data_2_rmsse <- data_1 %>%
+        dplyr::group_by_at(dplyr::vars(.data$model, .data$horizon)) %>%
+        dplyr::mutate("window_start" = min(.data$window_start, na.rm = TRUE),
+                      "window_stop" = max(.data$window_stop, na.rm = TRUE)) %>%
+        dplyr::group_by_at(dplyr::vars(.data$model, .data$horizon, !!groups, .data$window_start, .data$window_stop)) %>%
+        dplyr::summarize("rmsse" = mean(rmsse, na.rm = TRUE))
+
+      if (all(metrics %in% "rmsse")) {
+
+        data_2 <- data_2_rmsse
+
+      } else {
+
+        data_2$rmsse <- data_2_rmsse$rmsse
+      }
+    }
+
+    #--------------------------------------------------------------------------
+    # Compute error metric by model.
+    if (!all(metrics %in% "rmsse")) {
+
       data_3 <- data %>%
-        dplyr::group_by_at(dplyr::vars(.data$model, !!groups, .data$model_forecast_horizon)) %>%
+        dplyr::group_by_at(dplyr::vars(.data$model)) %>%
+        dplyr::mutate("window_start" = min(.data$valid_indices, na.rm = TRUE),
+                      "window_stop" = max(.data$valid_indices, na.rm = TRUE)) %>%
+        dplyr::group_by_at(dplyr::vars(.data$model, !!groups, .data$window_start, .data$window_stop)) %>%
         dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
                             .funs = error_functions,
                             x = rlang::quo(.data$residual),
                             y = rlang::sym(outcome_name),
                             z = rlang::sym(paste0(outcome_name, "_pred")))
+    }
 
+    if (any(metrics %in% "rmsse")) {
+
+      data_3_rmsse <- data_1 %>%
+        dplyr::group_by_at(dplyr::vars(.data$model)) %>%
+        dplyr::mutate("window_start" = min(.data$window_start, na.rm = TRUE),
+                      "window_stop" = max(.data$window_stop, na.rm = TRUE)) %>%
+        dplyr::group_by_at(dplyr::vars(.data$model, !!groups, .data$window_start, .data$window_stop)) %>%
+        dplyr::summarize("rmsse" = mean(rmsse, na.rm = TRUE))
+
+      if (all(metrics %in% "rmsse")) {
+
+        data_3 <- data_3_rmsse
+
+      } else {
+
+        data_3$rmsse <- data_3_rmsse$rmsse
+      }
+    }
+
+    #--------------------------------------------------------------------------
+    } else if (!is_forecastML) {  # Error metrics for the forecast_results class which has no validation windows and slightly different grouping columns.
+
+      #------------------------------------------------------------------------
+      data_1 <- data.frame()
+      #------------------------------------------------------------------------
+      # Compute error metric by horizon and window length across all validation windows.
+      if (!all(metrics %in% "rmsse")) {
+
+        data_2 <- data %>%
+          dplyr::group_by_at(dplyr::vars(.data$model, !!groups, .data$model_forecast_horizon, .data$horizon)) %>%
+          dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
+                              .funs = error_functions,
+                              x = rlang::quo(.data$residual),
+                              y = rlang::sym(outcome_name),
+                              z = rlang::sym(paste0(outcome_name, "_pred")))
+      }
+
+      if (any(metrics %in% "rmsse")) {
+
+        data_2_rmsse <- data %>%
+          dplyr::group_by_at(dplyr::vars(.data$model, !!groups, .data$model_forecast_horizon, .data$horizon)) %>%
+          dplyr::summarize("h" = sum(!is.na(.data$residual)),
+                           "sse_num" = sum(.data$residual^2, na.rm = TRUE),
+                           "mse_denom" = .data$mse_denom[1])
+
+        data_2_rmsse$rmsse <- with(data_2_rmsse, sqrt((1 / h) * (sse_num / mse_denom)))
+
+        data_2_rmsse$h <- NULL
+        data_2_rmsse$sse_num <- NULL
+        data_2_rmsse$mse_denom <- NULL
+
+        if (all(metrics %in% "rmsse")) {
+
+          data_2 <- data_2_rmsse
+
+        } else {
+
+          data_2$rmsse <- data_2_rmsse$rmsse
+        }
+      }
+      #------------------------------------------------------------------------
+      # Compute error metric by model.
+      if (!all(metrics %in% "rmsse")) {
+
+        data_3 <- data %>%
+          dplyr::group_by_at(dplyr::vars(.data$model, !!groups, .data$model_forecast_horizon)) %>%
+          dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
+                              .funs = error_functions,
+                              x = rlang::quo(.data$residual),
+                              y = rlang::sym(outcome_name),
+                              z = rlang::sym(paste0(outcome_name, "_pred")))
+      }
+
+      if (any(metrics %in% "rmsse")) {
+
+        data_3_rmsse <- data_2 %>%
+          dplyr::group_by_at(dplyr::vars(.data$model, !!groups, .data$model_forecast_horizon)) %>%
+          dplyr::summarize("rmsse" = mean(rmsse, na.rm = TRUE))
+
+        if (all(metrics %in% "rmsse")) {
+
+          data_3 <- data_3_rmsse
+
+        } else {
+
+          data_3$rmsse <- data_3_rmsse$rmsse
+        }
+      }
+    #--------------------------------------------------------------------------
     } else {  # Final forecasts from combine_forecasts().
 
-      data_combined <- data %>%
-        dplyr::group_by_at(dplyr::vars(.data$model, !!groups)) %>%
-        dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
-                            .funs = error_functions,
-                            x = rlang::quo(.data$residual),
-                            y = rlang::sym(outcome_name),
-                            z = rlang::sym(paste0(outcome_name, "_pred")))
+      if (!all(metrics %in% "rmsse")) {
 
+        data_combined <- data %>%
+          dplyr::group_by_at(dplyr::vars(.data$model, !!groups)) %>%
+          dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
+                              .funs = error_functions,
+                              x = rlang::quo(.data$residual),
+                              y = rlang::sym(outcome_name),
+                              z = rlang::sym(paste0(outcome_name, "_pred")))
+      }
+
+      if (any(metrics %in% "rmsse")) {
+
+        data_combined_rmsse <- data %>%
+          dplyr::group_by_at(dplyr::vars(.data$model, !!groups)) %>%
+          dplyr::summarize("h" = sum(!is.na(.data$residual)),
+                           "sse_num" = sum(.data$residual^2, na.rm = TRUE),
+                           "mse_denom" = .data$mse_denom[1])
+
+        data_combined_rmsse$rmsse <- with(data_combined_rmsse, sqrt((1 / h) * (sse_num / mse_denom)))
+
+        data_combined_rmsse$h <- NULL
+        data_combined_rmsse$sse_num <- NULL
+        data_combined_rmsse$mse_denom <- NULL
+
+        if (all(metrics %in% "rmsse")) {
+
+          data_combined <- data_combined_rmsse
+
+        } else {
+
+          data_combined$rmsse <- data_combined_rmsse$rmsse
+        }
+      }
     }  # End error metrics for forecast results.
   #----------------------------------------------------------------------------
 
@@ -264,7 +491,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
     data_out[] <- lapply(data_out, as.data.frame)  # Remove the tibble class.
   }
 
-  if (is.null(data_test)) {  # Validation error.
+  if (methods::is(data_results, "training_results")) {  # Validation error.
 
       class(data_out) <- c("validation_error", class(data_out))
 
@@ -275,6 +502,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
       class(data_out) <- c("forecast_error", class(data_out))
 
     } else {
+
       data_out <- as.data.frame(data_combined)
       class(data_out) <- c("forecast_error", class(data_out))
     }

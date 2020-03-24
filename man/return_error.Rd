@@ -8,7 +8,7 @@ return_error(
   data_results,
   data_test = NULL,
   test_indices = NULL,
-  metrics = c("mae", "mape", "mdape", "smape", "rmse"),
+  metrics = c("mae", "mape", "mdape", "smape", "rmse", "rmsse"),
   models = NULL,
   horizons = NULL,
   windows = NULL,

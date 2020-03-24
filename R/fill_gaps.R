@@ -83,18 +83,18 @@ fill_gaps <- function(data, date_col = 1L, frequency, groups = NULL,
   if (is.null(groups)) {
 
     data <- data %>%
-      dplyr::arrange(eval(parse(text = date_name)))
+      dplyr::arrange(!!rlang::sym(date_name))
 
   } else {
 
     data <- data %>%
-      dplyr::arrange(eval(parse(text = date_name)), eval(parse(text = groups)))
+      dplyr::arrange(!!rlang::sym(date_name), !!!rlang::syms(groups))
   }
 
   # Create a merge template giving the date bounds for non-grouped or grouped data.
   data_template <- data %>%
     dplyr::group_by_at(dplyr::vars(!!!groups)) %>%
-    dplyr::summarize("date_min" = min(eval(parse(text = date_name)), na.rm = TRUE)) %>%
+    dplyr::summarize("date_min" = min(!!rlang::sym(date_name), na.rm = TRUE)) %>%
     dplyr::ungroup()
 
   data_template$date_max <- max(data[, date_name, drop = TRUE], na.rm = TRUE)
@@ -107,8 +107,8 @@ fill_gaps <- function(data, date_col = 1L, frequency, groups = NULL,
     # have changed in the distant past. The user will be made aware of this in the help docs.
     data_static <- data %>%
       dplyr::group_by_at(dplyr::vars(!!!groups)) %>%
-      dplyr::mutate("date_max" = max(eval(parse(text = date_name)), na.rm = TRUE)) %>%
-      dplyr::filter(eval(parse(text = date_name)) == .data$date_max) %>%
+      dplyr::mutate("date_max" = max(!!rlang::sym(date_name), na.rm = TRUE)) %>%
+      dplyr::filter(!!rlang::sym(date_name) == .data$date_max) %>%
       dplyr::select_at(dplyr::vars(groups, static_features))
   }
 
@@ -158,12 +158,12 @@ fill_gaps <- function(data, date_col = 1L, frequency, groups = NULL,
   if (is.null(groups)) {
 
     data_out <- data_out %>%
-      dplyr::arrange(eval(parse(text = date_name)))
+      dplyr::arrange(!!rlang::sym(date_name))
 
   } else {
 
     data_out <- data_out %>%
-      dplyr::arrange(eval(parse(text = date_name)), eval(parse(text = groups)))
+      dplyr::arrange(!!rlang::sym(date_name), !!!rlang::syms(groups))
   }
 
   # Re-order the complete dataset to have the same column order as the input dataset.
