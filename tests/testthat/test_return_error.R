@@ -17,7 +17,7 @@ test_that("return_error produces correct mae and mape across aggregations", {
 
   windows <- create_windows(data_train, window_length = 0)
 
-  data = data_seatbelts
+  data <- data_seatbelts
 
   model_function <- function(data, my_outcome_col) {
 
@@ -66,6 +66,70 @@ test_that("return_error produces correct mae and mape across aggregations", {
     all(data_error_2$error_by_window$mape == 50),
     all(data_error_2$error_by_horizon$mape == 50),
     all(data_error_2$error_global$mape == 50)
+  )
+})
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+test_that("the rmsse M5 competition metric is correct on validation data with window_length = 0", {
+
+  data("data_seatbelts", package = "forecastML")
+
+  data_seatbelts <- data_seatbelts[, 1:2]
+
+  horizons <- 3
+  lookback <- 6
+
+  data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_col = 1,
+                                 lookback = lookback, horizons = horizons)
+
+  windows <- create_windows(data_train, window_length = 0)
+
+  data <- data_seatbelts
+
+  model_function <- function(data, my_outcome_col) {
+
+    x <- data[, -(my_outcome_col), drop = FALSE]
+    y <- data[, my_outcome_col, drop = FALSE]
+    x <- as.matrix(x, ncol = ncol(x))
+    y <- as.matrix(y, ncol = ncol(y))
+
+    model <- lm(y ~ x)
+    return(model)
+  }
+
+  set.seed(224)
+  model_results <- train_model(data_train, windows, model_name = "LASSO", model_function,
+                               my_outcome_col = 1)
+
+  prediction_function <- function(model, data_features) {
+
+    x <- data_features
+
+    data_pred <- data.frame("y_pred" = predict(model, x))
+    return(data_pred)
+  }
+
+  # Predict on the validation datasets.
+  data_valid <- predict(model_results, prediction_function = list(prediction_function),
+                        data = data_train)
+
+  # data_valid$DriversKilled <- 10
+  # data_valid$DriversKilled_pred <- 20
+
+  data_results <- data_valid
+
+  sse_num <- sum((data_results$DriversKilled - data_results$DriversKilled_pred)^2, na.rm = TRUE)
+
+  sse_denom <- (1 / (nrow(data_results) - 1)) * sum((data_results$DriversKilled - lag(data_results$DriversKilled, 1))^2, na.rm = TRUE)
+
+  h <- nrow(data_results)
+
+  rmsse <- sqrt((1 / h) * (sse_num / sse_denom))
+
+  data_error <- return_error(data_valid, data_test = data_seatbelts, test_indices = 1:nrow(data_seatbelts))
+
+  all(
+    data_error$error_by_window$rmsse == rmsse
   )
 })
 #------------------------------------------------------------------------------

@@ -151,7 +151,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 
     # Repeat prediction data for multiple windows.
     n_windows <- length(unique(data_results$window_number))
-    n_windows <- if (n_windows == 0) {1}
+    if (n_windows == 0) {n_windows <- 1}
     n_rows <- nrow(data_test)
 
     data_test <- data_test[rep(1:n_rows, n_windows), , drop = FALSE]
@@ -162,7 +162,6 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 
       data_merge <- data %>% dplyr::select(.data$valid_indices, .data$window_number, !!groups)
       names(data_merge)[names(data_merge) == "valid_indices"] <- "index"
-
     }
 
     if (methods::is(data_results, "training_results")) {
@@ -173,9 +172,9 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 
       } else {  # All training rows are also validation rows--essentially model fit error.
 
+        data_test$window_number <- NULL
         data_test <- dplyr::left_join(data_test, data_merge, by = c("index", groups))
       }
-
     }
 
     data_test <- data_test %>%
