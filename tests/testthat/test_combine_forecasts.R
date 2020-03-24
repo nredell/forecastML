@@ -145,7 +145,7 @@ test_that("combine forecasts works with 1 model and type equals error", {
 
   #----------------------------------------------------------------------------
   # Modify the validation error so the 12-step-ahead model performs better historically on 1-step-ahead forecasts.
-  data_error_modified <-  data_error
+  data_error_modified <- data_error
   data_error_modified$error_by_horizon$mae[1] <- 99999
 
   data_combined_modified <- combine_forecasts(data_forecasts, type = "error", data_error = list(data_error_modified), metric = "mae")

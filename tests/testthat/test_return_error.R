@@ -212,6 +212,14 @@ test_that("the rmsse M5 competition metric is correct for grouped data with mult
   all(
     data_error$error_by_window$rmsse == rmsse
   )
+
+  # data_test = data
+  # test_indices = dates
+  # metrics = c("mae", "mape", "mdape", "smape", "rmse", 'rmsse')
+  # models = NULL
+  # horizons = NULL
+  # windows = NULL
+  # group_filter = NULL
 })
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -272,7 +280,7 @@ test_that("validation error, window_length = 0 and 1 horizon returns the same er
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-test_that("test/forecast error, 1 horizon returns the 2 data.frames of error metrics", {
+test_that("test/forecast error, 1 horizon returns the 3 data.frames of error metrics", {
 
   data("data_seatbelts", package = "forecastML")
 
@@ -314,18 +322,19 @@ test_that("test/forecast error, 1 horizon returns the 2 data.frames of error met
   test_indices <- 192:203
   data_test <- data_seatbelts[test_indices - 11, ]
 
-  data_error <- return_error(data_forecasts, data_test = data_test, test_indices = test_indices)
+  data_error <- return_error(data_forecasts, data_test = data_test, test_indices = test_indices, aggregate = mean)
 
   all(
-    nrow(data_error[[1]]) == 0,
+    nrow(data_error[[1]]) == horizons,
     nrow(data_error[[2]]) == horizons,
-    nrow(data_error[[3]]) == 1
+    nrow(data_error[[3]]) == 1,
+    mean(data_error[[1]]$rmsse) == data_error[[3]]$rmsse
       )
 })
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 
-test_that("return_error returns a data.frame when the input is 1 model from combine_forecasts(type = 'horizon')", {
+test_that("return_error returns correctly when the input is 1 model from combine_forecasts(type = 'horizon')", {
 
   data("data_seatbelts", package = "forecastML")
 
@@ -367,6 +376,7 @@ test_that("return_error returns a data.frame when the input is 1 model from comb
   data_error_combined <- return_error(data_combined, data_test, test_indices)
 
   all(
-    methods::is(data_error_combined, "data.frame")
+   length(data_error_combined) == 3,
+   nrow(data_error_combined[[2]]) == max(horizons)
   )
 })

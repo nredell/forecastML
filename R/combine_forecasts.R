@@ -183,6 +183,7 @@ combine_forecasts <- function(..., type = c("horizon", "error"), data_error = li
     data_forecast <- as.data.frame(data_forecast)
   }  # End type = "error".
 
+  attr(data_forecast, "type") <- type
   attr(data_forecast, "outcome_name") <- outcome_name
   attr(data_forecast, "outcome_levels") <- outcome_levels
   attr(data_forecast, "groups") <- groups

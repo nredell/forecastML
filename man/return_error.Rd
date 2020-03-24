@@ -8,6 +8,7 @@ return_error(
   data_results,
   data_test = NULL,
   test_indices = NULL,
+  aggregate = median,
   metrics = c("mae", "mape", "mdape", "smape", "rmse", "rmsse"),
   models = NULL,
   horizons = NULL,
@@ -23,8 +24,9 @@ return_error(
 assess the accuracy of a 'forecast_results' object. \code{data_test} should have the outcome/target columns
 and any grouping columns.}
 
-\item{test_indices}{Required if \code{data_test} is given. A vector or 1-column data.frame of numeric
-row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_test)}.}
+\item{aggregate}{A function that aggregates historical prediction or forecast error across time series. All error metrics are first
+calculated at the level of the individual time series. \code{aggregate} is then used to combine error metrics across validation windows and horizons.
+Aggregations are returned at the group level if \code{data_results} contains groups.}
 
 \item{metrics}{A character vector of common forecast error metrics. The default behavior is to return all metrics.}
 
@@ -46,9 +48,9 @@ a single data.frame with results for each model passed in \code{combine_forecast
 A list containing: \cr
 
 \itemize{
-  \item Error metrics by horizon + validation window
-  \item Error metrics by horizon, collapsed across validation windows
-  \item Global error metrics collapsed across horizons and validation windows
+  \item Error metrics by model + horizon + validation window
+  \item Error metrics by model + horizon, collapsed across validation windows
+  \item Global error metrics by model collapsed across horizons and validation windows
 }
 }
 \description{
@@ -62,7 +64,8 @@ Compute forecast error metrics on the validation datasets or a new test dataset.
   \item \code{mape}: Mean absolute percentage error
   \item \code{mdape}: Median absolute percentage error
   \item \code{smape}: Symmetrical mean absolute percentage error
-  \item \code{rmse}: Root mean square error
+  \item \code{rmse}: Root mean squared error
+  \item \code{rmsse}: Root mean squared scaled error from the M5 competition
 }
 }
 
