@@ -162,31 +162,34 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL,
 
       data_merge <- data %>% dplyr::select(.data$valid_indices, .data$window_number, !!groups)
       names(data_merge)[names(data_merge) == "valid_indices"] <- "index"
+      data_merge$instance_in_valid_dataset <- TRUE
     }
 
     if (methods::is(data_results, "training_results")) {
 
       if (unique(data$window_length) != 0) {  # Validation rows need to be removed from training rows.
 
-        data_test <- dplyr::anti_join(data_test, data_merge, by = c("index", groups))
+        data_test <- dplyr::left_join(data_test, data_merge, by = c("index", "window_number", groups))
+        data_test <- dplyr::distinct(data_test, .data$index, .data$window_number, !!!rlang::syms(groups), .keep_all = TRUE)
+        data_test[which(data_test$instance_in_valid_dataset), outcome_name] <- NA
 
       } else {  # All training rows are also validation rows--essentially model fit error.
 
         data_test$window_number <- NULL
         data_test <- dplyr::left_join(data_test, data_merge, by = c("index", groups))
+        data_test <- dplyr::distinct(data_test, .data$index, !!!rlang::syms(groups), .keep_all = TRUE)
       }
     }
 
     data_test <- data_test %>%
       dplyr::arrange(!!!rlang::syms(groups), .data$window_number, .data$index) %>%
       dplyr::group_by_at(dplyr::vars(window_number, !!groups)) %>%
-      dplyr::mutate("n" = sum(!is.na(!!rlang::sym(outcome_name))),
-                    "outcome_lag_1" = dplyr::lag(!!rlang::sym(outcome_name), 1),
+      dplyr::mutate("outcome_lag_1" = dplyr::lag(!!rlang::sym(outcome_name), 1),
                     "outcome_minus_outcome_lag_1" = !!rlang::sym(outcome_name) - .data$outcome_lag_1,
                     "sse_denom" = sum(.data$outcome_minus_outcome_lag_1^2, na.rm = TRUE),
-                    "n_check" = dplyr::n()) %>%
-      dplyr::filter(sum(is.na(outcome_minus_outcome_lag_1)) != n_check) %>%
-      dplyr::summarize("mse_denom" = sse_denom[1] / (n[1] - 1))
+                    "n" = sum(!is.na(outcome_minus_outcome_lag_1))) %>%  # Used to compute average to convert sse_denom to mse_denom.
+      dplyr::filter(n > 0) %>%  # Avoid a division by zero error for sparse data with NAs or only 1 data point.
+      dplyr::summarize("mse_denom" = sse_denom[1] / (n[1]))  # No need to subtract 1 per the formula, 'n' already accounts for missing data from lags.
 
     if (!is_forecastML) {
 

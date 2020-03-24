@@ -113,9 +113,6 @@ test_that("the rmsse M5 competition metric is correct on validation data with wi
   data_valid <- predict(model_results, prediction_function = list(prediction_function),
                         data = data_train)
 
-  # data_valid$DriversKilled <- 10
-  # data_valid$DriversKilled_pred <- 20
-
   data_results <- data_valid
 
   sse_num <- sum((data_results$DriversKilled - data_results$DriversKilled_pred)^2, na.rm = TRUE)
@@ -127,6 +124,90 @@ test_that("the rmsse M5 competition metric is correct on validation data with wi
   rmsse <- sqrt((1 / h) * (sse_num / sse_denom))
 
   data_error <- return_error(data_valid, data_test = data_seatbelts, test_indices = 1:nrow(data_seatbelts))
+
+  all(
+    data_error$error_by_window$rmsse == rmsse
+  )
+})
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+test_that("the rmsse M5 competition metric is correct for grouped data with multiple validation datasets", {
+
+  data <- data.frame("outcome" = rep(1:10, 2), "group" = rep(1:2, each = 10))
+
+  dates <- rep(seq(as.Date("2019-06-01"), as.Date("2020-03-01"), by = "1 month"), 2)
+
+  lookback <- 1:2
+  horizons <- 1:2
+
+  data_train <- create_lagged_df(data, type = "train", outcome_col = 1,
+                                 lookback = lookback, horizons = horizons, groups = "group", dates = dates,
+                                 frequency = "1 month")
+
+  windows <- create_windows(data_train, window_start = as.Date(c("2020-01-01", "2020-02-01")),
+                            window_stop = as.Date(c("2020-01-31", "2020-02-28")))
+
+  model_function <- function(data, my_outcome_col) {
+
+    x <- data[, -(my_outcome_col), drop = FALSE]
+    y <- data[, my_outcome_col, drop = FALSE]
+    x <- as.matrix(x, ncol = ncol(x))
+    y <- as.matrix(y, ncol = ncol(y))
+
+    model <- lm(y ~ x)
+    return(model)
+  }
+
+  set.seed(224)
+  model_results <- train_model(data_train, windows, model_name = "LASSO", model_function,
+                               my_outcome_col = 1)
+
+  model <- model_results$horizon_1$window_1$model
+  data_features <- data_train$horizon_1
+
+  prediction_function <- function(model, data_features) {
+
+    x <- data_features
+
+    data_pred <- data.frame("y_pred" = 7)
+    return(data_pred)
+  }
+
+  # Predict on the validation datasets.
+  data_valid <- predict(model_results, prediction_function = list(prediction_function),
+                        data = data_train)
+
+  data_results <- data_valid
+
+  data_rmsse <- data_results %>%
+    dplyr::group_by(.data$model_forecast_horizon, .data$window_number, .data$group) %>%
+    dplyr::mutate("residual" = .data$outcome - .data$outcome_pred,
+                  "sse_num" = sum(.data$residual^2, na.rm = TRUE))
+
+  data_denom_window_1 <- data
+  data_denom_window_1$outcome[data_denom_window_1$outcome %in% c(8, 18)] <- NA
+  data_denom_window_2 <- data
+  data_denom_window_2$outcome[data_denom_window_2$outcome %in% c(9, 19)] <- NA
+
+  data_denom_window_1 <- data_denom_window_1 %>%
+    dplyr::group_by(group) %>%
+    dplyr::summarize("mse_denom" = ((1/(7)) * sum((.data$outcome - dplyr::lag(.data$outcome, 1))^2, na.rm = TRUE)))
+  data_denom_window_1$window_number <- 1
+
+  data_denom_window_2 <- data_denom_window_2 %>%
+    dplyr::group_by(group) %>%
+    dplyr::mutate("outcome_lag_1" =  dplyr::lag(.data$outcome, 1),
+                  "residual" = .data$outcome - .data$outcome_lag_1,
+                  "mse_denom" = ((1/(7)) * sum((.data$outcome - dplyr::lag(.data$outcome, 1))^2, na.rm = TRUE)))
+  data_denom_window_2$window_number <- 2
+
+  data_rmsse$mse_denom <- rep(rep(c(1, 1), each = 2), 2)
+
+  h <- 1
+
+  rmsse <- sqrt((1 / 1) * (data_rmsse$sse_num / data_rmsse$mse_denom))
+
+  data_error <- return_error(data_valid, data_test = data, test_indices = dates)
 
   all(
     data_error$error_by_window$rmsse == rmsse
