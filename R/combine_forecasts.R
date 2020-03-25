@@ -114,13 +114,13 @@ combine_forecasts <- function(..., type = c("horizon", "error"), aggregate = sta
     if (!forecast_intervals) {
 
       data_forecast <- data_forecast %>%
-        dplyr::group_by(.data$model, .data$model_forecast_horizon, .data$horizon, .data$forecast_period) %>%
+        dplyr::group_by(.data$model, .data$model_forecast_horizon, .data$horizon, !!!rlang::syms(groups), .data$forecast_period) %>%
         dplyr::summarize(!!paste0(outcome_name, "_pred") := aggregate(!!rlang::sym(paste0(outcome_name, "_pred"))))
 
     } else {
 
       data_forecast <- data_forecast %>%
-        dplyr::group_by(.data$model, .data$model_forecast_horizon, .data$horizon, .data$forecast_period) %>%
+        dplyr::group_by(.data$model, .data$model_forecast_horizon, .data$horizon, !!!rlang::syms(groups), .data$forecast_period) %>%
         dplyr::summarize(!!paste0(outcome_name, "_pred") := aggregate(!!rlang::sym(paste0(outcome_name, "_pred"))),
                       !!paste0(outcome_name, "_pred_lower") := aggregate(!!rlang::sym(paste0(outcome_name, "_pred_lower"))),
                       !!paste0(outcome_name, "_pred_upper") := aggregate(!!rlang::sym(paste0(outcome_name, "_pred_upper"))))
@@ -237,6 +237,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
                             models = NULL, group_filter = NULL,
                             drop_facet = FALSE, ...) { # nocov start
 
+  data_forecast <- data_combined
   #----------------------------------------------------------------------------
   data_forecast <- x
   rm(x)
