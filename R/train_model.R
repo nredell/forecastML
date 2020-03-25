@@ -1253,15 +1253,54 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
         data_actual$model <- rep(unique(data_plot$model), each = n_reps)
       }
       #--------------------------------------------------------------------------
+      # If the plot is colored by model, repeat the actuals dataset once for each model in a long format for faceting by model.
+      if (length(unique(data_plot$model)) == 1) {
 
-      data_actual$ggplot_color <- apply(data_actual[,  ggplot_color, drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+        data_actual$model <- unique(data_plot$model)
+
+      } else {
+
+        n_reps <- nrow(data_actual)
+        data_actual <- data_actual[rep(1:nrow(data_actual), length(unique(data_plot$model))), ]
+        data_actual$model <- rep(unique(data_plot$model), each = n_reps)
+      }
+      #--------------------------------------------------------------------------
+
+      if (length(ggplot_color) > 0) {
+
+        if (ggplot_color == "horizon") {
+
+          data_actual$ggplot_color <- NA
+
+        } else {
+
+          data_actual$ggplot_color <- apply(data_actual[,  ggplot_color, drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+        }
+      } else {
+
+        data_actual$ggplot_color <- "Forecast"
+      }
 
       # Give predictions a name in the legend if plot is faceted by model and horizon (and group if groups are given).
       if (length(ggplot_color) == 0) {
         data_actual$ggplot_color <- "Forecast"
       }
 
-      data_actual$ggplot_group <- apply(data_actual[,  ggplot_color, drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+      if (length(ggplot_color) > 0) {
+
+        if (ggplot_color == "horizon") {
+
+          data_actual$ggplot_group <- "Forecast"
+
+        } else {
+
+          data_actual$ggplot_group <- apply(data_actual[,  ggplot_color, drop = FALSE], 1, function(x) {paste(x, collapse = "-")})
+        }
+
+      } else {
+
+        data_actual$ggplot_group <- "Forecast"
+      }
       #------------------------------------------------------------------------
       # Coerce to viridis color scale with an ordered factor. The levels in the actual data are limited
       # to those factor levels that appear in the forecast data.
