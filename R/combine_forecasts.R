@@ -103,7 +103,7 @@ combine_forecasts <- function(..., type = c("horizon", "error"), aggregate = sta
   # Because different model forecast horizons could be passed in '...'--e.g., model A = 1- and 12-step-
   # ahead models and model B = 3-, 6-, and 9-step ahead models--, we'll combine the horizon-specific
   # forecasts into a single forecast using the function passed in 'aggregate'.
-  if (type == "horizon") {
+  if (type == "horizon" && is.null(outcome_levels)) {
 
     if (length(unique(data_forecast$model)) > 1) {
       data_forecast$model <- "Ensemble"
@@ -237,7 +237,6 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
                             models = NULL, group_filter = NULL,
                             drop_facet = FALSE, ...) { # nocov start
 
-  data_forecast <- data_combined
   #----------------------------------------------------------------------------
   data_forecast <- x
   rm(x)
