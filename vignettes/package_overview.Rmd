@@ -646,15 +646,19 @@ of forecast error metrics with the following columns is returned:
 * **horizon:** Forecast horizon, ranging from 1:model_forecast_horizon.
 * **"error_metrics":** Forecast error metrics.
 
+Below are 3 forecast error plots at various levels of aggregation.
+
 ```{r}
 data_error <- forecastML::return_error(data_forecast,
                                        data_test = data_test,
                                        test_indices = dates[(nrow(data_train) + 1):length(dates)],
                                        metrics = c("mae", "mape", "smape", "mdape"))
 
-data_error$error_by_horizon[, c("mae", "mape", "smape", "mdape")] <- lapply(data_error$error_by_horizon[, c("mae", "mape", "smape", "mdape")], round, 1)
+plot(data_error, data_forecast, facet = ~ horizon, type = "window")
 
-DT::datatable(head(data_error$error_by_horizon, 10), options = list(scrollX = TRUE))
+plot(data_error, data_forecast, facet = ~ horizon, type = "horizon")
+
+plot(data_error, data_forecast, facet = ~ horizon, type = "global")
 ```
 
 ***
@@ -706,6 +710,8 @@ plot(data_results, type = "prediction", horizons = c(1, 6, 12))
 
 ### Training error with `forecastML::return_error`
 
+Below is a the training error collapsed across our 4 direct forecast horizon/models.
+
 ```{r}
 data_error <- forecastML::return_error(data_results, metrics = c("mae", "mape", "mdape", "smape"),
                                        models = NULL)
@@ -750,11 +756,7 @@ data_error <- forecastML::return_error(data_forecast, data_test = data_test,
                                        test_indices = dates[(nrow(data_train) + 1):nrow(data)],
                                        metrics = c("mae", "mape", "mdape", "smape"))
 
-data_error$error_by_horizon[, c("mae", "mape", "mdape", "smape")] <- lapply(data_error$error_by_horizon[, c("mae", "mape", "mdape", "smape")], round, 1)
-
-data_error$error_global[, c("mae", "mape", "mdape", "smape")] <- lapply(data_error$error_global[, c("mae", "mape", "mdape", "smape")], round, 1)
-
-DT::datatable(data_error$error_global, options = list(scrollX = TRUE))
+plot(data_error, data_forecast, facet = ~ horizon)
 ```
 
 ***
@@ -781,6 +783,8 @@ actual_indices <- dates[dates >= as.Date("1980-01-01")]
 
 # Plot all final forecasts plus historical data.
 plot(data_combined, data_actual = data_actual, actual_indices = actual_indices)
+
+DT::datatable(return_error(data_combined, data_actual, actual_indices)$error_by_horizon)
 ```
 
 ***

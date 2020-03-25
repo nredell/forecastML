@@ -24,9 +24,12 @@ return_error(
 assess the accuracy of a 'forecast_results' object. \code{data_test} should have the outcome/target columns
 and any grouping columns.}
 
-\item{aggregate}{A function that aggregates historical prediction or forecast error across time series. All error metrics are first
-calculated at the level of the individual time series. \code{aggregate} is then used to combine error metrics across validation windows and horizons.
-Aggregations are returned at the group level if \code{data_results} contains groups.}
+\item{test_indices}{Required if \code{data_test} is given or 'rmsse' %in% \code{metrics}. A vector or 1-column data.frame of numeric
+row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_test)}.}
+
+\item{aggregate}{Default \code{median}. A function--without parentheses--that aggregates historical prediction or forecast error across time series.
+All error metrics are first calculated at the level of the individual time series. \code{aggregate} is then used to combine error metrics across
+validation windows and horizons. Aggregations are returned at the group level if \code{data_results} contains groups.}
 
 \item{metrics}{A character vector of common forecast error metrics. The default behavior is to return all metrics.}
 
@@ -36,20 +39,19 @@ Aggregations are returned at the group level if \code{data_results} contains gro
 
 \item{windows}{Optional. A numeric vector to filter results by validation window number.}
 
-\item{group_filter}{Optional. A string for filtering plot results for grouped time-series
+\item{group_filter}{Optional. A string for filtering plot results for grouped time series
 (e.g., \code{"group_col_1 == 'A'"}). \code{group_filter} is passed to \code{dplyr::filter()} internally.}
 }
 \value{
-An S3 object of class 'validation_error' or 'forecast_error': A list of data.frames
-of error metrics for the validation datasets or forecast dataset depending
-on the \code{data_test} argument. An input to \code{data_results} from \code{combine_forecasts()} will return
-a single data.frame with results for each model passed in \code{combine_forecasts(...)}. \cr
+An S3 object of class 'validation_error', 'forecast_error', or 'forecastML_error': A list of data.frames
+of error metrics for the validation or forecast dataset depending on the class of \code{data_results}: 'training_results',
+'forecast_results', or 'forecastML' from \code{combine_forecasts()}.
 
 A list containing: \cr
 
 \itemize{
-  \item Error metrics by model + horizon + validation window
-  \item Error metrics by model + horizon, collapsed across validation windows
+  \item Error metrics by model, horizon, and validation window
+  \item Error metrics by model and horizon, collapsed across validation windows
   \item Global error metrics by model collapsed across horizons and validation windows
 }
 }
@@ -76,6 +78,7 @@ The output of \code{return_error()} has the following generic S3 methods
 
 \itemize{
   \item \code{\link[=plot.validation_error]{plot}} from \code{return_error()}
+  \item \code{\link[=plot.forecast_error]{plot}} from \code{return_error()}
 }
 }
 

@@ -30,6 +30,7 @@ return_hyper <- function(forecast_model, hyper_function) {
   outcome_col <- attributes(forecast_model)$outcome_col
   outcome_name <- attributes(forecast_model)$outcome_name
   horizon <- attributes(forecast_model)$horizons
+  method <- attributes(forecast_model)$method
 
   # Defined here to catch (from '<<-' below) the user-defined hyperparameter names in hyper_function.
   # This will be an attribute in the function return.
@@ -52,6 +53,11 @@ return_hyper <- function(forecast_model, hyper_function) {
                               "valid_window_start" = min(data_results$valid_indices),
                               "valid_window_stop" = max(data_results$valid_indices),
                               "valid_window_midpoint" = mean(data_results$valid_indices))
+
+      if (method == "direct") {
+
+       names(data_plot)[names(data_plot) == "horizon"] <- "model_forecast_horizon"
+      }
 
       data_plot <- cbind(data_plot, data_hyper)
 
@@ -87,7 +93,7 @@ return_hyper <- function(forecast_model, hyper_function) {
 #' @param horizons Optional. A numeric vector to filter results by horizon.
 #' @param windows Optional. A numeric vector to filter results by validation window number.
 #' @param ... Not used.
-#' @return Hyperparameter plots of class 'ggplot'.
+#' @return Hyper-parameter plots of class 'ggplot'.
 #' @example /R/examples/example_return_hyper.R
 #' @export
 plot.forecast_model_hyper <- function(x, data_results, data_error,
@@ -112,10 +118,14 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
   outcome_name <- attributes(data_plot)$outcome_name
   hyper_names <- attributes(data_plot)$hyper_names
 
+  # Changing 'model_forecast_horizon' to 'horizon' for standardizing plot code with multi-output models.
   if (method == "direct") {
-    # Change the name of "horizon", which, although it makes sense from a naming perspective, will reduce the amount of code below.
+
+    names(data_plot)[names(data_plot) == "model_forecast_horizon"] <- "horizon"
     data_results$horizon <- data_results$model_forecast_horizon
     data_results$model_forecast_horizon <- NULL
+    data_error$horizon <- data_error$model_forecast_horizon
+    data_error$model_forecast_horizon <- NULL
   }
 
   hyper_num <- unlist(lapply(data_plot[, hyper_names], function(x) {inherits(x, c("numeric", "double", "integer"))}))
@@ -178,6 +188,8 @@ plot.forecast_model_hyper <- function(x, data_results, data_error,
     error_metrics <- attributes(data_error)$error_metrics
 
     data_error_merge <- data_error$error_by_window
+
+    names(data_error_merge)[names(data_error_merge) == "model_forecast_horizon"] <- "horizon"
 
     data_error_merge <- dplyr::select(data_error_merge,
                                       .data$model,

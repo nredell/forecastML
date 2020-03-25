@@ -212,14 +212,6 @@ test_that("the rmsse M5 competition metric is correct for grouped data with mult
   all(
     data_error$error_by_window$rmsse == rmsse
   )
-
-  # data_test = data
-  # test_indices = dates
-  # metrics = c("mae", "mape", "mdape", "smape", "rmse", 'rmsse')
-  # models = NULL
-  # horizons = NULL
-  # windows = NULL
-  # group_filter = NULL
 })
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------

@@ -32,7 +32,7 @@
 \item{...}{Not used.}
 }
 \value{
-Hyperparameter plots of class 'ggplot'.
+Hyper-parameter plots of class 'ggplot'.
 }
 \description{
 Plot hyperparameter stability and relationship with error metrics across validation datasets and horizons.
