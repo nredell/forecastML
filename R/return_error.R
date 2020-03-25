@@ -426,9 +426,40 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL, ag
       # Compute error metric by model.
       if (type == "horizon") {
 
-        data_3 <- data_2 %>%
-          dplyr::group_by_at(dplyr::vars(.data$model, !!groups)) %>%
-          dplyr::summarize_at(dplyr::vars(!!!rlang::syms(metrics)), aggregate, na.rm = TRUE)
+        if (type == "horizon") {
+
+          data_3 <- data %>%
+            dplyr::group_by_at(dplyr::vars(.data$model, !!groups)) %>%
+            dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
+                                .funs = error_functions,
+                                x = rlang::quo(.data$residual),
+                                y = rlang::sym(outcome_name),
+                                z = rlang::sym(paste0(outcome_name, "_pred")))
+        }
+
+        if (any(metrics %in% "rmsse")) {
+
+          data_3_rmsse <- data %>%
+            dplyr::group_by_at(dplyr::vars(.data$model, !!groups)) %>%
+            dplyr::summarize("h" = sum(!is.na(.data$residual)),
+                             "sse_num" = sum(.data$residual^2, na.rm = TRUE),
+                             "mse_denom" = .data$mse_denom[1])
+
+          data_3_rmsse$rmsse <- with(data_3_rmsse, sqrt((1 / h) * (sse_num / mse_denom)))
+
+          data_3_rmsse$h <- NULL
+          data_3_rmsse$sse_num <- NULL
+          data_3_rmsse$mse_denom <- NULL
+
+          if (all(metrics %in% "rmsse")) {
+
+            data_3 <- data_3_rmsse
+
+          } else {
+
+            data_3$rmsse <- data_3_rmsse$rmsse
+          }
+        }
       }
       #------------------------------------------------------------------------
     }  # End error metrics for results from combine_forecasts().

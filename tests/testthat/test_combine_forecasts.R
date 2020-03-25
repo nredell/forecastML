@@ -93,10 +93,10 @@ test_that("combine forecasts works with multiple models and type equals horizon"
   data_combined <- combine_forecasts(data_forecasts_1, data_forecasts_2)
 
   all(
-    (max(horizons) * 2) == nrow(data_combined),  # Are the correct number of h-step-ahead forecasts produced?
+    max(horizons) == nrow(data_combined),  # Are the correct number of h-step-ahead forecasts produced?
     all(data_combined$horizon <= data_combined$model_forecast_horizon),  # Are all forecasts produced possible given the model horizon?
     # Are the horizon-specific forecasts the same?
-    identical(data_forecasts_1[1, "DriversKilled_pred"], data_combined$DriversKilled_pred[1]),
+    identical(median(c(data_forecasts_1[1, "DriversKilled_pred"], data_forecasts_2[1, "DriversKilled_pred"])), data_combined$DriversKilled_pred[1]),
     identical(data_forecasts_1[3:(nrow(data_forecasts_1)), "DriversKilled_pred"], data_combined$DriversKilled_pred[2:(max(horizons))])
   )
 

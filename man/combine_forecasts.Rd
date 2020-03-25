@@ -7,6 +7,7 @@
 combine_forecasts(
   ...,
   type = c("horizon", "error"),
+  aggregate = stats::median,
   data_error = list(NULL),
   metric = NULL
 )
@@ -15,10 +16,14 @@ combine_forecasts(
 \item{...}{One or more objects of class 'forecast_results' from running \code{predict.forecast_model()} on
 an input forward-looking forecast dataset. These are the forecasts from the horizon-specific
 direct forecasting models trained over the entire training dataset by setting \code{create_windows(..., window_length = 0)}.
-If multiple models are passed in \code{...}, the model names from \code{train_model()} should be unique for a
-given model forecast horizon.}
+If multiple models are passed in \code{...} with the same direct forecast horizon, for \code{type = 'horizon'},
+forecasts for the same direct forecast horizon are combined with \code{aggregate}; for \code{type = 'error'}, the model that
+minimizes the error metric at the given direct forecast horizon produces the forecast.}
 
 \item{type}{Default: 'horizon'. A character vector of length 1 that identifies the forecast combination method.}
+
+\item{aggregate}{Default \code{median} for \code{type = 'horizon'}. A function--without parentheses--that aggregates forecasts if
+more than one model passed in \code{...} has the same direct forecast horizon and \code{type = 'horizon'].}}
 
 \item{data_error}{Optional. A list of objects of class 'validation_error' from running \code{return_error()}
 on a training dataset. The length and order of \code{data_error} should match the models passed in \code{...}.}
