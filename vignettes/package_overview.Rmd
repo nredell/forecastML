@@ -710,7 +710,7 @@ plot(data_results, type = "prediction", horizons = c(1, 6, 12))
 
 ### Training error with `forecastML::return_error`
 
-Below is a the training error collapsed across our 4 direct forecast horizon/models.
+Below is a the training error collapsed across our 4 direct forecast horizons/models.
 
 ```{r}
 data_error <- forecastML::return_error(data_results, metrics = c("mae", "mape", "mdape", "smape"),
@@ -784,7 +784,7 @@ actual_indices <- dates[dates >= as.Date("1980-01-01")]
 # Plot all final forecasts plus historical data.
 plot(data_combined, data_actual = data_actual, actual_indices = actual_indices)
 
-DT::datatable(return_error(data_combined, data_actual, actual_indices)$error_by_horizon)
+DT::datatable(return_error(data_combined, data_actual, actual_indices)$error_by_horizon, options = list(scrollX = TRUE))
 ```
 
 ***
