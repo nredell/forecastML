@@ -256,7 +256,7 @@ randomly selected rows, to mimic forecasting over multi-step-ahead forecast hori
 `create_lagged_df()`--that allow the user to adjust the number and placement of outer loop validation datasets.
 
 ```{r, warnings = FALSE, message = FALSE}
-windows <- forecastML::create_windows(lagged_df = data_list, window_length = 24, skip = 0,
+windows <- forecastML::create_windows(lagged_df = data_list, window_length = 12, skip = 48,
                                       window_start = NULL, window_stop = NULL,
                                       include_partial_window = TRUE)
 windows
@@ -265,10 +265,10 @@ windows
 <br>
 
 Below is a plot of the nested cross-validation outer loop datasets or windows. In our example, 
-a `window_length` of 24 (months) resulted in 7 validation windows.
+a `window_length` of 12 (months) resulted in `r nrow(windows)` validation windows.
 
-In this nested cross-validation setup, a model is trained with data from 6 windows and 
-**forecast accuracy is assessed on the left-out window**. This means that we'll need to train 7 models 
+In this nested cross-validation setup, a model is trained with data from `r nrow(windows) - 1` windows and 
+**forecast accuracy is assessed on the left-out window**. This means that we'll need to train `r nrow(windows)` models 
 for each direct forecast horizon, each potentially selecting different optimal 
 hyperparameters and having different coefficients--if available--from the inner cross-validation loop. 
 Assessing the differences between these models is a good way to determine the stability of a given 
@@ -376,7 +376,7 @@ and a 3-column data.frame can be used to return point, lower, and upper forecast
 prediction_function <- function(model, data_features) {
   
   if (length(model$constant_features) > 1) {  # 'model' was passed as a list.
-    data <- data[, -c(model$constant_features )]
+    data_features <- data_features[, -c(model$constant_features )]
   }
 
   x <- as.matrix(data_features, ncol = ncol(data_features))
@@ -433,7 +433,7 @@ plot(data_results, type = "prediction", horizons = c(1, 6, 12))
 Below is a plot of the historical forecast error for select validation windows at select forecast horizons.
 
 ```{r}
-plot(data_results, type = "residual", horizons = c(1, 6, 12), windows = 5:7)
+plot(data_results, type = "residual", horizons = c(1, 6, 12))
 ```
 
 <br>
@@ -446,7 +446,7 @@ In most cases it would be reasonable to expect shorter-horizon forecasts to be m
 * **Plot:** Rolling origin forecasts for the last validation window in our training data.
 
 ```{r}
-plot(data_results, type = "forecast_stability", windows = max(data_results$window_number))
+plot(data_results, type = "forecast_stability", windows = 3)
 ```
 
 <br>
@@ -483,7 +483,7 @@ DT::datatable(data_error$error_global, options = list(scrollX = TRUE), )
 Below is a plot of error metrics across time for select validation windows and forecast horizons.
 
 ```{r}
-plot(data_error, data_results, type = "time", facet = ~ horizon, horizons = c(1, 6, 12), windows = 5:7)
+plot(data_error, data_results, type = "time", facet = ~ horizon, horizons = c(1, 6, 12))
 ```
 
 <br>
@@ -499,7 +499,7 @@ plot(data_error, data_results, type = "horizon", facet = ~ horizon, horizons = c
 Below is a plot of error metrics collapsed across validation windows and forecast horizons.
 
 ```{r}
-plot(data_error, data_results, type = "global")
+plot(data_error, data_results, type = "global", facet = ~ horizon)
 ```
 
 <br>
@@ -620,7 +620,7 @@ Below is a plot of the forecasts vs. the actuals for each model at select foreca
 Setting the `data_actual = ...` and `actual_indices = ...` arguments plots a background dataset (gray line in the plots below).
 
 It's clear from the plots that our Random Forest model is producing less accurate forecasts and is more 
-sensitive to the data on which it was trained--producing an erratic forecast when not trained on window 7.
+sensitive to the data on which it was trained.
 
 ```{r}
 plot(data_forecast,

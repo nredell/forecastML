@@ -814,7 +814,7 @@ plot.training_results <- function(x,
         if (is.null(groups)) {  # Single time series.
 
           p <- p + geom_line(data = data_plot[data_plot$outcome == outcome_name, ],
-                             aes(x = .data$index, y = .data$value), color = "grey50")
+                             aes(x = .data$index, y = .data$value, group = .data$ggplot_group), color = "grey50")
 
         } else {  # Actuals, grouped time series.
 
