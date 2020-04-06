@@ -160,7 +160,7 @@ The main functions covered in each vignette are shown below as `function()`.
 * **[Customizing the user-defined wrapper functions](https://nredell.github.io/forecastML/doc/custom_functions.html)**. 
 `train()` and `predict()`
 
-* **[Forecast combinations](https://nredell.github.io/forecastML/doc/combine_forecasts.html)**. `combine_forecasts()`
+* **[Forecast combinations](https://nredell.github.io/forecastML/doc/combine_forecasts)**. `combine_forecasts()`
 
 
 ## Cheat Sheets
