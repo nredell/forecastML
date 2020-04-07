@@ -61,10 +61,12 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
   row_indices <- attributes(lagged_df)$row_indices
   date_indices <- attributes(lagged_df)$date_indices
   horizons <- attributes(lagged_df)$horizons
+  data_start <- attributes(lagged_df)$data_start
+  data_stop <- attributes(lagged_df)$data_stop
 
   # These are the arguments from the user-defined modeling function passed in train_model() with ...
   # which is optional but potentially convenient for the user who can avoid re-defining the modeling function
-  # in repeated calls to train_model(). The arguments in ... will passed as a named list in do.call(). This
+  # in repeated calls to train_model(). The arguments in ... will be passed as a named list in do.call(). This
   # local scoping within future_lapply() appears to be necessary because global arguments passed in ...
   # aren't being found by the future package when use_future = TRUE.
   n_args <- ...length()
@@ -121,8 +123,9 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
         valid_indices_date <- date_indices[date_indices >= windows[i, "start"] & date_indices <= windows[i, "stop"]]
       }
 
-      # A window length of 0 removes the nested cross-validation and trains on all input data in lagged_df.
-      if (window_length == 0) {
+      # A window length of 0 that spans the entire dataset removes the nested cross-validation and
+      # trains on all input data in lagged_df.
+      if (window_length == 0 && (windows[i, "start"] == data_start) && (windows[i, "stop"] == data_stop)) {
 
         # Model training over all data.
         if (n_args == 0) {  # No user-defined model args passed in ...
@@ -136,7 +139,7 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
           })
         }
 
-      } else {  # Model training with cv.
+      } else {  # Model training with external block-contiguous cv.
 
         if (n_args == 0) {  # No user-defined model args passed in ...
 
