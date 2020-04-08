@@ -4,14 +4,15 @@
 #' specified forecast horizons and (b) forecast into the future with a trained ML model.
 #'
 #' @param data A data.frame with the (a) target to be forecasted and (b) features/predictors. An optional date column can be given in the
-#' \code{dates} argument (required for grouped time series). Note that forecastML only works with regularly spaced date/time intervals and that missing
-#' rows--usually due to periods when no data was collected--will result in poorly trained models due to incorrect feature lags.
+#' \code{dates} argument (required for grouped time series). Note that `\code{orecastML} only works with regularly spaced date/time intervals and that missing
+#' rows--usually due to periods when no data was collected--will result in incorrect feature lags.
 #' Use \code{\link{fill_gaps}} to fill in any missing rows/data prior to running this function.
 #' @param type The type of dataset to return--(a) model training or (b) forecast prediction. The default is \code{train}.
 #' @param method The type of modeling dataset to create. \code{direct} returns 1 data.frame for each forecast horizon and
 #' \code{multi_output} returns 1 data.frame for simultaneously modeling all forecast horizons. The default is \code{direct}.
-#' @param outcome_col The column index--an integer--of the target to be forecasted.
-#' @param horizons A numeric vector of one or more forecast horizons, h, measured in input dataset rows.
+#' @param outcome_col The column index--an integer--of the target to be forecasted. If \code{outcome_col != 1}, the
+#' outcome column will be moved to position 1 and \code{outcome_col} will be set to 1 internally.
+#' @param horizons A numeric vector of one or more forecast horizons, h, measured in dataset rows.
 #' If \code{dates} are given, a horizon of 1, for example, would equal 1 * \code{frequency} in calendar time.
 #' @param lookback A numeric vector giving the lags--in dataset rows--for creating the lagged features. All non-grouping,
 #' non-static, and non-dynamic features in the input dataset, \code{data}, are lagged by the same values. The outcome is
@@ -202,8 +203,6 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
     stop("The 'dates' argument needs to be specified with grouped data.")
   }
   #--------------------------------------------------------------------------
-  data <- as.data.frame(data)
-
   # The outcomes will always be moved to the front of the dataset and eventually more than one
   # outcome will be supported.
   if (outcome_col != 1) {
@@ -212,15 +211,10 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
   }
 
   outcome_name <- names(data)[outcome_col]
-
   type <- type[1]  # Model-training datasets are the default.
-
   method <- method[1]  # Direct forecasting is the default.
-
   row_names <- 1:nrow(data)
-
   n_instances <- max(row_names, na.rm = TRUE)
-
   var_names <- names(data)
 
   dynamic_feature_cols <- which(names(data) %in% dynamic_features)
@@ -235,21 +229,11 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
     # This block of code ensures that unsorted data.frames will return the correct lagged feature values.
     data$forecastML_dates <- dates  # Adding to the data temporarily for sorting.
 
-    if (length(groups) == 1) {
-
-      data <- data %>%
-        dplyr::arrange(!!rlang::sym(groups), .data$forecastML_dates)
-
-    } else {
-
-      data <- data %>%
-        dplyr::arrange(!!!rlang::syms(groups), .data$forecastML_dates)
-    }
+    data <- data %>%
+      dplyr::arrange(!!!rlang::syms(groups), .data$forecastML_dates)
 
     dates <- data$forecastML_dates
     data$forecastML_dates <- NULL
-
-    data <- as.data.frame(data)
   }
   #----------------------------------------------------------------------------
   # If the outcome is a factor, save the levels out as an attribute.

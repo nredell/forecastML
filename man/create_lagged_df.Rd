@@ -23,8 +23,8 @@ create_lagged_df(
 }
 \arguments{
 \item{data}{A data.frame with the (a) target to be forecasted and (b) features/predictors. An optional date column can be given in the
-\code{dates} argument (required for grouped time series). Note that forecastML only works with regularly spaced date/time intervals and that missing
-rows--usually due to periods when no data was collected--will result in poorly trained models due to incorrect feature lags.
+\code{dates} argument (required for grouped time series). Note that `\code{orecastML} only works with regularly spaced date/time intervals and that missing
+rows--usually due to periods when no data was collected--will result in incorrect feature lags.
 Use \code{\link{fill_gaps}} to fill in any missing rows/data prior to running this function.}
 
 \item{type}{The type of dataset to return--(a) model training or (b) forecast prediction. The default is \code{train}.}
@@ -32,9 +32,10 @@ Use \code{\link{fill_gaps}} to fill in any missing rows/data prior to running th
 \item{method}{The type of modeling dataset to create. \code{direct} returns 1 data.frame for each forecast horizon and
 \code{multi_output} returns 1 data.frame for simultaneously modeling all forecast horizons. The default is \code{direct}.}
 
-\item{outcome_col}{The column index--an integer--of the target to be forecasted.}
+\item{outcome_col}{The column index--an integer--of the target to be forecasted. If \code{outcome_col != 1}, the
+outcome column will be moved to position 1 and \code{outcome_col} will be set to 1 internally.}
 
-\item{horizons}{A numeric vector of one or more forecast horizons, h, measured in input dataset rows.
+\item{horizons}{A numeric vector of one or more forecast horizons, h, measured in dataset rows.
 If \code{dates} are given, a horizon of 1, for example, would equal 1 * \code{frequency} in calendar time.}
 
 \item{lookback}{A numeric vector giving the lags--in dataset rows--for creating the lagged features. All non-grouping,
