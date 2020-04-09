@@ -868,21 +868,22 @@ summary.lagged_df <- function(object, ...) {
 #' @export
 plot.lagged_df <- function(x, ...) { # nocov start
 
-  data <- x
-  rm(x)
+  if (isTRUE(attributes(x)$skeleton)) {
+    stop("Lagged feature plots are not available for skeleton objects.")
+  }
 
-  horizons <- attributes(data)$horizons
+  horizons <- attributes(x)$horizons
 
   # Within a given horizons, an indicator for different lag vectors for each feature.
-  if (methods::is(attributes(data[[1]])$lookback, "list")) {
+  if (methods::is(attributes(x[[1]])$lookback, "list")) {
     lookback_per_predictor <- TRUE
   } else {
     lookback_per_predictor <- FALSE
   }
 
-  groups <- attributes(data)$groups
-  dynamic_features <- attributes(data)$dynamic_features
-  static_features <- attributes(data)$static_features
+  groups <- attributes(x)$groups
+  dynamic_features <- attributes(x)$dynamic_features
+  static_features <- attributes(x)$static_features
 
   # Grouping features won't be plotted because they aren't lagged.
   predictor_names <- attributes(data)$predictor_names
@@ -891,7 +892,7 @@ plot.lagged_df <- function(x, ...) { # nocov start
 
   n_predictors <- length(predictor_names)
 
-  lookback <- lapply(data, function(x) {attributes(x)$lookback})
+  lookback <- lapply(x, function(data) {attributes(data)$lookback})
   lookback_max <- max(unlist(lookback), na.rm = TRUE)
 
   if (lookback_per_predictor) {

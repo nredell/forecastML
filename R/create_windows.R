@@ -203,27 +203,25 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
 
   windows <- x
   rm(x)
-
-  data <- lagged_df
-  rm(lagged_df)
   #----------------------------------------------------------------------------
-  method <- attributes(data)$method
-  outcome <- attributes(data)$outcome
-  outcome_col <- attributes(data)$outcome_col
-  outcome_name <- attributes(data)$outcome_name
-  outcome_levels <- attributes(data)$outcome_levels
-  row_indices <- attributes(data)$row_indices
-  date_indices <- attributes(data)$date_indices
-  groups <- attributes(data)$groups
+  method <- attributes(lagged_df)$method
+  outcome <- attributes(lagged_df)$outcome
+  outcome_col <- attributes(lagged_df)$outcome_col
+  outcome_name <- attributes(lagged_df)$outcome_name
+  outcome_levels <- attributes(lagged_df)$outcome_levels
+  row_indices <- attributes(lagged_df)$row_indices
+  date_indices <- attributes(lagged_df)$date_indices
+  frequency <- attributes(lagged_df)$frequency
+  groups <- attributes(lagged_df)$groups
   #----------------------------------------------------------------------------
   # If there are multiple horizons in the lagged_df, select the first dataset and columns for plotting.
   if (method == "direct") {
 
-    data_plot <- dplyr::select(data[[1]], !!outcome_name, !!groups)
+    data_plot <- dplyr::select(lagged_df[[1]], !!outcome_name, !!groups)
 
     } else if (method == "multi_output") {
 
-    data_plot <- dplyr::bind_cols(outcome, dplyr::select(data[[1]], !!groups))
+    data_plot <- dplyr::bind_cols(outcome, dplyr::select(lagged_df[[1]], !!groups))
   }
 
   if (is.null(date_indices)) {  # Index-based x-axis in plot.
@@ -266,7 +264,7 @@ plot.windows <- function(x, lagged_df, show_labels = TRUE, group_filter = NULL, 
   # Fill in date gaps with NAs so ggplot doesn't connect line segments where there were no entries recorded.
   if (!is.null(groups)) {
 
-    data_plot_template <- expand.grid("index" = seq(min(date_indices, na.rm = TRUE), max(date_indices, na.rm = TRUE), by = attributes(data)$frequency),
+    data_plot_template <- expand.grid("index" = seq(min(date_indices, na.rm = TRUE), max(date_indices, na.rm = TRUE), by = frequency),
                                       "ggplot_color_group" = unique(data_plot$ggplot_color_group),
                                       stringsAsFactors = FALSE)
 

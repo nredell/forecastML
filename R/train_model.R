@@ -63,6 +63,7 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
   horizons <- attributes(lagged_df)$horizons
   data_start <- attributes(lagged_df)$data_start
   data_stop <- attributes(lagged_df)$data_stop
+  skeleton <- attributes(lagged_df)$skeleton
 
   # These are the arguments from the user-defined modeling function passed in train_model() with ...
   # which is optional but potentially convenient for the user who can avoid re-defining the modeling function
@@ -101,7 +102,6 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
     lapply_across_val_windows <- base::lapply
   }
   #----------------------------------------------------------------------------
-
   # Seq along model forecast horizon > cross-validation windows.
   data_out <- lapply_across_horizons(lagged_df, function(data, future.seed, ...) {  # model forecast horizon.
 
@@ -116,9 +116,9 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
 
       } else {
 
-        # When create_lagged_df(..., keep_rows = FALSE) the validation indices need an offset to account for the fact that
-        # validation windows are selected where row_indices %in% valid_indices which maps back to the input dataset which will
-        # have 1:max(lookback) more rows than the dataset that comes out of create_lagged_df(..., keep_rows = FALSE).
+        # When create_lagged_df(..., groups = NULL, keep_rows = FALSE), the validation indices need an offset to account for the fact that
+        # validation windows are selected where row_indices %in% valid_indices which maps back to the input dataset to create_lagged_df()
+        # which will have 1:max(lookback) more rows than the dataset that comes out of create_lagged_df(..., groups = NULL, keep_rows = FALSE).
         valid_indices <- min(row_indices) - 1 + which(date_indices >= windows[i, "start"] & date_indices <= windows[i, "stop"])
         valid_indices_date <- date_indices[date_indices >= windows[i, "start"] & date_indices <= windows[i, "stop"]]
       }
@@ -134,21 +134,25 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
 
         } else {
 
-          model <- try({
-            do.call(model_function, append(list(data), model_function_args))
-          })
+          model <- try(do.call(model_function, append(list(data), model_function_args)))
         }
 
       } else {  # Model training with external block-contiguous cv.
 
+        # These validation indices will always start at 1. They index with respect to the
+        # data passed into model_function() as opposed to the dataset passed in create_lagged_df().
+        # These indices, stored as an attribute, are for manual filtering any skeleton lagged_dfs in model_function().
+        validation_indices <- which(row_indices %in% valid_indices)
+        attributes(data)$validation_indices <- validation_indices
+
         if (n_args == 0) {  # No user-defined model args passed in ...
 
-          model <- try(model_function(data[!row_indices %in% valid_indices, , drop = FALSE]))
+          model <- try(model_function(data[-(validation_indices), , drop = FALSE]))
 
         } else {
 
           model <- try({
-              do.call(model_function, append(list(data[!row_indices %in% valid_indices, , drop = FALSE]), model_function_args))
+              do.call(model_function, append(list(data[-(validation_indices), , drop = FALSE]), model_function_args))
             })
           }
       }
@@ -179,6 +183,8 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
   attr(data_out, "data_stop") <- attributes(lagged_df)$data_stop
   attr(data_out, "groups") <- attributes(lagged_df)$groups
   attr(data_out, "method") <- attributes(lagged_df)$method
+  attr(data_out, "skeleton") <- skeleton
+
 
   class(data_out) <- c("forecast_model", class(data_out))
 
@@ -280,6 +286,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
   date_indices <- attributes(model_list[[1]])$date_indices
   frequency <- attributes(model_list[[1]])$frequency
   groups <- attributes(model_list[[1]])$groups
+  skeleton <- attributes(model_list[[1]])$skeleton
   #----------------------------------------------------------------------------
   if (type == "train") {
 
@@ -304,8 +311,16 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
         # Predict on training data or the forecast dataset?
         if (type == "train") {  # Nested cross-validation.
 
-          x_valid <- data[[j]][row_indices %in% data_results$valid_indices, -(outcome_cols), drop = FALSE]
-          y_valid <- data[[j]][row_indices %in% data_results$valid_indices, outcome_cols, drop = FALSE]  # Actuals in function return.
+          # These validation indices will always start at 1. They index with respect to the
+          # data passed into predict_function() as opposed to the dataset passed in create_lagged_df().
+          # These indices, stored as an attribute, are for manual filtering any skeleton lagged_dfs in predict_function().
+          validation_indices <- which(row_indices %in% data_results$valid_indices)
+
+          x_valid <- data[[j]][validation_indices, -(outcome_cols), drop = FALSE]
+          y_valid <- data[[j]][validation_indices, outcome_cols, drop = FALSE]  # Actuals in function return.
+
+          attributes(x_valid)$validation_indices <- validation_indices
+          attributes(x_valid)$horizons <- attributes(data[[j]])$horizons
 
           data_pred <- try(prediction_fun(data_results$model, x_valid))  # Nested cross-validation.
 
