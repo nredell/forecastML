@@ -25,11 +25,11 @@ The following quote from Bergmeir et al.'s article nicely sums up the aim of thi
 > (e.g., when using Machine Learning methods), the aforementioned problems of CV are largely
 > irrelevant, and CV can and should be used without modification, as in the independent case."
 
-At a glance, `forecastML` supports the following approaches when forecasting with machine learning methods:
+## Featured Notebooks
 
-<p align="center">
-  <img src="./tools/features_table.png" width="715px" height="400px"></img>
-</p>
+* **[Forecasting with big data - Spark and H2O](https://github.com/nredell/forecastML/blob/master/notebooks/Forecasting%20with%20big%20data%20-%20Spark%20and%20H2O.ipynb)**
+
+User-contributed notebooks welcome!
 
 
 ## Lightning Example
@@ -82,7 +82,6 @@ plot(data_forecasts, data_actual = data_seatbelts[-(1:100), ], actual_indices = 
         + **[Direct forecasting](#direct-forecast-in-r)**
         + **[Multi-output forecasting](#multi-output-forecast-in-r)**
     + **[Forecasting factor outcomes (forecasting sequences)](#examples---factor-outcomes-with-r-and-python)**
-* **[Roadmap](#roadmap)**
 
 
 ## Install
