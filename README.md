@@ -27,7 +27,7 @@ The following quote from Bergmeir et al.'s article nicely sums up the aim of thi
 
 ## Featured Notebooks
 
-* **[Forecasting with big data - Spark and H2O](https://github.com/nredell/forecastML/blob/master/notebooks/Forecasting%20with%20big%20data%20-%20Spark%20and%20H2O.ipynb)**
+* **[Forecasting with big data - Spark and H2O](https://github.com/nredell/forecastML/blob/master/notebooks/Forecasting%20with%20big%20data%20-%20Spark%20and%20H2O.ipynb)**  (currently requires GitHub dev versions of `dplyr` and `forecastML`)
 
 User-contributed notebooks welcome!
 
