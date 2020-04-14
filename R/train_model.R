@@ -123,12 +123,6 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
         valid_indices_date <- date_indices[date_indices >= windows[i, "start"] & date_indices <= windows[i, "stop"]]
       }
 
-      # These validation indices will always start at 1. They index with respect to the
-      # data passed into model_function() as opposed to the dataset passed in create_lagged_df().
-      # These indices, stored as an attribute, are for manual filtering any skeleton lagged_dfs in model_function().
-      validation_indices <- which(row_indices %in% valid_indices)
-      attributes(data)$validation_indices <- validation_indices
-
       # A window length of 0 that spans the entire dataset removes the nested cross-validation and
       # trains on all input data in lagged_df.
       if (window_length == 0 && (windows[i, "start"] == data_start) && (windows[i, "stop"] == data_stop)) {
@@ -144,6 +138,12 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
         }
 
       } else {  # Model training with external block-contiguous cv.
+
+        # These validation indices will always start at 1. They index with respect to the
+        # data passed into model_function() as opposed to the dataset passed in create_lagged_df().
+        # These indices, stored as an attribute, are for manual filtering any skeleton lagged_dfs in model_function().
+        validation_indices <- which(row_indices %in% valid_indices)
+        attributes(data)$validation_indices <- validation_indices
 
         if (n_args == 0) {  # No user-defined model args passed in ...
 
@@ -463,12 +463,12 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
         data_temp$model <- as.character(data_temp$model)  # Coerce to remove any factor levels.
         data_temp
       })  # End cross-validation window predictions.
-      data_win_num <- suppressMessages(dplyr::bind_rows(data_win_num))  # A message about new row naming conventions in dplyr 1.0.0.
+      data_win_num <- dplyr::bind_rows(data_win_num)
     })  # End horizon-level predictions.
-    data_horizon <- suppressMessages(dplyr::bind_rows(data_horizon))  # A message about new row naming conventions in dplyr 1.0.0.
+    data_horizon <- dplyr::bind_rows(data_horizon)
   })  # End model-level predictions.
 
-  data_out <- suppressMessages(dplyr::bind_rows(data_model))  # A message about new row naming conventions in dplyr 1.0.0.
+  data_out <- dplyr::bind_rows(data_model)
 
   # For multi-output models, the data (a) need to be reshaped from a wide to long format
   # and (b) the validation indices that represent the forecast origin need to be changed
@@ -526,7 +526,6 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
   }
 
   data_out <- as.data.frame(data_out)
-  row.names(data_out) <- 1:nrow(data_out)
 
   attr(data_out, "method") <- method
   attr(data_out, "horizons") <- horizons
@@ -665,7 +664,7 @@ plot.training_results <- function(x,
 
       data_residual <- 1 - data[, names(data) %in% outcome_levels]
       names(data_residual) <- paste0(names(data_residual), "_residual")
-      data <- dplyr::bind_cols(tibble::as_tibble(data), tibble::as_tibble(data_residual))
+      data <- dplyr::bind_cols(data, data_residual)
       rm(data_residual)
     }
   }
@@ -1460,7 +1459,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
           data_hist <- data_hist[rep(1:nrow(data_hist), length(unique(data_plot$ggplot_color_group))), ]
           data_hist$ggplot_color_group <- rep(unique(data_plot$ggplot_color_group), each = n_rows)
 
-          data_actual <- suppressWarnings(dplyr::bind_rows(tibble::as_tibble(data_hist), tibble::as_tibble(data_actual)))
+          data_actual <- suppressWarnings(dplyr::bind_rows(data_hist, data_actual))
         }
       }
       #------------------------------------------------------------------------
@@ -1476,7 +1475,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
       }
       #------------------------------------------------------------------------
       if (!is.null(data_actual)) {
-        data_plot <- suppressWarnings(dplyr::bind_rows(tibble::as_tibble(data_plot), tibble::as_tibble(data_actual)))
+        data_plot <- suppressWarnings(dplyr::bind_rows(data_plot, data_actual))
       }
 
       data_plot$ggplot_color_group <- factor(data_plot$ggplot_color_group, levels = rev(unique(data_plot$ggplot_color_group)), ordered = TRUE)

@@ -75,9 +75,8 @@ combine_forecasts <- function(..., type = c("horizon", "error"), aggregate = sta
   groups <- attributes(data_forecast_list[[1]])$groups
   data_stop <- attributes(data_forecast_list[[1]])$data_stop
 
-  data_forecast_list <- lapply(data_forecast_list, tibble::as_tibble)  # Remove forecastML attributes.
-
-  data_forecast <- dplyr::bind_rows(data_forecast_list)
+  data_forecast <- dplyr::bind_rows(data_forecast_list)  # Collapse the forecast_results list(...).
+  data_forecast <- dplyr::as_tibble(data_forecast)
   #----------------------------------------------------------------------------
   # For factor outcomes, is the prediction a factor level or probability?
   if (!is.null(outcome_levels)) {
@@ -161,7 +160,7 @@ combine_forecasts <- function(..., type = c("horizon", "error"), aggregate = sta
     data_forecast <- lapply(seq_along(model_forecast_horizons), function(i) {
 
       data_forecast[data_forecast$model_forecast_horizon == model_forecast_horizons[i] &
-                    data_forecast$horizon %in% horizon_filter[[i]], ]
+                      data_forecast$horizon %in% horizon_filter[[i]], ]
     })
 
     data_forecast <- dplyr::bind_rows(data_forecast)
@@ -379,7 +378,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
               dplyr::mutate("model_forecast_horizon" = dplyr::lag(.data$model_forecast_horizon, 1)) %>%
               dplyr::filter(!is.na(.data$model_forecast_horizon))
 
-            data_fill <- dplyr::bind_rows(tibble::as_tibble(data_forecast), tibble::as_tibble(data_fill))
+            data_fill <- dplyr::bind_rows(data_forecast, data_fill)
 
             p <- p + geom_ribbon(data = data_fill,
                                  aes(x = .data$index, ymin = eval(parse(text = paste0(outcome_name, "_pred_lower"))),
@@ -397,7 +396,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
               dplyr::mutate("model_forecast_horizon" = dplyr::lag(.data$model_forecast_horizon, 1)) %>%
               dplyr::filter(!is.na(.data$model_forecast_horizon))
 
-            data_fill <- dplyr::bind_rows(tibble::as_tibble(data_forecast), tibble::as_tibble(data_fill))
+            data_fill <- dplyr::bind_rows(data_forecast, data_fill)
 
             p <- p + geom_ribbon(data = data_fill,
                                  aes(x = .data$index, ymin = eval(parse(text = paste0(outcome_name, "_pred_lower"))),
@@ -504,7 +503,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
               data_hist <- data_hist[rep(1:nrow(data_hist), length(unique(data_plot$ggplot_color_group))), ]
               data_hist$ggplot_color_group <- rep(unique(data_plot$ggplot_color_group), each = n_rows)
 
-              data_actual <- suppressWarnings(dplyr::bind_rows(tibble::as_tibble(data_hist), tibble::as_tibble(data_actual)))
+              data_actual <- suppressWarnings(dplyr::bind_rows(data_hist, data_actual))
             }
           }
 
@@ -514,7 +513,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
           data_plot$time_series_type <- "model_forecast"
 
           if (!is.null(data_actual)) {
-            data_plot <- suppressWarnings(dplyr::bind_rows(tibble::as_tibble(data_plot), tibble::as_tibble(data_actual)))
+            data_plot <- suppressWarnings(dplyr::bind_rows(data_plot, data_actual))
           }
 
           data_plot$ggplot_color_group <- factor(data_plot$ggplot_color_group, levels = rev(unique(data_plot$ggplot_color_group)), ordered = TRUE)
@@ -564,7 +563,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
             data_hist <- data_hist[rep(1:nrow(data_hist), length(unique(data_plot$ggplot_color_group))), ]
             data_hist$ggplot_color_group <- rep(unique(data_plot$ggplot_color_group), each = n_rows)
 
-            data_actual <- suppressWarnings(dplyr::bind_rows(tibble::as_tibble(data_hist), tibble::as_tibble(data_actual)))
+            data_actual <- suppressWarnings(dplyr::bind_rows(data_hist, data_actual))
           }
         }
 
@@ -576,7 +575,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
         data_plot$time_series_type <- "model_forecast"
 
         if (!is.null(data_actual)) {
-          data_plot <- suppressWarnings(dplyr::bind_rows(tibble::as_tibble(data_plot), tibble::as_tibble(data_actual)))
+          data_plot <- suppressWarnings(dplyr::bind_rows(data_plot, data_actual))
         }
 
         data_plot$ggplot_color_group <- factor(data_plot$ggplot_color_group, levels = rev(unique(data_plot$ggplot_color_group)), ordered = TRUE)
