@@ -10,7 +10,7 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(fig.width = 6, fig.height = 4)
+knitr::opts_chunk$set(fig.width = 7.15, fig.height = 4)
 ```
 
 ## Purpose
@@ -172,3 +172,5 @@ data_results <- predict(model_results,
 ```{r}
 plot(data_results)
 ```
+
+***

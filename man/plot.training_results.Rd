@@ -4,15 +4,26 @@
 \alias{plot.training_results}
 \title{Plot an object of class training_results}
 \usage{
-\method{plot}{training_results}(x, type = c("prediction", "residual",
-  "forecast_stability", "forecast_variability"), models = NULL,
-  horizons = NULL, windows = NULL, valid_indices = NULL,
-  group_filter = NULL, ...)
+\method{plot}{training_results}(
+  x,
+  type = c("prediction", "residual", "forecast_stability"),
+  facet = horizon ~ model,
+  models = NULL,
+  horizons = NULL,
+  windows = NULL,
+  valid_indices = NULL,
+  group_filter = NULL,
+  keep_missing = FALSE,
+  ...
+)
 }
 \arguments{
-\item{x}{An object of class 'training_results' from \code{predict.forecast_mode()l}.}
+\item{x}{An object of class 'training_results' from \code{predict.forecast_model()}.}
 
 \item{type}{Plot type. The default plot is "prediction" for validation dataset predictions.}
+
+\item{facet}{Optional. For numeric outcomes, a formula with any combination of \code{horizon}, \code{model}, or \code{group} (for grouped time series)
+passed to \code{ggplot2::facet_grid()} internally (e.g., \code{horizon ~ model}, \code{horizon + model ~ .}, \code{~ horizon + group}).}
 
 \item{models}{Optional. Filter results by user-defined model name from \code{train_model()}.}
 
@@ -24,6 +35,8 @@
 
 \item{group_filter}{Optional. A string for filtering plot results for grouped time series
 (e.g., \code{"group_col_1 == 'A'"}). The results are passed to \code{dplyr::filter()} internally.}
+
+\item{keep_missing}{Boolean. If \code{TRUE}, predictions are plotted for indices/dates where the outcome is missing.}
 
 \item{...}{Not used.}
 }

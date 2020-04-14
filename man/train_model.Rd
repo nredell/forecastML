@@ -4,8 +4,14 @@
 \alias{train_model}
 \title{Train a model across horizons and validation datasets}
 \usage{
-train_model(lagged_df, windows, model_name, model_function, ...,
-  use_future = FALSE)
+train_model(
+  lagged_df,
+  windows,
+  model_name,
+  model_function,
+  ...,
+  use_future = FALSE
+)
 }
 \arguments{
 \item{lagged_df}{An object of class 'lagged_df' from \code{\link{create_lagged_df}}.}
@@ -16,13 +22,13 @@ train_model(lagged_df, windows, model_name, model_function, ...,
 
 \item{model_function}{A user-defined wrapper function for model training that takes the following
 arguments: (1) a horizon-specific data.frame made with \code{create_lagged_df(..., type = "train")}
-(i.e., the datasets stored in \code{lagged_df}) and, optionally, (2) any number of additional named arguments
-which are passed as \code{...} in this function.}
+(i.e., the dataset(s) stored in \code{lagged_df}) and, optionally, (2) any number of additional named arguments
+which can be passed in \code{...} in this function.}
 
 \item{...}{Optional. Named arguments passed into the user-defined \code{model_function}.}
 
 \item{use_future}{Boolean. If \code{TRUE}, the \code{future} package is used for training models in parallel.
-The model will train in parallel across either (1) model forecast horizons or (b) validation windows,
+The models will train in parallel across either (1) model forecast horizons or (b) validation windows,
 whichever is longer (i.e., \code{length(create_lagged_df())} or \code{nrow(create_windows())}). The user
 should run \code{future::plan(future::multiprocess)} or similar prior to this function to train these models
 in parallel.}
@@ -30,18 +36,18 @@ in parallel.}
 \value{
 An S3 object of class 'forecast_model': A nested list of trained models. Models can be accessed with
 \code{my_trained_model$horizon_h$window_w$model} where 'h' gives the forecast horizon and 'w' gives
-the validation dataset window number from \code{create_windows}.
+the validation dataset window number from \code{create_windows()}.
 }
 \description{
-Train a user-defined forecast model for each horizon, h, and across the validation
-datasets, d. A total of h * d models are trained--more if the user-defined modeling function
-performs any inner-loop cross-validation. These models can, however, be trained in parallel
-with the \code{future} package.
+Train a user-defined forecast model for each horizon, 'h', and across the validation
+datasets, 'd'. If \code{method = "direct"}, a total of 'h' * 'd' models are trained.
+If \code{method = "multi_output"}, a total of 1 * 'd' models are trained.
+These models can be trained in parallel with the \code{future} package.
 }
 \section{Methods and related functions}{
 
 
-The output of of \code{train_model} can be passed into
+The output of \code{train_model} can be passed into
 
 \itemize{
   \item \code{\link{return_error}}
@@ -68,7 +74,8 @@ lookback <- 1:15
 data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_col = 1,
                                lookback = lookback, horizon = horizons)
 
-windows <- create_windows(data_train, window_length = 12)
+# One custom validation window at the end of the dataset.
+windows <- create_windows(data_train, window_start = 181, window_stop = 192)
 
 # User-define model - LASSO
 # A user-defined wrapper function for model training that takes the following

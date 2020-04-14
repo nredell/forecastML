@@ -4,8 +4,7 @@
 \alias{plot.windows}
 \title{Plot validation datasets}
 \usage{
-\method{plot}{windows}(x, lagged_df, show_labels = TRUE,
-  group_filter = NULL, ...)
+\method{plot}{windows}(x, lagged_df, show_labels = TRUE, group_filter = NULL, ...)
 }
 \arguments{
 \item{x}{An object of class 'windows' from \code{create_windows()}.}
@@ -14,7 +13,7 @@
 
 \item{show_labels}{Boolean. If \code{TRUE}, show validation dataset IDs on the plot.}
 
-\item{group_filter}{Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
+\item{group_filter}{Optional. A string for filtering plot results for grouped time series (e.g., \code{"group_col_1 == 'A'"}).
 This string is passed to \code{dplyr::filter()} internally.}
 
 \item{...}{Not used.}
@@ -36,7 +35,11 @@ lookback <- 1:15
 data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_col = 1,
                                lookback = lookback, horizon = horizons)
 
+# All historical window lengths of 12 plus any partial windows at the end of the dataset.
 windows <- create_windows(data_train, window_length = 12)
+plot(windows, data_train)
 
+# Two custom validation windows with different lengths.
+windows <- create_windows(data_train, window_start = c(20, 80), window_stop = c(30, 100))
 plot(windows, data_train)
 }

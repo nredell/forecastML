@@ -4,57 +4,70 @@
 \alias{return_error}
 \title{Compute forecast error}
 \usage{
-return_error(data_results, data_test = NULL, test_indices = NULL,
-  metrics = c("mae", "mape", "mdape", "smape"), models = NULL,
-  horizons = NULL, windows = NULL, group_filter = NULL)
+return_error(
+  data_results,
+  data_test = NULL,
+  test_indices = NULL,
+  aggregate = stats::median,
+  metrics = c("mae", "mape", "mdape", "smape", "rmse", "rmsse"),
+  models = NULL,
+  horizons = NULL,
+  windows = NULL,
+  group_filter = NULL
+)
 }
 \arguments{
-\item{data_results}{An object of class 'training_results' or 'forecast_results' from running
-\code{\link[=predict.forecast_model]{predict}} on a trained model.}
+\item{data_results}{An object of class 'training_results' or 'forecast_results' from running (a)
+\code{\link[=predict.forecast_model]{predict}} on a trained model or (b) \code{combine_forecasts()}.}
 
 \item{data_test}{Required for forecast results only. If \code{data_results} is an object of class 'forecast_results', a data.frame used to
 assess the accuracy of a 'forecast_results' object. \code{data_test} should have the outcome/target columns
 and any grouping columns.}
 
-\item{test_indices}{Required if \code{data_test} is given. A vector or 1-column data.frame of numeric
-row indices or dates (class 'Date') with length nrow(data_test).}
+\item{test_indices}{Required if \code{data_test} is given or 'rmsse' %in% \code{metrics}. A vector or 1-column data.frame of numeric
+row indices or dates (class 'Date' or 'POSIXt') with length \code{nrow(data_test)}.}
 
-\item{metrics}{Common forecast error metrics. See the Error Metrics section below for details. The
-default behavior is to return all metrics.}
+\item{aggregate}{Default \code{median}. A function--without parentheses--that aggregates historical prediction or forecast error across time series.
+All error metrics are first calculated at the level of the individual time series. \code{aggregate} is then used to combine error metrics across
+validation windows and horizons. Aggregations are returned at the group level if \code{data_results} contains groups.}
 
-\item{models}{Optional. A character vector of user-defined model names supplied to \code{train_model()}.}
+\item{metrics}{A character vector of common forecast error metrics. The default behavior is to return all metrics.}
+
+\item{models}{Optional. A character vector of user-defined model names supplied to \code{train_model()} to filter results.}
 
 \item{horizons}{Optional. A numeric vector to filter results by horizon.}
 
 \item{windows}{Optional. A numeric vector to filter results by validation window number.}
 
-\item{group_filter}{Optional. A string for filtering plot results for grouped time-series
-(e.g., \code{"group_col_1 == 'A'"}). The results are passed to \code{dplyr::filter()} internally.}
+\item{group_filter}{Optional. A string for filtering plot results for grouped time series
+(e.g., \code{"group_col_1 == 'A'"}). \code{group_filter} is passed to \code{dplyr::filter()} internally.}
 }
 \value{
-An S3 object of class 'validation_error' or 'forecast_error': A list of data.frames
-of error metrics for the validation datasets or forecast dataset depending
-on the \code{data_test} argument. \cr
+An S3 object of class 'validation_error', 'forecast_error', or 'forecastML_error': A list of data.frames
+of error metrics for the validation or forecast dataset depending on the class of \code{data_results}: 'training_results',
+'forecast_results', or 'forecastML' from \code{combine_forecasts()}.
 
 A list containing: \cr
 
 \itemize{
-  \item Error metrics by horizon + validation window
-  \item Error metrics by horizon, collapsed across validation windows
-  \item Global error metrics collapsed across horizons and validation windows
+  \item Error metrics by model, horizon, and validation window
+  \item Error metrics by model and horizon, collapsed across validation windows
+  \item Global error metrics by model collapsed across horizons and validation windows
 }
 }
 \description{
-Compute forecast error metrics on the validation datasets or a test dataset.
+Compute forecast error metrics on the validation datasets or a new test dataset.
 }
 \section{Error Metrics}{
 
 
 \itemize{
-  \item \code{mae}: Mean absolute error
+  \item \code{mae}: Mean absolute error (works with factor outcomes)
   \item \code{mape}: Mean absolute percentage error
   \item \code{mdape}: Median absolute percentage error
   \item \code{smape}: Symmetrical mean absolute percentage error
+  \item \code{rmse}: Root mean squared error
+  \item \code{rmsse}: Root mean squared scaled error from the M5 competition
 }
 }
 
@@ -65,6 +78,7 @@ The output of \code{return_error()} has the following generic S3 methods
 
 \itemize{
   \item \code{\link[=plot.validation_error]{plot}} from \code{return_error()}
+  \item \code{\link[=plot.forecast_error]{plot}} from \code{return_error()}
 }
 }
 
@@ -79,7 +93,8 @@ lookback <- 1:15
 data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_col = 1,
                                lookback = lookback, horizon = horizons)
 
-windows <- create_windows(data_train, window_length = 12)
+# One custom validation window at the end of the dataset.
+windows <- create_windows(data_train, window_start = 181, window_stop = 192)
 
 # User-define model - LASSO
 # A user-defined wrapper function for model training that takes the following

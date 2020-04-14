@@ -4,8 +4,7 @@
 \alias{predict.forecast_model}
 \title{Predict on validation datasets or forecast}
 \usage{
-\method{predict}{forecast_model}(..., prediction_function = list(NULL),
-  data)
+\method{predict}{forecast_model}(..., prediction_function = list(NULL), data)
 }
 \arguments{
 \item{...}{One or more trained models from \code{train_model()}.}
@@ -13,10 +12,16 @@
 \item{prediction_function}{A list of user-defined prediction functions with length equal to
 the number of models supplied in \code{...}. The prediction functions
 take 2 required positional arguments--(1) a 'forecast_model' object from \code{train_model()} and (2) a
-data.frame of model features from \code{create_lagged_df()}--and return a 1- or 3-column data.frame
-of model predictions. If the prediction function returns a 1-column data.frame, point forecasts are assumed.
+data.frame of model features from \code{create_lagged_df()}. For numeric outcomes and \code{method = "direct"}, the function should \code{return()}
+1- or 3-column data.frame of model predictions. If the prediction function returns a 1-column data.frame, point forecasts are assumed.
 If the prediction function returns a 3-column data.frame, lower and upper forecast bounds are assumed (the
-order and names of the 3 columns does not matter). See the example below for details.}
+order and names of the 3 columns does not matter). For factor outcomes and \code{method = "direct"}, the function should \code{return()}
+(1) 1-column data.frame of the model-predicted factor level or (2) an L-column data.frame of class probabilities where
+'L' equals the number of levels in the outcome; columns should be ordered, from left to right, the same as
+\code{levels(data$outcome)} which is the default behavior for most \code{predict(..., type = "prob")} functions.
+Column names do not matter. For numeric outcomes and \code{method = "multi_output"}, the function should \code{return()} and
+h-column data.frame of model predictions--1 column for each horizon. Forecast intervals and factor outcomes are not currently
+supported with \code{method = "multi_output"}.}
 
 \item{data}{If \code{data} is a training dataset from \code{create_lagged_df(..., type = "train")}, validation dataset
 predictions are returned; else, if \code{data} is a forecasting dataset from \code{create_lagged_df(..., type = "forecast")},
@@ -33,18 +38,21 @@ If \code{data = create_lagged_df(..., type = "forecast")}, an S3 object of class
       \item \code{window_length}: Validation window length measured in dataset rows.
       \item \code{window_number}: Validation dataset number.
       \item \code{valid_indices}: Validation dataset row names from \code{attributes(create_lagged_df())$row_indices}.
-      \item \code{date_indices}: If given, validation dataset date indices from \code{attributes(create_lagged_df())$date_indices}.
+      \item \code{date_indices}: If given and \code{method = "direct"}, validation dataset date indices from \code{attributes(create_lagged_df())$date_indices}.
+      If given and \code{method = "multi_output"}, date_indices represents the date of the forecast.
       \item \code{"groups"}: If given, the user-supplied groups in \code{create_lagged_df()}.
       \item \code{"outcome_name"}: The target being forecasted.
       \item \code{"outcome_name"_pred}: The model predictions.
       \item \code{"outcome_name"_pred_lower}: If given, the lower prediction bounds returned by the user-supplied prediction function.
       \item \code{"outcome_name"_pred_upper}: If given, the upper prediction bounds returned by the user-supplied prediction function.
+      \item \code{forecast_indices}: If \code{method = "multi_output"}, the validation index of the h-step-ahead forecast.
+      \item \code{forecast_date_indices}: If \code{method = "multi_output"}, the validation date index of the h-step-ahead forecast.
    }
 
    \strong{Columns in returned 'forecast_results' data.frame:}
     \itemize{
       \item \code{model}: User-supplied model name in \code{train_model()}.
-      \item \code{model_forecast_horizon}: The direct-forecasting time horizon that the model was trained on.
+      \item \code{model_forecast_horizon}: If \code{method = "direct"}, the direct-forecasting time horizon that the model was trained on.
       \item \code{horizon}: Forecast horizons, 1:h, measured in dataset rows.
       \item \code{window_length}: Validation window length measured in dataset rows.
       \item \code{forecast_period}: The forecast period in row indices or dates. The forecast period starts at either \code{attributes(create_lagged_df())$data_stop + 1} for row indices or \code{attributes(create_lagged_df())$data_stop + 1 * frequency} for date indices.
@@ -52,15 +60,14 @@ If \code{data = create_lagged_df(..., type = "forecast")}, an S3 object of class
       \item \code{"outcome_name"}: The target being forecasted.
       \item \code{"outcome_name"_pred}: The model forecasts.
       \item \code{"outcome_name"_pred_lower}: If given, the lower forecast bounds returned by the user-supplied prediction function.
-      \item \code{"outcome_name"_pred_upper}: If given, the upper forecast bounds returned by
-      the user-supplied prediction function.
+      \item \code{"outcome_name"_pred_upper}: If given, the upper forecast bounds returned by the user-supplied prediction function.
    }
 }
 \description{
 Predict with a 'forecast_model' object from \code{train_model()}. If \code{data = create_lagged_df(..., type = "train")},
 predictions are returned for the outer-loop nested cross-validation datasets.
 If \code{data} is an object of class 'lagged_df' from \code{create_lagged_df(..., type = "forecast")},
-predictions are returned for the horizons specified in \code{create_lagged_df()}.
+predictions are returned for the horizons specified in \code{create_lagged_df(horizons = ...)}.
 }
 \examples{
 # Sampled Seatbelts data from the R package datasets.
@@ -73,7 +80,8 @@ lookback <- 1:15
 data_train <- create_lagged_df(data_seatbelts, type = "train", outcome_col = 1,
                                lookback = lookback, horizon = horizons)
 
-windows <- create_windows(data_train, window_length = 12)
+# One custom validation window at the end of the dataset.
+windows <- create_windows(data_train, window_start = 181, window_stop = 192)
 
 # User-define model - LASSO
 # A user-defined wrapper function for model training that takes the following

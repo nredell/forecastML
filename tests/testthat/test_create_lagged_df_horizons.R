@@ -114,8 +114,8 @@ test_that("lagged_df, forecasting data, dynamic features are missing", {
                                                   dates = dates,
                                                   frequency = "1 month")
 
-  data_out_no_groups <- data.frame(data_out_no_groups$horizon_1)
-  data_out_groups <- data.frame(data_out_groups$horizon_1)
+  data_out_no_groups <- data.frame(data_out_no_groups$horizon_3)
+  data_out_groups <- data.frame(data_out_groups$horizon_3)
 
   all(is.na(data_out_no_groups$feature), is.na(data_out_groups$feature))
 })

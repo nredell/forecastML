@@ -4,9 +4,18 @@
 \alias{plot.validation_error}
 \title{Plot validation dataset forecast error}
 \usage{
-\method{plot}{validation_error}(x, data_results, type = c("time",
-  "horizon", "global"), models = NULL, horizons = NULL,
-  windows = NULL, group_filter = NULL, ...)
+\method{plot}{validation_error}(
+  x,
+  data_results,
+  type = c("time", "horizon", "global"),
+  metric = NULL,
+  facet = NULL,
+  models = NULL,
+  horizons = NULL,
+  windows = NULL,
+  group_filter = NULL,
+  ...
+)
 }
 \arguments{
 \item{x}{An object of class 'validation_error' from \code{return_error()}.}
@@ -14,6 +23,12 @@
 \item{data_results}{An object of class 'training_results' from \code{predict.forecast_model()}.}
 
 \item{type}{Select plot type; \code{type = "time"} is the default plot.}
+
+\item{metric}{Select error metric to plot (e.g., "mae"); \code{attributes(x)$error_metrics[1]} is the default metric.}
+
+\item{facet}{Optional. A formula with any combination of \code{horizon}, \code{model}, or \code{group} (for grouped time series).
+passed to \code{ggplot2::facet_grid()} internally (e.g., \code{horizon ~ model}, \code{horizon + model ~ .}, \code{~ horizon + group}).
+Can be \code{NULL}. The default faceting is set internally depending on the plot \code{type}.}
 
 \item{models}{Optional. A vector of user-defined model names from \code{train_model()} to filter results.}
 

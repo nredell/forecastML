@@ -1,28 +1,32 @@
 Package: forecastML
 Type: Package
 Title: Time Series Forecasting with Machine Learning Methods
-Version: 0.5.2
+Version: 0.9.0
 Author: Nickalus Redell
 Maintainer: Nickalus Redell <nickalusredell@gmail.com>
-Description: The purpose of 'forecastML' is to simplify the process of multi-step-ahead direct forecasting with standard machine learning algorithms. 'forecastML' supports lagged, dynamic, static, and grouping features for modeling single and grouped time series. In addition, simple wrapper functions are used to support model-building with most R packages. This approach to forecasting is inspired by Bergmeir, Hyndman, and Koo's (2018) paper "A note on the validity of cross-validation for evaluating autoregressive time series prediction" <doi:10.1016/j.csda.2017.11.003>.
+Description: The purpose of 'forecastML' is to simplify the process of multi-step-ahead forecasting with standard machine learning algorithms. 'forecastML' supports lagged, dynamic, static, and grouping features for modeling single and grouped numeric or factor/sequence time series. In addition, simple wrapper functions are used to support model-building with most R packages. This approach to forecasting is inspired by Bergmeir, Hyndman, and Koo's (2018) paper "A note on the validity of cross-validation for evaluating autoregressive time series prediction" <doi:10.1016/j.csda.2017.11.003>.
 License: MIT + file LICENSE
 URL: https://github.com/nredell/forecastML/
 Encoding: UTF-8
 LazyData: true
 Imports: 
     tidyr (>= 0.8.1),
-    dplyr (>= 0.7.8),
     rlang (>= 0.4.0),
     magrittr (>= 1.5),
     lubridate (>= 1.7.4),
     ggplot2 (>= 3.1.0),
     future.apply (>= 1.3.0),
     methods,
-    purrr (>= 0.3.2)
-RoxygenNote: 6.1.1
+    purrr (>= 0.3.2),
+    data.table (>= 1.12.6),
+    dtplyr (>= 1.0.0),
+    tibble (>= 2.1.3)
+RoxygenNote: 7.0.2
 Collate: 
     'fill_gaps.R'
     'create_windows.R'
+    'create_skeleton.R'
+    'combine_forecasts.R'
     'lagged_df.R'
     'return_error.R'
     'return_hyper.R'
@@ -30,8 +34,10 @@ Collate:
     'data_seatbelts.R'
     'data_buoy.R'
     'data_buoy_gaps.R'
+    'zzz.R'
 Depends: 
-    R (>= 3.4.0)
+    R (>= 3.5.0),
+    dplyr (>= 0.8.3)
 Suggests: 
     glmnet (>= 2.0.16),
     DT (>= 0.5),
