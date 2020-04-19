@@ -886,7 +886,7 @@ plot.lagged_df <- function(x, ...) { # nocov start
   static_features <- attributes(x)$static_features
 
   # Grouping features won't be plotted because they aren't lagged.
-  predictor_names <- attributes(data)$predictor_names
+  predictor_names <- attributes(x)$predictor_names
   dont_plot_these_predictors <- which(predictor_names %in% c(groups, dynamic_features, static_features))
   predictor_names <- predictor_names[!predictor_names %in% c(groups, dynamic_features, static_features)]
 
