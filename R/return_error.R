@@ -99,7 +99,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL, ag
   outcome_levels <- attributes(data)$outcome_levels
   groups <- attributes(data)$groups
 
-  if (is_forecastML) {type <- attributes(data)$type}  # 'horizon' or 'error'; used for group_by()
+  if (is_forecastML) {type <- attributes(data)$type}  # 'horizon' or 'error'; used for group_by() for outputs from combine_forecasts().
   #----------------------------------------------------------------------------
   # For factor outcomes, is the prediction a factor level or probability?
   if (!is.null(outcome_levels)) {
@@ -236,7 +236,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL, ag
   }
   #----------------------------------------------------------------------------
   # Select error functions. The forecastML internal error functions are in zzz.R.
-  # The functions are called with named x, y, and z args in dplyr::summarize_at().
+  # The functions are called with named x, y, and z args in dplyr::summarize().
   if (is.null(data_test)) {  # The M5 rmsse requires a dataset of actuals.
 
     error_functions <- c(forecastML_mae, forecastML_mape, forecastML_mdape, forecastML_smape,
@@ -333,7 +333,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL, ag
       if (!all(metrics %in% "rmsse")) {
 
         data_1 <- data %>%
-          dplyr::group_by_at(dplyr::vars(.data$model, .data$model_forecast_horizon, .data$horizon, .data$window_number, !!groups)) %>%
+          dplyr::group_by_at(dplyr::vars(.data$model, .data$model_forecast_horizon, .data$window_number, !!groups)) %>%
           dplyr::summarize_at(dplyr::vars(1),  # 1 is a col position that gets the fun to run; args x, y, and z defined below.
                               .funs = error_functions,
                               x = rlang::quo(.data$residual),
@@ -344,7 +344,7 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL, ag
       if (any(metrics %in% "rmsse")) {
 
         data_1_rmsse <- data %>%
-          dplyr::group_by_at(dplyr::vars(.data$model, .data$model_forecast_horizon, .data$horizon, .data$window_number, !!groups)) %>%
+          dplyr::group_by_at(dplyr::vars(.data$model, .data$model_forecast_horizon, .data$window_number, !!groups)) %>%
           dplyr::summarize("h" = sum(!is.na(.data$residual)),
                            "sse_num" = sum(.data$residual^2, na.rm = TRUE),
                            "mse_denom" = .data$mse_denom[1])
@@ -368,13 +368,13 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL, ag
       # Compute error metric by horizon and window across all validation windows.
       data_2 <- data_1 %>%
         dplyr::ungroup() %>%
-        dplyr::group_by_at(dplyr::vars(.data$model, .data$model_forecast_horizon, .data$horizon, !!groups)) %>%
+        dplyr::group_by_at(dplyr::vars(.data$model, .data$model_forecast_horizon, !!groups)) %>%
         dplyr::summarize_at(dplyr::vars(!!!rlang::syms(metrics)), aggregate, na.rm = TRUE)
       #------------------------------------------------------------------------
       # Compute error metric by model.
       data_3 <- data_1 %>%
         dplyr::ungroup() %>%
-        dplyr::group_by_at(dplyr::vars(.data$model, .data$model_forecast_horizon, !!groups)) %>%
+        dplyr::group_by_at(dplyr::vars(.data$model, !!groups)) %>%
         dplyr::summarize_at(dplyr::vars(!!!rlang::syms(metrics)), aggregate, na.rm = TRUE)
     #--------------------------------------------------------------------------
 
@@ -482,6 +482,10 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL, ag
   }
 
   attr(data_out, "error_metrics") <- metrics
+  attr(data_out, "outcome_name") <- outcome_name
+  attr(data_out, "outcome_levels") <- outcome_levels
+  attr(data_out, "method") <- method
+  attr(data_out, "groups") <- groups
 
   return(data_out)
 }
@@ -492,34 +496,28 @@ return_error <- function(data_results, data_test = NULL, test_indices = NULL, ag
 #'
 #' Plot forecast error at various levels of aggregation across validation datasets.
 #' @param x An object of class 'validation_error' from \code{return_error()}.
-#' @param data_results An object of class 'training_results' from \code{predict.forecast_model()}.
-#' @param type Select plot type; \code{type = "time"} is the default plot.
+#' @param type Select plot type; \code{type = "window"} is the default plot.
 #' @param metric Select error metric to plot (e.g., "mae"); \code{attributes(x)$error_metrics[1]} is the default metric.
 #' @param models Optional. A vector of user-defined model names from \code{train_model()} to filter results.
 #' @param horizons Optional. A numeric vector to filter results by horizon.
 #' @param windows Optional. A numeric vector to filter results by validation window number.
-#' @param group_filter A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
+#' @param group_filter A string for filtering plot results for grouped time series (e.g., \code{"group_col_1 == 'A'"}).
 #' @param facet Optional. A formula with any combination of \code{horizon}, \code{model}, or \code{group} (for grouped time series).
 #' passed to \code{ggplot2::facet_grid()} internally (e.g., \code{horizon ~ model}, \code{horizon + model ~ .}, \code{~ horizon + group}).
 #' Can be \code{NULL}. The default faceting is set internally depending on the plot \code{type}.
 #' @param ... Not used.
 #' @return Forecast error plots of class 'ggplot'.
 #' @export
-plot.validation_error <- function(x, data_results, type = c("time", "horizon", "global"), metric = NULL,
+plot.validation_error <- function(x, type = c("window", "horizon", "global"), metric = NULL,
                                   facet = NULL, models = NULL, horizons = NULL, windows = NULL, group_filter = NULL, ...) { # nocov start
 
   #----------------------------------------------------------------------------
   data_error <- x
 
-  if (!methods::is(data_results, "training_results")) {
-    stop("The 'data_results' argument takes an object of class 'training_results' as input. Run predict.forecast_model() first.")
-  }
-
   type <- type[1]
 
-  method <- attributes(data_results)$method
-  outcome_name <- attributes(data_results)$outcome_name
-  groups <- attributes(data_results)$groups
+  method <- attributes(data_error)$method
+  groups <- attributes(data_error)$groups
 
   error_metrics <- metric
 
@@ -534,7 +532,7 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
   # Set default plot facets for each plot type.
   if (is.null(facet)) {
 
-    if (type == "time") {
+    if (type == "window") {
 
       facet <- horizon ~ model
 
@@ -552,48 +550,47 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
   facet <- facets[[1]]
   facet_names <- facets[[2]]
 
-  if (type == "time") {
+  if (type == "window") {
 
     data_plot <- data_error$error_by_window
+
+    if (method == "direct") {
+      data_plot$horizon <- data_plot$model_forecast_horizon  # Added for faceting.
+    }
 
   } else if (type == "horizon") {
 
     data_plot <- data_error$error_by_horizon
+
+    if (method == "direct") {
+      data_plot$horizon <- data_plot$model_forecast_horizon  # Added for faceting.
+    }
+
     data_plot$window_number <- TRUE  # Not in data, added for filtering.
 
   } else if (type == "global") {
 
     data_plot <- data_error$error_global
+    data_plot$model_forecast_horizon <- TRUE  # Not in data, added for filtering.
     data_plot$window_number <- TRUE  # Not in data, added for filtering.
     data_plot$horizon <- TRUE  # Not in data, added for filtering.
   }
   #----------------------------------------------------------------------------
   # Filter the datasets based on user input.
-  models <- if (is.null(models)) {unique(data_results$model)} else {models}
-
-  # Changing 'model_forecast_horizon' to 'horizon' for standardizing plot code with multi-output models.
-  if (method == "direct") {
-
-    data_results$horizon <- data_results$model_forecast_horizon
-    data_results$model_forecast_horizon <- NULL
-    names(data_plot)[names(data_plot) == "model_forecast_horizon"] <- "horizon"
-  }
+  models <- if (is.null(models)) {unique(data_plot$model)} else {models}
 
   if (is.null(horizons)) {
 
-    horizons <- unique(data_results$horizon)
+    horizons <- unique(data_plot$horizon)
   }
 
-  windows <- if (is.null(windows)) {unique(data_results$window_number)} else {windows}
+  windows <- if (is.null(windows)) {unique(data_plot$window_number)} else {windows}
 
   data_plot <- data_plot[data_plot$horizon %in% horizons & data_plot$model %in% models & data_plot$window_number %in% windows, ]
-
-  data_results <- data_results[data_results$horizon %in% horizons & data_results$model %in% models & data_results$window_number %in% windows, ]
   #----------------------------------------------------------------------------
-  # User filtering to display select results in grouped time-series.
+  # User filtering to display select results in grouped time series.
   if (!is.null(group_filter)) {
     data_plot <- dplyr::filter(data_plot, eval(parse(text = group_filter)))
-    data_results <- dplyr::filter(data_results, eval(parse(text = group_filter)))
   }
   #----------------------------------------------------------------------------
   # Melt the data for plotting.
@@ -637,7 +634,7 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
 
   #----------------------------------------------------------------------------
   # Create plots.
-  if (type == "time") {
+  if (type == "window") {
 
     p <- ggplot()
 
@@ -712,35 +709,29 @@ plot.validation_error <- function(x, data_results, type = c("time", "horizon", "
 #' Plot forecast error
 #'
 #' Plot forecast error at various levels of aggregation.
-#' @param x An object of class 'validation_error' from \code{return_error()}.
-#' @param data_results An object of class 'forecast_results' from \code{predict.forecast_model()}.
+#' @param x An object of class 'forecast_error' from \code{return_error()}.
 #' @param type Select plot type; \code{type = "window"} is the default plot.
 #' @param metric Select error metric to plot (e.g., "mae"); \code{attributes(x)$error_metrics[1]} is the default metric.
 #' @param models Optional. A vector of user-defined model names from \code{train_model()} to filter results.
 #' @param horizons Optional. A numeric vector to filter results by horizon.
 #' @param windows Optional. A numeric vector to filter results by validation window number.
-#' @param group_filter A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).
+#' @param group_filter A string for filtering plot results for grouped time series (e.g., \code{"group_col_1 == 'A'"}).
 #' @param facet Optional. A formula with any combination of \code{horizon}, \code{model}, or \code{group} (for grouped time series).
 #' passed to \code{ggplot2::facet_grid()} internally (e.g., \code{horizon ~ model}, \code{horizon + model ~ .}, \code{~ horizon + group}).
 #' Can be \code{NULL}. The default faceting is set internally depending on the plot \code{type}.
 #' @param ... Not used.
 #' @return Forecast error plots of class 'ggplot'.
 #' @export
-plot.forecast_error <- function(x, data_results, type = c("window", "horizon", "global"), metric = NULL,
+plot.forecast_error <- function(x, type = c("window", "horizon", "global"), metric = NULL,
                                 facet = NULL, models = NULL, horizons = NULL, windows = NULL, group_filter = NULL, ...) { # nocov start
 
   #----------------------------------------------------------------------------
   data_error <- x
 
-  if (!methods::is(data_results, "forecast_results")) {
-    stop("The 'data_results' argument takes an object of class 'forecast_results' as input. Run predict.forecast_model() first.")
-  }
-
   type <- type[1]
 
-  method <- attributes(data_results)$method
-  outcome_name <- attributes(data_results)$outcome_name
-  groups <- attributes(data_results)$groups
+  method <- attributes(data_error)$method
+  groups <- attributes(data_error)$groups
 
   error_metrics <- metric
 
@@ -777,35 +768,42 @@ plot.forecast_error <- function(x, data_results, type = c("window", "horizon", "
 
     data_plot <- data_error$error_by_window
 
+    if (method == "direct") {
+      data_plot$horizon <- data_plot$model_forecast_horizon  # Added for faceting.
+    }
+
   } else if (type == "horizon") {
 
     data_plot <- data_error$error_by_horizon
+
+    if (method == "direct") {
+      data_plot$horizon <- data_plot$model_forecast_horizon  # Added for faceting.
+    }
+
     data_plot$window_number <- TRUE  # Not in data, added for filtering.
 
   } else if (type == "global") {
 
     data_plot <- data_error$error_global
+    data_plot$model_forecast_horizon <- TRUE  # Not in data, added for filtering.
     data_plot$window_number <- TRUE  # Not in data, added for filtering.
     data_plot$horizon <- TRUE  # Not in data, added for filtering.
   }
   #----------------------------------------------------------------------------
   # Filter the datasets based on user input.
-  models <- if (is.null(models)) {unique(data_results$model)} else {models}
+  models <- if (is.null(models)) {unique(data_plot$model)} else {models}
 
   if (is.null(horizons)) {
-    horizons <- unique(data_results$model_forecast_horizon)
+    horizons <- unique(data_plot$model_forecast_horizon)
   }
 
-  windows <- if (is.null(windows)) {unique(data_results$window_number)} else {windows}
+  windows <- if (is.null(windows)) {unique(data_plot$window_number)} else {windows}
 
   data_plot <- data_plot[data_plot$model_forecast_horizon %in% horizons & data_plot$model %in% models & data_plot$window_number %in% windows, ]
-
-  data_results <- data_results[data_results$model_forecast_horizon %in% horizons & data_results$model %in% models & data_results$window_number %in% windows, ]
   #----------------------------------------------------------------------------
-  # User filtering to display select results in grouped time-series.
+  # User filtering to display select results in grouped time series.
   if (!is.null(group_filter)) {
     data_plot <- dplyr::filter(data_plot, eval(parse(text = group_filter)))
-    data_results <- dplyr::filter(data_results, eval(parse(text = group_filter)))
   }
   #----------------------------------------------------------------------------
   # Melt the data for plotting.
@@ -816,9 +814,12 @@ plot.forecast_error <- function(x, data_results, type = c("window", "horizon", "
   #----------------------------------------------------------------------------
 
   if (is.null(groups)) {
-    data_plot <- dplyr::arrange(data_plot, .data$model, .data$horizon, .data$window_number)
+
+    data_plot <- dplyr::arrange(data_plot, .data$model, .data$window_number)
+
   } else {
-    data_plot <- dplyr::arrange(data_plot, .data$model, .data$horizon, .data$window_number, !!!rlang::syms(groups))
+
+    data_plot <- dplyr::arrange(data_plot, .data$model, .data$window_number, !!!rlang::syms(groups))
   }
 
   data_plot$model_forecast_horizon <- factor(data_plot$model_forecast_horizon, levels = unique(data_plot$model_forecast_horizon), ordered = TRUE)
@@ -856,64 +857,64 @@ plot.forecast_error <- function(x, data_results, type = c("window", "horizon", "
 
   #----------------------------------------------------------------------------
   # Create plots.
-  if (type %in% c("window", "horizon")) {
-
-    p <- ggplot()
-
-    if (1 %in% horizons || nrow(data_plot) == 1 || (method == "multi_output" && any(c(facet_names %in% "horizon")))) {  # Use geom_point instead of geom_line to plot a 1-step-ahead forecast.
-
-      if (method == "direct") {
-
-        data_plot_temp <- data_plot[data_plot$model_forecast_horizon == 1, ]
-        data_plot_temp$index <- data_plot_temp$horizon
-        data_plot_temp$horizon <- NULL
-        names(data_plot_temp)[names(data_plot_temp) == "model_forecast_horizon"] <- "horizon"  # Rename for faceting.
-
-      } else if (method == "multi_output") {
-
-        data_plot_temp <- data_plot
-      }
-
-      p <- p + geom_point(data = data_plot_temp,
-                          aes(x = .data$index, y = .data$value,
-                              color = .data$ggplot_color, group = .data$ggplot_group))
-    }
-
-    if ((method == "direct" && !all(horizons == 1)) || (method == "multi_output" && nrow(data_plot) > 1 && !any(c(facet_names %in% "horizon")))) {  # Plot forecasts for model forecast horizons > 1.
-
-      if (method == "direct") {
-
-        data_plot_temp <- data_plot[data_plot$model_forecast_horizon != 1, ]
-        data_plot_temp$index <- data_plot_temp$horizon
-        data_plot_temp$horizon <- NULL
-        names(data_plot_temp)[names(data_plot_temp) == "model_forecast_horizon"] <- "horizon"  # Rename for faceting.
-
-      } else if (method == "multi_output") {
-
-        data_plot_temp <- data_plot
-      }
-
-      p <- p + geom_line(data = data_plot_temp,
-                         aes(x = .data$index, y = .data$value,
-                             color = .data$ggplot_color, group = .data$ggplot_group))
-    }
-
-    p <- p + scale_color_viridis_d()
-    p <- p + theme_bw() + theme(panel.spacing = unit(0, "lines"))
-    p <- p + facet_grid(facet, scales = "fixed")
-    p <- p + xlab(x_axis_title) + ylab(paste0("Forecast error metric (", error_metrics, ")")) + labs(color = x_axis_title)
-    if (type %in% c("window")) {
-      p <- p + ggtitle("Forecast Error by Validation Window and Model Forecast Horizon")
-    } else {
-      p <- p + ggtitle("Forecast Error by Model Forecast Horizon")
-    }
-
-    return(suppressWarnings(p))
-  }
+  # if (type %in% c("window", "horizon")) {
+  #
+  #   p <- ggplot()
+  #
+  #   if (1 %in% horizons || nrow(data_plot) == 1 || (method == "multi_output" && any(c(facet_names %in% "horizon")))) {  # Use geom_point instead of geom_line to plot a 1-step-ahead forecast.
+  #
+  #     if (method == "direct") {
+  #
+  #       data_plot_temp <- data_plot[data_plot$model_forecast_horizon == 1, ]
+  #       data_plot_temp$index <- data_plot_temp$horizon
+  #       data_plot_temp$horizon <- NULL
+  #       names(data_plot_temp)[names(data_plot_temp) == "model_forecast_horizon"] <- "horizon"  # Rename for faceting.
+  #
+  #     } else if (method == "multi_output") {
+  #
+  #       data_plot_temp <- data_plot
+  #     }
+  #
+  #     p <- p + geom_point(data = data_plot_temp,
+  #                         aes(x = .data$index, y = .data$value,
+  #                             color = .data$ggplot_color, group = .data$ggplot_group))
+  #   }
+  #
+  #   if ((method == "direct" && !all(horizons == 1)) || (method == "multi_output" && nrow(data_plot) > 1 && !any(c(facet_names %in% "horizon")))) {  # Plot forecasts for model forecast horizons > 1.
+  #
+  #     if (method == "direct") {
+  #
+  #       data_plot_temp <- data_plot[data_plot$model_forecast_horizon != 1, ]
+  #       data_plot_temp$index <- data_plot_temp$horizon
+  #       data_plot_temp$horizon <- NULL
+  #       names(data_plot_temp)[names(data_plot_temp) == "model_forecast_horizon"] <- "horizon"  # Rename for faceting.
+  #
+  #     } else if (method == "multi_output") {
+  #
+  #       data_plot_temp <- data_plot
+  #     }
+  #
+  #     p <- p + geom_line(data = data_plot_temp,
+  #                        aes(x = .data$index, y = .data$value,
+  #                            color = .data$ggplot_color, group = .data$ggplot_group))
+  #   }
+  #
+  #   p <- p + scale_color_viridis_d()
+  #   p <- p + theme_bw() + theme(panel.spacing = unit(0, "lines"))
+  #   p <- p + facet_grid(facet, scales = "fixed")
+  #   p <- p + xlab(x_axis_title) + ylab(paste0("Forecast error metric (", error_metrics, ")")) + labs(color = x_axis_title)
+  #   if (type %in% c("window")) {
+  #     p <- p + ggtitle("Forecast Error by Validation Window and Model Forecast Horizon")
+  #   } else {
+  #     p <- p + ggtitle("Forecast Error by Model Forecast Horizon")
+  #   }
+  #
+  #   return(suppressWarnings(p))
+  # }
 
   if (type == "global") {
-
-    data_plot$horizon <- data_plot$model_forecast_horizon
+    data_plot$horizon <- "All"
+  }
 
     p <- ggplot()
 
@@ -929,10 +930,22 @@ plot.forecast_error <- function(x, data_results, type = c("window", "horizon", "
       panel.spacing = unit(0, "lines"),
       axis.text.x = element_blank()
     )
-    p <- p + xlab(x_axis_title) + ylab(paste0("Forecast error metric (", error_metrics, ")")) + labs(fill = x_axis_title, alpha = NULL) +
-      ggtitle("Forecast Error Across Validation Windows and Forecast Horizons")
+    p <- p + xlab(x_axis_title) + ylab(paste0("Forecast error metric (", error_metrics, ")")) + labs(fill = x_axis_title, alpha = NULL)
+
+      if (type %in% c("window")) {
+
+        p <- p + ggtitle("Forecast Error by Validation Window, Model Forecast Horizon, & Model")
+
+      } else if (type %in% c("horizon")) {
+
+        p <- p + ggtitle("Forecast Error by Model Forecast Horizon & Model")
+
+      } else if (type %in% c("global")) {
+
+        p <- p + ggtitle("Forecast Error by Model")
+      }
 
     return(suppressWarnings(p))
-  }
+  # }
 } # nocov end
 

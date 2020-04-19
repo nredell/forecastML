@@ -27,12 +27,7 @@ The following quote from Bergmeir et al.'s article nicely sums up the aim of thi
 > (e.g., when using Machine Learning methods), the aforementioned problems of CV are largely
 > irrelevant, and CV can and should be used without modification, as in the independent case."
 
-At a glance, `forecastML` supports the following approaches when forecasting with machine learning methods:
-
-<p align="center">
-  <img src="./features_table.png" width="715px" height="400px"></img>
-</p>
-
+More information, cheat sheets, and worked examples can be found at **[https://github.com/nredell/forecastML](https://github.com/nredell/forecastML)**.
 
 <br>
 
@@ -372,7 +367,7 @@ The following user-defined prediction function is needed for each model:
 and a 3-column data.frame can be used to return point, lower, and upper forecasts (column names and order do not matter).
 
 ```{r}
-# Example 1 - LASSO
+# Example 1 - LASSO.
 prediction_function <- function(model, data_features) {
   
   if (length(model$constant_features) > 1) {  # 'model' was passed as a list.
@@ -385,7 +380,7 @@ prediction_function <- function(model, data_features) {
   return(data_pred)
 }
 
-# Example 2 - Random Forest
+# Example 2 - Random Forest.
 prediction_function_2 <- function(model, data_features) {
 
   data_pred <- data.frame("y_pred" = predict(model, data_features))
@@ -405,7 +400,7 @@ function argument is `...`.
 Outer loop nested cross-validation forecasts are returned for each user-defined model, forecast horizon, and 
 validation window.
 
-```{r}
+```{r, warning = FALSE, message = FALSE}
 data_results <- predict(model_results, model_results_2,
                         prediction_function = list(prediction_function, prediction_function_2), 
                         data = data_list)
@@ -457,23 +452,18 @@ plot(data_results, type = "forecast_stability", windows = 3)
 
 Let's calculate several common forecast error metrics for our holdout data sets in the training data.
 
-* **mae:** Mean absolute error
-* **mape:** Mean absolute percentage error
-* **mdape:** Median absolute percentage error
-* **smape:** Symmetrical mean absolute percentage error from (Chen and Yang's 2004 formula with a 100% multiplier as 
-discussed at [https://robjhyndman.com/hyndsight/smape/](https://robjhyndman.com/hyndsight/smape/))
-
 The forecast errors for nested cross-validation are returned at 3 levels of granularity:
 
 1. Error by validation window
-2. Error by model forecast horizon, collapsed across validation windows (only useful when multiple 
+2. Error by model forecast horizon, collapsed across validation windows (only useful when multiple direct 
 forecast horizons are trained together)
 3. Global error collapsed across validation windows and model forecast horizons
 
-```{r}
-data_error <- forecastML::return_error(data_results, metrics = c("mae", "mape", "smape"))
+```{r, warning = FALSE, message = FALSE}
+data_error <- forecastML::return_error(data_results)
 
-data_error$error_global[, c("mae", "mape", "smape")] <- lapply(data_error$error_global[, c("mae", "mape", "smape")], round, 1)
+# Global error.
+data_error$error_global[, -1] <- lapply(data_error$error_global[, -1], round, 1)
 
 DT::datatable(data_error$error_global, options = list(scrollX = TRUE), )
 ```
@@ -483,7 +473,7 @@ DT::datatable(data_error$error_global, options = list(scrollX = TRUE), )
 Below is a plot of error metrics across time for select validation windows and forecast horizons.
 
 ```{r}
-plot(data_error, data_results, type = "time", facet = ~ horizon, horizons = c(1, 6, 12))
+plot(data_error, type = "window", facet = ~ horizon, horizons = c(1, 6, 12))
 ```
 
 <br>
@@ -491,7 +481,7 @@ plot(data_error, data_results, type = "time", facet = ~ horizon, horizons = c(1,
 Below is a plot of forecast error metrics by forecast model horizon collapsed across validation windows.
 
 ```{r}
-plot(data_error, data_results, type = "horizon", facet = ~ horizon, horizons = c(1, 6, 12))
+plot(data_error, type = "horizon", facet = ~ horizon, horizons = c(1, 6, 12))
 ```
 
 <br>
@@ -499,7 +489,7 @@ plot(data_error, data_results, type = "horizon", facet = ~ horizon, horizons = c
 Below is a plot of error metrics collapsed across validation windows and forecast horizons.
 
 ```{r}
-plot(data_error, data_results, type = "global", facet = ~ horizon)
+plot(data_error, type = "global", facet = ~ horizon)
 ```
 
 <br>
@@ -603,7 +593,7 @@ a data.frame of forecasts.
 An S3 object of class, `forecast_results`, is returned. This object will have different plotting and error methods than 
 the `training_results` class from earlier.
 
-```{r}
+```{r, warning = FALSE, message = FALSE}
 data_forecast <- predict(model_results, model_results_2,  # ... supports any number of ML models.
                          prediction_function = list(prediction_function, prediction_function_2), 
                          data = data_forecast_list)
@@ -643,7 +633,6 @@ of forecast error metrics with the following columns is returned:
 
 * **model:** User-supplied model name in `train_model()`.
 * **model_forecast_horizon:** The direct-forecasting time horizon that the model was trained on.
-* **horizon:** Forecast horizon, ranging from 1:model_forecast_horizon.
 * **"error_metrics":** Forecast error metrics.
 
 Below are 3 forecast error plots at various levels of aggregation.
@@ -651,14 +640,13 @@ Below are 3 forecast error plots at various levels of aggregation.
 ```{r}
 data_error <- forecastML::return_error(data_forecast,
                                        data_test = data_test,
-                                       test_indices = dates[(nrow(data_train) + 1):length(dates)],
-                                       metrics = c("mae", "mape", "smape", "mdape"))
+                                       test_indices = dates[(nrow(data_train) + 1):length(dates)])
 
-plot(data_error, data_forecast, facet = ~ horizon, type = "window")
+plot(data_error, facet = ~ horizon, type = "window")
 
-plot(data_error, data_forecast, facet = ~ horizon, type = "horizon")
+plot(data_error, facet = ~ horizon, type = "horizon")
 
-plot(data_error, data_forecast, facet = ~ horizon, type = "global")
+plot(data_error, facet = ~ horizon, type = "global")
 ```
 
 ***
@@ -712,11 +700,10 @@ plot(data_results, type = "prediction", horizons = c(1, 6, 12))
 
 Below is a the training error collapsed across our 4 direct forecast horizons/models.
 
-```{r}
-data_error <- forecastML::return_error(data_results, metrics = c("mae", "mape", "mdape", "smape"),
-                                       models = NULL)
+```{r, warning = FALSE, message = FALSE}
+data_error <- forecastML::return_error(data_results)
 
-data_error$error_global[, c("mae", "mape", "mdape", "smape")] <- lapply(data_error$error_global[, c("mae", "mape", "mdape", "smape")], round, 1)
+data_error$error_global[, -1] <- lapply(data_error$error_global[, -1], round, 1)
 
 DT::datatable(head(data_error$error_global), options = list(scrollX = TRUE))
 ```
@@ -753,10 +740,9 @@ plot(data_forecast,
 
 ```{r}
 data_error <- forecastML::return_error(data_forecast, data_test = data_test, 
-                                       test_indices = dates[(nrow(data_train) + 1):nrow(data)],
-                                       metrics = c("mae", "mape", "mdape", "smape"))
+                                       test_indices = dates[(nrow(data_train) + 1):nrow(data)])
 
-plot(data_error, data_forecast, facet = ~ horizon)
+plot(data_error, type = "horizon", facet = ~ horizon)
 ```
 
 ***
@@ -784,7 +770,13 @@ actual_indices <- dates[dates >= as.Date("1980-01-01")]
 # Plot all final forecasts plus historical data.
 plot(data_combined, data_actual = data_actual, actual_indices = actual_indices)
 
-DT::datatable(return_error(data_combined, data_actual, actual_indices)$error_by_horizon, options = list(scrollX = TRUE))
+# Error by forecast horizon.
+DT::datatable(return_error(data_combined, data_actual, actual_indices)$error_by_horizon, 
+              options = list(scrollX = TRUE))
+
+# Error aggregated across forecast horizons.
+DT::datatable(return_error(data_combined, data_actual, actual_indices)$error_global, 
+              options = list(scrollX = TRUE))
 ```
 
 ***

@@ -10,8 +10,8 @@ vignette: >
 ---
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(fig.width = 7.15, fig.height = 4)
-knitr::opts_knit$set(fig.width = 7.15, fig.height = 4)
+knitr::opts_chunk$set(fig.width = 7.15, fig.height = 4, warning = FALSE, message = FALSE)
+knitr::opts_knit$set(fig.width = 7.15, fig.height = 4, warning = FALSE, message = FALSE)
 ```
 
 
@@ -425,8 +425,8 @@ are not currently supported. Additional error metrics will continue to be added 
 ```{r, message = FALSE, warning = FALSE}
 data_error <- forecastML::return_error(data_pred_level, metric = "mae")
 
-plot(data_error, data_pred_level, type = "horizon", metric = "mae")
-plot(data_error, data_pred_level, type = "global", metric = "mae")
+plot(data_error, type = "horizon", metric = "mae")
+plot(data_error, type = "global", metric = "mae")
 ```
 
 

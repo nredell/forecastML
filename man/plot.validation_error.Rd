@@ -6,8 +6,7 @@
 \usage{
 \method{plot}{validation_error}(
   x,
-  data_results,
-  type = c("time", "horizon", "global"),
+  type = c("window", "horizon", "global"),
   metric = NULL,
   facet = NULL,
   models = NULL,
@@ -20,9 +19,7 @@
 \arguments{
 \item{x}{An object of class 'validation_error' from \code{return_error()}.}
 
-\item{data_results}{An object of class 'training_results' from \code{predict.forecast_model()}.}
-
-\item{type}{Select plot type; \code{type = "time"} is the default plot.}
+\item{type}{Select plot type; \code{type = "window"} is the default plot.}
 
 \item{metric}{Select error metric to plot (e.g., "mae"); \code{attributes(x)$error_metrics[1]} is the default metric.}
 
@@ -36,7 +33,7 @@ Can be \code{NULL}. The default faceting is set internally depending on the plot
 
 \item{windows}{Optional. A numeric vector to filter results by validation window number.}
 
-\item{group_filter}{A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"}).}
+\item{group_filter}{A string for filtering plot results for grouped time series (e.g., \code{"group_col_1 == 'A'"}).}
 
 \item{...}{Not used.}
 }
