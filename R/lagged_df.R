@@ -32,6 +32,9 @@
 #' are not lagged. Note that combining feature lags with grouped time series will result in \code{NA} values throughout the data.
 #' @param static_features For grouped time series only. A character vector of column names that identify features that do not change through time.
 #' These columns are not lagged. If \code{type = "forecast"}, these features will be filled forward using the most recent value for the group.
+#' @param predict_future When \code{type = "forecast"}, a function for predicting the future values of any dynamic features.
+#' This function takes \code{data} and \code{dates} as positional arguments and returns a data.frame with (a) one or more rows, (b) an
+#' "index" column of future dates, (c) group columns if needed, and (d) 1 or more columns with name(s) in \code{dynamic_features}.
 #' @param use_future Boolean. If \code{TRUE}, the \code{future.apply} package is used for creating lagged data.frames.
 #' \code{multisession} or \code{multicore} futures are especially useful for (a) grouped time series with many groups and
 #' (b) high-dimensional datasets with many lags per feature. Run \code{future::plan(future::multiprocess)} prior to this
@@ -109,9 +112,10 @@
 #'
 #' @export
 create_lagged_df <- function(data, type = c("train", "forecast"), method = c("direct", "multi_output"),
-                             outcome_col = 1L, horizons, lookback = NULL,
-                             lookback_control = NULL, dates = NULL, frequency = NULL, dynamic_features = NULL,
-                             groups = NULL, static_features = NULL, use_future = FALSE, keep_rows = FALSE) {
+                             outcome_col = 1L, horizons, lookback = NULL, lookback_control = NULL,
+                             dates = NULL, frequency = NULL, dynamic_features = NULL,
+                             groups = NULL, static_features = NULL, predict_future = NULL,
+                             use_future = FALSE, keep_rows = FALSE) {
 
   if (!methods::is(data, c("data.frame"))) {
     stop("The 'data' argument takes an object of class 'data.frame'.")
@@ -563,9 +567,9 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
                 data_x <- data[, c(groups, static_features), drop = FALSE] %>%
                   dplyr::group_by_at(dplyr::vars(groups)) %>%
-                  dplyr::mutate("row_number" = 1:dplyr::n(),
-                                "max_row_number" = max(.data$row_number, na.rm = TRUE)) %>%
-                  dplyr::filter(.data$row_number == .data$max_row_number) %>%
+                  dplyr::mutate("index" = 1:dplyr::n(),
+                                "max_row_number" = max(.data$index, na.rm = TRUE)) %>%
+                  dplyr::filter(.data$index == .data$max_row_number) %>%
                   dplyr::ungroup() %>%
                   dplyr::select(!!groups, !!static_features, .data$max_row_number) %>%
                   dplyr::as_tibble()
@@ -581,9 +585,9 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
                 data_x <- dplyr::bind_rows(data_x)
 
                 # Used for merging with other feature-level lagged datasets.
-                data_x$row_number <- data_x$max_row_number + data_x$horizon
+                data_x$index <- data_x$max_row_number + data_x$horizon
 
-                data_x <- dplyr::select(data_x, .data$row_number, .data$horizon, groups, static_features)
+                data_x <- dplyr::select(data_x, .data$index, .data$horizon, groups, static_features)
 
                 } else {  # Exit the 'j' loop and return 'NULL' because the group/static features are already computed.
 
@@ -601,15 +605,15 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
                 data_x <- data_x %>%
                   dplyr::group_by_at(dplyr::vars(groups)) %>%
-                  dplyr::mutate("row_number" = 1:dplyr::n()) %>%
+                  dplyr::mutate("index" = 1:dplyr::n()) %>%
                   dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions) %>%
-                  dplyr::mutate("max_row_number" = max(.data$row_number, na.rm = TRUE),
-                                "horizon" = .data$max_row_number - .data$row_number + 1) %>%
+                  dplyr::mutate("max_row_number" = max(.data$index, na.rm = TRUE),
+                                "horizon" = .data$max_row_number - .data$index + 1) %>%
                   dplyr::filter(.data$horizon <= forecast_horizon) %>%
                   dplyr::mutate("horizon" = rev(.data$horizon),
-                                "row_number" = .data$max_row_number + .data$horizon) %>%
+                                "index" = .data$max_row_number + .data$horizon) %>%
                   dplyr::ungroup() %>%
-                  dplyr::select(.data$row_number, .data$horizon, groups, names(lag_functions)) %>%
+                  dplyr::select(.data$index, .data$horizon, groups, names(lag_functions)) %>%
                   dplyr::as_tibble()
 
               } else {
@@ -621,14 +625,14 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
                   data_x <- data_x %>%
                     dplyr::group_by_at(dplyr::vars(groups)) %>%
-                    dplyr::mutate("row_number" = 1:dplyr::n()) %>%
-                    dplyr::mutate("max_row_number" = max(.data$row_number, na.rm = TRUE),
-                                  "horizon" = .data$max_row_number - .data$row_number + 1) %>%
+                    dplyr::mutate("index" = 1:dplyr::n()) %>%
+                    dplyr::mutate("max_row_number" = max(.data$index, na.rm = TRUE),
+                                  "horizon" = .data$max_row_number - .data$index + 1) %>%
                     dplyr::filter(.data$horizon <= forecast_horizon) %>%
                     dplyr::mutate("horizon" = rev(.data$horizon),
-                                  "row_number" = .data$max_row_number + .data$horizon) %>%
+                                  "index" = .data$max_row_number + .data$horizon) %>%
                     dplyr::ungroup() %>%
-                    dplyr::select(.data$row_number, .data$horizon, !!groups) %>%
+                    dplyr::select(.data$index, .data$horizon, !!groups) %>%
                     dplyr::as_tibble()
 
                   data_x[, var_names[j]] <- NA  # This is direct forecasting without predicting the predictors.
@@ -637,14 +641,14 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
                   data_x <- data_x %>%
                     dplyr::group_by_at(dplyr::vars(groups)) %>%
-                    dplyr::mutate("row_number" = 1:dplyr::n()) %>%
-                    dplyr::mutate("max_row_number" = max(.data$row_number, na.rm = TRUE),
-                                  "horizon" = .data$max_row_number - .data$row_number + 1) %>%
+                    dplyr::mutate("index" = 1:dplyr::n()) %>%
+                    dplyr::mutate("max_row_number" = max(.data$index, na.rm = TRUE),
+                                  "horizon" = .data$max_row_number - .data$index + 1) %>%
                     dplyr::filter(.data$horizon <= forecast_horizon) %>%
                     dplyr::mutate("horizon" = rev(.data$horizon),
-                                  "row_number" = .data$max_row_number + .data$horizon) %>%
+                                  "index" = .data$max_row_number + .data$horizon) %>%
                     dplyr::ungroup() %>%
-                    dplyr::select(.data$row_number, .data$horizon, !!groups, !!var_names[j]) %>%
+                    dplyr::select(.data$index, .data$horizon, !!groups, !!var_names[j]) %>%
                     dplyr::as_tibble()
                 }
               }
@@ -662,24 +666,24 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
               if (method == "direct") {
 
                 data_x <- data[, var_names[j], drop = FALSE] %>%
-                  dplyr::mutate("row_number" = !!row_names) %>%
+                  dplyr::mutate("index" = !!row_names) %>%
                   dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions) %>%
                   dplyr::mutate("max_row_number" = !!n_instances,
-                                "horizon" = .data$max_row_number - .data$row_number + 1) %>%
+                                "horizon" = .data$max_row_number - .data$index + 1) %>%
                   dplyr::filter(.data$horizon <= forecast_horizon) %>%
                   dplyr::mutate("horizon" = rev(.data$horizon),
-                                "row_number" = .data$max_row_number + .data$horizon) %>%
-                  dplyr::select(.data$row_number, .data$horizon, names(lag_functions)) %>%
+                                "index" = .data$max_row_number + .data$horizon) %>%
+                  dplyr::select(.data$index, .data$horizon, names(lag_functions)) %>%
                   dplyr::as_tibble()
 
               } else if (method == "multi_output") {
 
                 data_x <- data[, var_names[j], drop = FALSE] %>%
                   dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions) %>%
-                  dplyr::filter(dplyr::row_number() == dplyr::n()) %>%
-                  dplyr::mutate("row_number" = !!n_instances,  # Hard-coded for merging feature-level data.
+                  dplyr::filter(dplyr::index() == dplyr::n()) %>%
+                  dplyr::mutate("index" = !!n_instances,  # Hard-coded for merging feature-level data.
                                 "horizon" = !!horizons[1]) %>%  # Hard-coded for merging feature-level data.
-                  dplyr::select(.data$row_number, .data$horizon, names(lag_functions)) %>%
+                  dplyr::select(.data$index, .data$horizon, names(lag_functions)) %>%
                   dplyr::as_tibble()
               }
 
@@ -687,12 +691,12 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
               if (method == "direct") {
 
-                data_x <- data.frame("row_number" = n_instances + 1:forecast_horizon, "horizon" = 1:forecast_horizon)
+                data_x <- data.frame("index" = n_instances + 1:forecast_horizon, "horizon" = 1:forecast_horizon)
                 data_x[, var_names[j]] <- NA  # This is direct forecasting without predicting the predictors.
 
               } else if (method == "multi_output") {  # Without groups, this value is in the last row of the input data.
 
-                data_x <- data.frame("row_number" = n_instances, "horizon" = horizons[1])
+                data_x <- data.frame("index" = n_instances, "horizon" = horizons[1])
                 data_x[, var_names[j]] <- data[n_instances, var_names[j], drop = TRUE]
               }
             }
@@ -711,16 +715,14 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
       if (is.null(groups)) {
 
-        data_x <- Reduce(function(x, y) {dplyr::full_join(x, y, by = c("row_number", "horizon"))}, data_x)
+        data_x <- Reduce(function(x, y) {dplyr::full_join(x, y, by = c("index", "horizon"))}, data_x)
 
       } else {
 
-        data_x <- Reduce(function(x, y) {try(dplyr::full_join(x, y, by = c("row_number", "horizon", groups)))}, data_x)
+        data_x <- Reduce(function(x, y) {try(dplyr::full_join(x, y, by = c("index", "horizon", groups)))}, data_x)
       }
 
       if (is.null(dates)) {  # Single time series without dates.
-
-        names(data_x)[names(data_x) == "row_number"] <- "index"
 
         if (method == "multi_output") {
           data_x$index <- paste(n_instances + horizons, collapse = ", ")  # There is only 1 row in the forecast data.frame.
@@ -729,7 +731,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
       } else {  # Single or multiple time series with dates.
 
-        data_x <- dplyr::select(data_x, -.data$row_number)  # The index will be a date from a merged template.
+        data_x <- dplyr::select(data_x, -.data$index)  # The index will be a date from a merged template.
 
         date_of_forecast <- data.frame("horizon" = 1:forecast_horizon,
                                        "index" = seq(max(dates, na.rm = TRUE), by = frequency, length.out = forecast_horizon + 1)[-1])
@@ -747,6 +749,40 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
           data_x$index <- paste(seq(max(dates, na.rm = TRUE), by = frequency, length.out = max(horizons, na.rm = TRUE) + 1)[-1][horizons], collapse = ", ")
           data_x$horizon <- paste(horizons, collapse = ", ")
         }
+        #----------------------------------------------------------------------
+        # User-defined prediction of future dynamic features.
+        if (!is.null(predict_future)) {
+
+          if (is.null(dates)) {
+            stop("Dates are required for predicting future values in the forecast data.frame.")
+          }
+
+          data_dynamic_future <- predict_future(data, dates)
+
+          feature_names <- names(data_x)
+
+          feature_names_future <- names(data_dynamic_future)
+
+          if (!"index" %in% feature_names_future) {
+            stop("The data.frame returned from 'predict_future()' needs a column of dates named 'index'.")
+          }
+
+          features_in_common <- dplyr::intersect(feature_names, dplyr::setdiff(feature_names_future, "index"))
+
+          if (length(features_in_common) < 1) {
+            stop("The data.frame returned from 'predict_future()' does not have any column names in common with 'data'.")
+          }
+
+          data_x <- dplyr::left_join(data_x, data_dynamic_future, by = c("index", groups), suffix = c("", "_forecastML_predicted"))
+
+          for (feature in features_in_common) {
+
+            data_x[, feature] <- data_x[, paste0(feature, "_forecastML_predicted")]
+          }
+
+          data_x <- data_x[, 1:length(feature_names)]
+        }
+        #----------------------------------------------------------------------
       }  # End formatting of the forecast dataset for horizon 'i'.
       #------------------------------------------------------------------------
       attr(data_x, "horizons") <- forecast_horizon

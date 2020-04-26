@@ -17,6 +17,7 @@ create_lagged_df(
   dynamic_features = NULL,
   groups = NULL,
   static_features = NULL,
+  predict_future = NULL,
   use_future = FALSE,
   keep_rows = FALSE
 )
@@ -62,6 +63,10 @@ are not lagged. Note that combining feature lags with grouped time series will r
 
 \item{static_features}{For grouped time series only. A character vector of column names that identify features that do not change through time.
 These columns are not lagged. If \code{type = "forecast"}, these features will be filled forward using the most recent value for the group.}
+
+\item{predict_future}{When \code{type = "forecast"}, a function for predicting the future values of any dynamic features.
+This function takes \code{data} and \code{dates} as positional arguments and returns a data.frame with (a) one or more rows, (b) an
+"index" column of future dates, (c) group columns if needed, and (d) 1 or more columns with name(s) in \code{dynamic_features}.}
 
 \item{use_future}{Boolean. If \code{TRUE}, the \code{future.apply} package is used for creating lagged data.frames.
 \code{multisession} or \code{multicore} futures are especially useful for (a) grouped time series with many groups and
