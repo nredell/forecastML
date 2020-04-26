@@ -680,7 +680,7 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
 
                 data_x <- data[, var_names[j], drop = FALSE] %>%
                   dplyr::mutate_at(dplyr::vars(var_names[j]), lag_functions) %>%
-                  dplyr::filter(dplyr::index() == dplyr::n()) %>%
+                  dplyr::filter(dplyr::row_number() == dplyr::n()) %>%
                   dplyr::mutate("index" = !!n_instances,  # Hard-coded for merging feature-level data.
                                 "horizon" = !!horizons[1]) %>%  # Hard-coded for merging feature-level data.
                   dplyr::select(.data$index, .data$horizon, names(lag_functions)) %>%
