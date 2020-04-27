@@ -767,13 +767,21 @@ create_lagged_df <- function(data, type = c("train", "forecast"), method = c("di
             stop("The data.frame returned from 'predict_future()' needs a column of dates named 'index'.")
           }
 
-          features_in_common <- dplyr::intersect(feature_names, dplyr::setdiff(feature_names_future, "index"))
+          features_in_common <- dplyr::intersect(feature_names, dplyr::setdiff(feature_names_future, c("index", groups)))
 
           if (length(features_in_common) < 1) {
             stop("The data.frame returned from 'predict_future()' does not have any column names in common with 'data'.")
           }
 
-          data_x <- dplyr::left_join(data_x, data_dynamic_future, by = c("index", groups), suffix = c("", "_forecastML_predicted"))
+          # If groups exist in the data.frame returned from predict_future, join using groups.
+          if (all(!is.null(groups), groups %in% feature_names_future)) {
+
+            data_x <- dplyr::left_join(data_x, data_dynamic_future, by = c("index", groups), suffix = c("", "_forecastML_predicted"))
+
+          } else {  # Grouped data can be joined by dates without explicit groups.
+
+            data_x <- dplyr::left_join(data_x, data_dynamic_future, by = c("index"), suffix = c("", "_forecastML_predicted"))
+          }
 
           for (feature in features_in_common) {
 
