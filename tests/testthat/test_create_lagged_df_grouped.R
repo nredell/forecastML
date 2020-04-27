@@ -148,14 +148,9 @@ test_that("lagged_df, forecasting data, grouped with predict_future", {
   predict_future <- function(data, index) {
 
     data <- data.frame("index" = as.Date("2021-01-01"),
-                       "group" = c("A", "B", "C"),
+                       # "group" = c("A", "B", "C"),  # Optional
                        "dynamic_feature_1" = "January")
   }
-
-  group_test <- NULL
-  dplyr::setdiff(c("a", "b", "c"), c("index", group_test))
-
-
 
   data_out <- forecastML::create_lagged_df(data_test, type = "forecast",
                                            outcome_col = 1, horizons = 1,

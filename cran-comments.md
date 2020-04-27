@@ -1,6 +1,6 @@
 ## Test environments
 
-* local Windows install, R 3.5.3, 3.6.2, and devel
+* local Windows install, R 4.0.0 and 3.6.2
 * ubuntu 16.04 (on travis-ci), R 3.6.2
 
 ## R CMD check results
@@ -8,6 +8,26 @@
 0 errors | 0 warnings | 0 notes
 
 ## Submission history
+
+* **05-01-2020**
+* This is a minor version update, 0.8.0 to 0.9.0, for an existing CRAN package.
+    + User-visible new features
+        + New function `create_skeleton()` for analysis with big data.
+        + New argument in `create_lagged_df(..., predict_future = NULL)` for predicting dynamic features.
+        + Added the rmsse error metric from the M5 forecasting competition.
+        + Forecast combination is clearer and now supports custom aggregation with 
+        `combine_forecasts(..., aggregate = stats::median)`.
+        + Added a new vignette for forecast combinations.
+        + Continued improvement of plot aesthetics.
+    + Bug fixes
+        + Multiple grouping columns now works with `create_lagged_df()`.
+        + Support outcome column positions other than 1 in `create_lagged_df()`.
+        + Plotting single time series predictions with non-contiguous windows removes connecting line.
+    + Internals
+        + DESCRIPTION: DEPENDS on dplyr (>= 1.0.0)
+        + Reduced build time of existing vignettes.
+        + Unit test code coverage = 83%.
+<br>
 
 * **02-28-2020**
 * This is a minor version update, 0.7.0 to 0.8.0, for an existing CRAN package.
