@@ -105,6 +105,8 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
   # Seq along model forecast horizon > cross-validation windows.
   data_out <- lapply_across_horizons(lagged_df, function(data, future.seed, ...) {  # model forecast horizon.
 
+    data <- as.data.frame(data)  # To-do: Remove when the tibble class has been removed or added through all analysis paths.
+
     model_plus_valid_data <- lapply_across_val_windows(1:nrow(windows), function(i, future.seed, ...) {  # validation windows within model forecast horizon.
 
       window_length <- windows[i, "window_length"]
@@ -463,12 +465,12 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
         data_temp$model <- as.character(data_temp$model)  # Coerce to remove any factor levels.
         data_temp
       })  # End cross-validation window predictions.
-      data_win_num <- dplyr::bind_rows(data_win_num)
+      data_win_num <- suppressMessages(dplyr::bind_rows(data_win_num))
     })  # End horizon-level predictions.
-    data_horizon <- dplyr::bind_rows(data_horizon)
+    data_horizon <- suppressMessages(dplyr::bind_rows(data_horizon))
   })  # End model-level predictions.
 
-  data_out <- dplyr::bind_rows(data_model)
+  data_out <- suppressMessages(dplyr::bind_rows(data_model))
 
   # For multi-output models, the data (a) need to be reshaped from a wide to long format
   # and (b) the validation indices that represent the forecast origin need to be changed
@@ -526,6 +528,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
   }
 
   data_out <- as.data.frame(data_out)
+  row.names(data_out) <- 1:nrow(data_out)
 
   attr(data_out, "method") <- method
   attr(data_out, "horizons") <- horizons

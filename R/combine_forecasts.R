@@ -75,8 +75,8 @@ combine_forecasts <- function(..., type = c("horizon", "error"), aggregate = sta
   groups <- attributes(data_forecast_list[[1]])$groups
   data_stop <- attributes(data_forecast_list[[1]])$data_stop
 
+  data_forecast_list <- lapply(data_forecast_list, tibble::as_tibble)
   data_forecast <- dplyr::bind_rows(data_forecast_list)  # Collapse the forecast_results list(...).
-  data_forecast <- dplyr::as_tibble(data_forecast)
   #----------------------------------------------------------------------------
   # For factor outcomes, is the prediction a factor level or probability?
   if (!is.null(outcome_levels)) {
@@ -160,7 +160,7 @@ combine_forecasts <- function(..., type = c("horizon", "error"), aggregate = sta
     data_forecast <- lapply(seq_along(model_forecast_horizons), function(i) {
 
       data_forecast[data_forecast$model_forecast_horizon == model_forecast_horizons[i] &
-                      data_forecast$horizon %in% horizon_filter[[i]], ]
+                    data_forecast$horizon %in% horizon_filter[[i]], ]
     })
 
     data_forecast <- dplyr::bind_rows(data_forecast)
@@ -247,6 +247,8 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
   data_stop <- attributes(data_forecast)$data_stop
   metric <- attributes(data_forecast)$metric
   horizons <- unique(data_forecast$horizon)
+
+  data_forecast <- tibble::as_tibble(data_forecast)
 
   if (!is.null(outcome_levels) && !is.null(groups) && !is.null(data_actual)) {
     stop("Plotting forecasts from grouped time series with an actuals dataset is not currently supported.")
@@ -488,7 +490,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
             # actual or forecast: these are all actuals.
             data_actual$actual_or_forecast <- "actual"
             # historical, test, or model_forecast: these may be any combination of historical data and a holdout test dataset.
-            data_actual$time_series_type <- with(data_actual, ifelse(index <= attributes(data_forecast)$data_stop, "historical", "test"))
+            data_actual$time_series_type <- with(data_actual, ifelse(index <= data_stop, "historical", "test"))
             names(data_actual)[names(data_actual) == outcome_name] <- "outcome"  # Standardize before concat with forecasts.
             data_actual$ggplot_color_group <- "Actual"  # Actuals will be plotted in the top plot facet.
             data_actual$value <- 1  # Plot a solid bar with probability 1 in geom_col().
@@ -548,7 +550,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
           # actual or forecast: these are all actuals.
           data_actual$actual_or_forecast <- "actual"
           # historical, test, or model_forecast: these may be any combination of historical data and a holdout test dataset.
-          data_actual$time_series_type <- with(data_actual, ifelse(index <= attributes(data_forecast)$data_stop, "historical", "test"))
+          data_actual$time_series_type <- with(data_actual, ifelse(index <= data_stop, "historical", "test"))
           names(data_actual)[names(data_actual) == outcome_name] <- "outcome"  # Standardize before concat with forecasts.
           data_actual$ggplot_color_group <- "Actual"  # Actuals will be plotted in the top plot facet.
           data_actual$value <- 1  # Plot a solid bar with probability 1 in geom_col().

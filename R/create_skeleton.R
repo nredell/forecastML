@@ -36,7 +36,7 @@ create_skeleton <- function(lagged_df) {
 
     if (is.null(groups)) {
 
-      data <- x[, c(outcome_names)]
+      data <- x[, c(outcome_names), drop = FALSE]
 
     } else {
 

@@ -27,7 +27,7 @@ The following quote from Bergmeir et al.'s article nicely sums up the aim of thi
 
 ## Featured Notebooks
 
-* **[Forecasting with big data - Spark and H2O](https://github.com/nredell/forecastML/blob/master/notebooks/Forecasting%20with%20big%20data%20-%20Spark%20and%20H2O.ipynb)**  (currently requires GitHub dev versions of `dplyr` and `forecastML`)
+* **[Forecasting with big data - Spark and H2O](https://github.com/nredell/forecastML/blob/master/notebooks/Forecasting%20with%20big%20data%20-%20Spark%20and%20H2O.ipynb)**
 
 User-contributed notebooks welcome!
 
@@ -96,7 +96,7 @@ library(forecastML)
 * Development
 
 ``` r
-devtools::install_github("nredell/forecastML")
+remotes::install_github("nredell/forecastML")
 library(forecastML)
 ```
 
@@ -136,7 +136,7 @@ The multi-output forecasting approach used in `forecastML` involves the followin
 
 **2.** Assess model generalization performance across a variety of heldout datasets through time.
 
-**3.** Select the hyperparamters that minimize forecast error overall the relevant forecast horizons and re-train.
+**3.** Select the hyperparamters that minimize forecast error over all the relevant forecast horizons and re-train.
 
 
 ## Vignettes
