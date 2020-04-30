@@ -1,7 +1,7 @@
 ## Test environments
 
 * local Windows install, R 4.0.0 and 3.6.2
-* ubuntu 16.04 (on travis-ci), R 3.6.2
+* ubuntu 16.04 (on travis-ci), R 4.0.0 and 3.6.2
 
 ## R CMD check results
 
@@ -24,7 +24,7 @@
         + Support outcome column positions other than 1 in `create_lagged_df()`.
         + Plotting single time series predictions with non-contiguous windows removes connecting line.
     + Internals
-        + DESCRIPTION: DEPENDS on dplyr (>= 1.0.0)
+        + DESCRIPTION: works with dplyr < v1.0.0 and v1.0.0.
         + Reduced build time of existing vignettes.
         + Unit test code coverage = 83%.
 <br>

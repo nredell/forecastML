@@ -105,8 +105,6 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
   # Seq along model forecast horizon > cross-validation windows.
   data_out <- lapply_across_horizons(lagged_df, function(data, future.seed, ...) {  # model forecast horizon.
 
-    data <- as.data.frame(data)  # To-do: Remove when the tibble class has been removed or added through all analysis paths.
-
     model_plus_valid_data <- lapply_across_val_windows(1:nrow(windows), function(i, future.seed, ...) {  # validation windows within model forecast horizon.
 
       window_length <- windows[i, "window_length"]
@@ -299,7 +297,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
     data_stop <- attributes(data)$data_stop
   }
   #----------------------------------------------------------------------------
-  # Seq along forecast model > model forecast horizon > validation window number.
+  # Seq along forecast model[i] > model forecast horizon[j] > validation window number[k].
   data_model <- lapply(seq_along(model_list), function(i) {
 
     prediction_fun <- prediction_function[[i]]
@@ -488,7 +486,7 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 
       data_out <- data_actual_temp
 
-      data_out$model_forecast_horizon <- horizons
+      data_out$model_forecast_horizon <- rep(horizons, nrow(data_out) / length(horizons))
 
       data_out$forecast_indices <- data_out$valid_indices
 
