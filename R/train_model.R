@@ -604,6 +604,8 @@ plot.training_results <- function(x,
   frequency <- attributes(data)$frequency
   groups <- attributes(data)$group
   window_custom <- all(data$window_length == "custom")
+
+  data <- as.data.frame(data)  # Coerce to remove new vctrs warning about mismatched classes when joining data.
   #----------------------------------------------------------------------------
   if (method == "multi_output") {
 
@@ -1161,6 +1163,8 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
   groups <- attributes(data_forecast)$group
   data_stop <- attributes(data_forecast)$data_stop
 
+  data_forecast <- as.data.frame(data_forecast)  # Coerce to remove new vctrs warning about mismatched classes when joining data.
+
   if (!is.null(outcome_levels) && !is.null(groups) && !is.null(data_actual)) {
     stop("Plotting forecasts from grouped time series with an actuals dataset is not currently supported.")
   }
@@ -1445,7 +1449,7 @@ plot.forecast_results <- function(x, data_actual = NULL, actual_indices = NULL, 
         # actual or forecast: these are all actuals.
         data_actual$actual_or_forecast <- "actual"
         # historical, test, or model_forecast: these may be any combination of historical data and a holdout test dataset.
-        data_actual$time_series_type <- with(data_actual, ifelse(index <= attributes(data_forecast)$data_stop, "historical", "test"))
+        data_actual$time_series_type <- with(data_actual, ifelse(index <= data_stop, "historical", "test"))
         names(data_actual)[names(data_actual) == outcome_name] <- "outcome"  # Standardize before concat with forecasts.
         data_actual$ggplot_color_group <- "Actual"  # Actuals will be plotted in the top plot facet.
         data_actual$value <- 1  # Plot a solid bar with probability 1 in geom_col().

@@ -9,7 +9,7 @@
 
 ## Submission history
 
-* **05-01-2020**
+* **05-05-2020**
 * This is a minor version update, 0.8.0 to 0.9.0, for an existing CRAN package.
     + User-visible new features
         + New function `create_skeleton()` for analysis with big data.
