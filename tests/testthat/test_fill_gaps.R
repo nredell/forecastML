@@ -45,7 +45,7 @@ test_that("fill_gaps with grouped data is correct", {
                                             frequency = frequency, groups = groups,
                                             static_features = static_features)
 
-  testthat::expect_equivalent(data_buoy, data_buoy_filled)
+  identical(data_buoy, data_buoy_filled)
 })
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
