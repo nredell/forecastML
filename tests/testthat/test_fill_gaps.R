@@ -41,9 +41,11 @@ test_that("fill_gaps with grouped data is correct", {
   groups <- c("buoy_id")
   static_features <- c("lat", "lon")
 
-  identical(data_buoy, forecastML::fill_gaps(data_buoy_gaps, date_col = 1,
-                                             frequency = frequency, groups = groups,
-                                             static_features = static_features))
+  data_buoy_filled <- forecastML::fill_gaps(data_buoy_gaps, date_col = 1,
+                                            frequency = frequency, groups = groups,
+                                            static_features = static_features)
+
+  testthat::expect_equivalent(data_buoy, data_buoy_filled)
 })
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -61,12 +63,10 @@ test_that("fill_gaps column fills are correct", {
                                              frequency = frequency, groups = groups,
                                              static_features = static_features)
 
-  all(
-    sum(is.na(data_test$date)) == 0,                # dates should not be missing
-    sum(is.na(data_test[, dynamic_features])) > 0,  # dynamic features should be missing
-    sum(is.na(data_test[, groups])) == 0,           # grouping features should not be missing
-    sum(is.na(data_test[, static_features])) == 0   # static features should not be missing
-    )
+  testthat::expect_equal(sum(is.na(data_test$date)), 0)
+  testthat::expect_gt(sum(is.na(data_test[, dynamic_features])), 0)
+  testthat::expect_equal(sum(is.na(data_test[, groups])), 0)
+  testthat::expect_equal(sum(is.na(data_test[, static_features])), 0)
 })
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------

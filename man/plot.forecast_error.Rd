@@ -6,7 +6,7 @@
 \usage{
 \method{plot}{forecast_error}(
   x,
-  type = c("window", "horizon", "global"),
+  type = c("global"),
   metric = NULL,
   facet = NULL,
   models = NULL,
@@ -19,7 +19,7 @@
 \arguments{
 \item{x}{An object of class 'forecast_error' from \code{return_error()}.}
 
-\item{type}{Select plot type; \code{type = "window"} is the default plot.}
+\item{type}{Select plot type; \code{type = "global"} is the default plot.}
 
 \item{metric}{Select error metric to plot (e.g., "mae"); \code{attributes(x)$error_metrics[1]} is the default metric.}
 

@@ -39,14 +39,12 @@ test_that("combine forecasts works with 1 model and type equals horizon", {
 
   data_combined <- combine_forecasts(data_forecasts)
 
-  all(
-    max(horizons) == nrow(data_combined),  # Are the correct number of h-step-ahead forecasts produced?
-    all(data_combined$horizon <= data_combined$model_forecast_horizon),  # Are all forecasts produced possible given the model horizon?
-    # Are the horizon-specific forecasts the same?
-    identical(data_forecasts[1, "DriversKilled_pred"], data_combined$DriversKilled_pred[1]),
-    identical(data_forecasts[3:(nrow(data_forecasts)), "DriversKilled_pred"], data_combined$DriversKilled_pred[2:(max(horizons))])
-    )
-
+  testthat::expect_equal(max(horizons), nrow(data_combined))
+  testthat::expect_true(all(data_combined$horizon <= data_combined$model_forecast_horizon))
+  testthat::expect_true(all(data_combined$horizon <= data_combined$model_forecast_horizon))
+  testthat::expect_identical(data_forecasts[1, "DriversKilled_pred"], data_combined$DriversKilled_pred[1])
+  testthat::expect_identical(data_forecasts[3:(nrow(data_forecasts)), "DriversKilled_pred"],
+                             data_combined$DriversKilled_pred[2:(max(horizons))])
   testthat::expect_error(combine_forecasts(model_results))  # Input is not of class 'forecast_results'.
 })
 #------------------------------------------------------------------------------
@@ -92,14 +90,12 @@ test_that("combine forecasts works with multiple models and type equals horizon"
 
   data_combined <- combine_forecasts(data_forecasts_1, data_forecasts_2)
 
-  all(
-    max(horizons) == nrow(data_combined),  # Are the correct number of h-step-ahead forecasts produced?
-    all(data_combined$horizon <= data_combined$model_forecast_horizon),  # Are all forecasts produced possible given the model horizon?
-    # Are the horizon-specific forecasts the same?
-    identical(median(c(data_forecasts_1[1, "DriversKilled_pred"], data_forecasts_2[1, "DriversKilled_pred"])), data_combined$DriversKilled_pred[1]),
-    identical(data_forecasts_1[3:(nrow(data_forecasts_1)), "DriversKilled_pred"], data_combined$DriversKilled_pred[2:(max(horizons))])
-  )
-
+  testthat::expect_equal(max(horizons), nrow(data_combined))
+  testthat::expect_true(all(data_combined$horizon <= data_combined$model_forecast_horizon))
+  testthat::expect_identical(median(c(data_forecasts_1[1, "DriversKilled_pred"], data_forecasts_2[1, "DriversKilled_pred"])),
+                             data_combined$DriversKilled_pred[1])
+  testthat::expect_identical(data_forecasts_1[3:(nrow(data_forecasts_1)), "DriversKilled_pred"],
+                             data_combined$DriversKilled_pred[2:(max(horizons))])
   testthat::expect_error(combine_forecasts(model_results))  # Input is not of class 'forecast_results'.
 })
 #------------------------------------------------------------------------------
@@ -150,14 +146,12 @@ test_that("combine forecasts works with 1 model and type equals error", {
 
   data_combined_modified <- combine_forecasts(data_forecasts, type = "error", data_error = list(data_error_modified), metric = "mae")
   #----------------------------------------------------------------------------
-  all(
-    max(horizons) == nrow(data_combined),  # Are the correct number of h-step-ahead forecasts produced?
-    all(data_combined$horizon <= data_combined$model_forecast_horizon),  # Are all forecasts produced possible given the model horizon?
-    # Are the horizon-specific forecasts the same?
-    identical(data_forecasts[1, "DriversKilled_pred"], data_combined$DriversKilled_pred[1]),
-    identical(data_forecasts[3:(nrow(data_forecasts)), "DriversKilled_pred"], data_combined$DriversKilled_pred[2:(max(horizons))]),
-    unique(data_combined_modified$model_forecast_horizon) == 12  # The 12-step-ahead model outperforms the 1-step-ahead model for 1-step-ahead forecasts.
-  )
+  testthat::expect_equal(max(horizons), nrow(data_combined))
+  testthat::expect_true(all(data_combined$horizon <= data_combined$model_forecast_horizon))
+  testthat::expect_identical(data_forecasts[1, "DriversKilled_pred"], data_combined$DriversKilled_pred[1])
+  testthat::expect_identical(data_forecasts[3:(nrow(data_forecasts)), "DriversKilled_pred"],
+                             data_combined$DriversKilled_pred[2:(max(horizons))])
+  testthat::expect_identical(unique(data_combined_modified$model_forecast_horizon), 12)
 })
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -206,11 +200,9 @@ test_that("combine_forecasts() works with multiple models and type equals error"
   data_combined <- combine_forecasts(data_forecasts, data_forecasts_2, type = "error",
                                      data_error = list(data_error, data_error_2), metric = "mae")
 
-  all(
-    max(horizons) == nrow(data_combined),  # Are the correct number of h-step-ahead forecasts produced?
-    all(data_combined$horizon <= data_combined$model_forecast_horizon),  # Are all forecasts produced possible given the model horizon?
-    # Are the horizon-specific forecasts the same?
-    identical(data_forecasts[1, "DriversKilled_pred"], data_combined$DriversKilled_pred[1]),
-    identical(data_forecasts[3:(nrow(data_forecasts)), "DriversKilled_pred"], data_combined$DriversKilled_pred[2:(max(horizons))])
-  )
+  testthat::expect_equal(max(horizons), nrow(data_combined))
+  testthat::expect_true(all(data_combined$horizon <= data_combined$model_forecast_horizon))
+  testthat::expect_identical(data_forecasts[1, "DriversKilled_pred"], data_combined$DriversKilled_pred[1])
+  testthat::expect_identical(data_forecasts[3:(nrow(data_forecasts)), "DriversKilled_pred"],
+                             data_combined$DriversKilled_pred[2:(max(horizons))])
 })

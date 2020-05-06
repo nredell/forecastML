@@ -33,7 +33,9 @@ test_that("lagged_df, forecasting data, non-grouped with daily date horizons are
 
   data_out <- data.frame(data_out$horizon_3[, c("index", "horizon")])
 
-  all.equal(data, data_out)
+  data[, 2] <- as.numeric(data[, 2])
+
+  identical(data, data_out)
 })
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -67,7 +69,9 @@ test_that("lagged_df, forecasting data, non-grouped with monthly date horizons a
 
   data_out <- data.frame(data_out$horizon_3[, c("index", "horizon")])
 
-  all.equal(data, data_out)
+  data[, 2] <- as.numeric(data[, 2])
+
+  identical(data, data_out)
 })
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------

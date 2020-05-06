@@ -2,7 +2,6 @@
 # Cross-validation indices are correct for dates and indices from input data to lagged_df to predict.
 library(forecastML)
 library(dplyr)
-library(glmnet)
 
 test_that("cross-validation indices are correct for dates and indices from input data to lagged_df to predict", {
 
@@ -57,21 +56,19 @@ test_that("cross-validation indices are correct for dates and indices from input
   pred_4 <- predict(model_results_4, prediction_function = list(predict_fun), data = data_dates_keep_rows)
 
   # Test that the indices are the same for all combinations of keep_rows = TRUE/FALSE and row/date indices.
-  all(
-    length(attributes(data_no_dates_discrard_rows)$row_indices) == length(attributes(data_dates_discrard_rows)$row_indices),
-    length(attributes(data_dates_discrard_rows)$row_indices) == length(attributes(data_dates_discrard_rows)$date_indices),
-    length(attributes(data_no_dates_keep_rows)$row_indices) == length(attributes(data_dates_keep_rows)$row_indices),
-    length(attributes(data_dates_keep_rows)$row_indices) == length(attributes(data_dates_keep_rows)$date_indices),
+  testthat::expect_equal(length(attributes(data_no_dates_discrard_rows)$row_indices), length(attributes(data_dates_discrard_rows)$row_indices))
+  testthat::expect_equal(length(attributes(data_dates_discrard_rows)$row_indices), length(attributes(data_dates_discrard_rows)$date_indices))
+  testthat::expect_equal(length(attributes(data_no_dates_keep_rows)$row_indices), length(attributes(data_dates_keep_rows)$row_indices))
+  testthat::expect_equal(length(attributes(data_dates_keep_rows)$row_indices), length(attributes(data_dates_keep_rows)$date_indices))
 
-    all(dates == attributes(data_dates_keep_rows)$date_indices),
+  testthat::expect_true(all(dates == attributes(data_dates_keep_rows)$date_indices))
 
-    all(unique(pred_1$valid_indices) == attributes(data_no_dates_discrard_rows)$row_indices),
-    all(unique(pred_2$valid_indices) == attributes(data_dates_discrard_rows)$row_indices),
-    all(unique(pred_2$date_indices) == attributes(data_dates_discrard_rows)$date_indices),
-    all(unique(pred_3$valid_indices) == attributes(data_no_dates_keep_rows)$row_indices),
-    all(unique(pred_4$valid_indices) == attributes(data_no_dates_keep_rows)$row_indices),
-    all(unique(pred_4$date_indices) == attributes(data_dates_keep_rows)$date_indices),
-    all(unique(pred_4$row_indices) == as.numeric(row.names(data))),
-    all(unique(pred_4$date_indices) == dates)
-  )
+  testthat::expect_true(all(unique(pred_1$valid_indices) == attributes(data_no_dates_discrard_rows)$row_indices))
+  testthat::expect_true(all(unique(pred_2$valid_indices) == attributes(data_dates_discrard_rows)$row_indices))
+  testthat::expect_true(all(unique(pred_2$date_indices) == attributes(data_dates_discrard_rows)$date_indices))
+  testthat::expect_true(all(unique(pred_3$valid_indices) == attributes(data_no_dates_keep_rows)$row_indices))
+  testthat::expect_true(all(unique(pred_4$valid_indices) == attributes(data_no_dates_keep_rows)$row_indices))
+  testthat::expect_true(all(unique(pred_4$date_indices) == attributes(data_dates_keep_rows)$date_indices))
+  testthat::expect_true(all(unique(pred_4$row_indices) == as.numeric(row.names(data))))
+  testthat::expect_true(all(unique(pred_4$date_indices) == dates))
 })

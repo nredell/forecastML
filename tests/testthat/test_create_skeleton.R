@@ -15,6 +15,6 @@ test_that("create_skeleton correctly preserves lagged_df objects", {
   data_lagged_attr <- attributes(data_lagged)
   data_skeleton_attr <- attributes(data_skeleton)[!names(attributes(data_skeleton)) %in% "skeleton"]
 
-  identical(data_lagged_attr, data_skeleton_attr)
+  testthat::expect_identical(data_lagged_attr, data_skeleton_attr)
 })
 #------------------------------------------------------------------------------

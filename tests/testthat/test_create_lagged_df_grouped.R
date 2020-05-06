@@ -97,10 +97,11 @@ test_that("lagged_df, forecasting data, grouped with dates is correct", {
                                            frequency = "1 month", groups = "group")
 
   data_out <- data.frame(data_out$horizon_1)
+  data_out[, -1] <- lapply(data_out[, -1], as.numeric)
 
   data_out[, c("index", "horizon")] <- NULL
 
-  all.equal(data, data_out)
+  identical(data, data_out)
 })
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -161,9 +162,10 @@ test_that("lagged_df, forecasting data, grouped with predict_future", {
                                            )
 
   data_out <- data.frame(data_out$horizon_1)
+  data_out[, -c(1, ncol(data_out))] <- lapply(data_out[, -c(1, ncol(data_out))], as.numeric)
 
   data_out[, c("index", "horizon")] <- NULL
 
-  all.equal(data, data_out)
+  identical(data, data_out)
 })
 

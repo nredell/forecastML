@@ -37,7 +37,7 @@ forecasts and (b) an ensemble of separately trained ML models at any forecast ho
 ## **Load Packages & Data**
 
 ```{r, warning = FALSE, message = FALSE}
-library(forecastML)
+# library(forecastML)
 library(dplyr)
 library(ggplot2)
 library(glmnet)
@@ -83,7 +83,7 @@ model_fun <- function(data) {
   x <- as.matrix(data[, -1, drop = FALSE])
   y <- as.matrix(data[, 1, drop = FALSE])
   set.seed(1)
-  model <- glmnet::cv.glmnet(x, y)
+  model <- glmnet::cv.glmnet(x, y, nfolds = 5)
 }
 
 model_results <- forecastML::train_model(data_train, windows, model_name = "LASSO", model_function = model_fun)
@@ -151,7 +151,7 @@ model_fun_lasso <- function(data) {
   x <- as.matrix(data[, -1, drop = FALSE])
   y <- as.matrix(data[, 1, drop = FALSE])
   set.seed(1)
-  model <- glmnet::cv.glmnet(x, y, alpha = 1)
+  model <- glmnet::cv.glmnet(x, y, alpha = 1, nfolds = 5)
 }
 
 model_results <- forecastML::train_model(data_train, windows, model_name = "LASSO", model_function = model_fun_lasso)
@@ -179,7 +179,7 @@ model_fun_ridge <- function(data) {
   x <- as.matrix(data[, -1, drop = FALSE])
   y <- as.matrix(data[, 1, drop = FALSE])
   set.seed(1)
-  model <- glmnet::cv.glmnet(x, y, alpha = 0)
+  model <- glmnet::cv.glmnet(x, y, alpha = 0, nfolds = 5)
 }
 
 model_results <- forecastML::train_model(data_train, windows, model_name = "Ridge", model_function = model_fun_ridge)
@@ -245,7 +245,7 @@ model_fun_lasso <- function(data) {
   x <- as.matrix(data[, -1, drop = FALSE])
   y <- as.matrix(data[, 1, drop = FALSE])
   set.seed(1)
-  model <- glmnet::cv.glmnet(x, y, alpha = 1)
+  model <- glmnet::cv.glmnet(x, y, alpha = 1, nfolds = 5)
 }
 
 model_results <- forecastML::train_model(data_train, windows, model_name = "LASSO", model_function = model_fun_lasso)
@@ -273,7 +273,7 @@ model_fun_ridge <- function(data) {
   x <- as.matrix(data[, -1, drop = FALSE])
   y <- as.matrix(data[, 1, drop = FALSE])
   set.seed(1)
-  model <- glmnet::cv.glmnet(x, y, alpha = 0)
+  model <- glmnet::cv.glmnet(x, y, alpha = 0, nfolds = 5)
 }
 
 model_results <- forecastML::train_model(data_train, windows, model_name = "Ridge", model_function = model_fun_ridge)

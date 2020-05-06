@@ -112,7 +112,7 @@
 #'
 #' @export
 create_lagged_df <- function(data, type = c("train", "forecast"), method = c("direct", "multi_output"),
-                             outcome_col = 1L, horizons, lookback = NULL, lookback_control = NULL,
+                             outcome_col = 1, horizons, lookback = NULL, lookback_control = NULL,
                              dates = NULL, frequency = NULL, dynamic_features = NULL,
                              groups = NULL, static_features = NULL, predict_future = NULL,
                              use_future = FALSE, keep_rows = FALSE) {

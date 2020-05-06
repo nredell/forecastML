@@ -25,7 +25,7 @@ test_that("train model works with fixed and ... model args", {
     x <- as.matrix(x, ncol = ncol(x))
     y <- as.matrix(y, ncol = ncol(y))
 
-    model <- glmnet::cv.glmnet(x, y, nfolds = 3)
+    model <- glmnet::glmnet(x, y)
     return(model)
   }
 
@@ -40,19 +40,17 @@ test_that("train model works with fixed and ... model args", {
     x <- as.matrix(x, ncol = ncol(x))
     y <- as.matrix(y, ncol = ncol(y))
 
-    model <- glmnet::cv.glmnet(x, y, nfolds = 3)
+    model <- glmnet::glmnet(x, y)
     return(model)
   }
 
   set.seed(224)
   model_results_2 <- train_model(data_train, windows, model_name = "LASSO", model_function)
 
-  all(
-    length(model_results_1) == length(horizons),  # Is the length of the nested list correct?
-    length(model_results_2) == length(horizons),  # Is the length of the nested list correct?
-    length(model_results_1[[1]]) == nrow(windows),  # 1 model for each validation window.
-    length(model_results_2[[1]]) == nrow(windows),  # 1 model for each validation window.
-    methods::is(model_results_1$horizon_1$window_1$model, "cv.glmnet"),  # Argument in ....
-    methods::is(model_results_2$horizon_1$window_1$model, "cv.glmnet")  # Hardcoded model args.
-  )
+  testthat::expect_equal(length(model_results_1), length(horizons))
+  testthat::expect_equal(length(model_results_2), length(horizons))
+  testthat::expect_equal(length(model_results_1[[1]]), nrow(windows))
+  testthat::expect_equal(length(model_results_2[[1]]), nrow(windows))
+  testthat::expect_true(methods::is(model_results_1$horizon_1$window_1$model, "glmnet"))  # Argument in ....
+  testthat::expect_true(methods::is(model_results_2$horizon_1$window_1$model, "glmnet"))  # Hardcoded model args.
 })

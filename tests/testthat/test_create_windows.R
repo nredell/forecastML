@@ -26,7 +26,7 @@ test_that("create_windows with dates is correct", {
 
   windows <- forecastML::create_windows(data_test, window_length = window_length)
 
-  identical(windows$start, windows$stop)
+  testthat::expect_identical(windows$start, windows$stop)
 })
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -53,7 +53,7 @@ test_that("create_windows with the same start and stop date for 1 unit of time i
 
   windows <- forecastML::create_windows(data_test, window_length = window_length)
 
-  identical(windows$start, windows$stop)
+  testthat::expect_identical(windows$start, windows$stop)
 })
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -82,8 +82,6 @@ test_that("create_windows length and skip with dates is correct", {
   windows <- forecastML::create_windows(data_test, window_start = window_start_true,
                                         window_stop = window_stop_true)
 
-  all(
-    all(windows$start == window_start_true),
-    all(windows$stop == window_stop_true)
-  )
+  testthat::expect_true(all(windows$start == window_start_true))
+  testthat::expect_true(all(windows$stop == window_stop_true))
 })

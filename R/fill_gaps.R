@@ -39,7 +39,7 @@
 #' @example /R/examples/example_fill_gaps.R
 #'
 #' @export
-fill_gaps <- function(data, date_col = 1L, frequency, groups = NULL,
+fill_gaps <- function(data, date_col = 1, frequency, groups = NULL,
                       static_features = NULL) {
 
   if (!methods::is(data, c("data.frame"))) {
@@ -88,7 +88,7 @@ fill_gaps <- function(data, date_col = 1L, frequency, groups = NULL,
   } else {
 
     data <- data %>%
-      dplyr::arrange(!!rlang::sym(date_name), !!!rlang::syms(groups))
+      dplyr::arrange(!!!rlang::syms(groups), !!rlang::sym(date_name))
   }
 
   # Create a merge template giving the date bounds for non-grouped or grouped data.
@@ -163,7 +163,7 @@ fill_gaps <- function(data, date_col = 1L, frequency, groups = NULL,
   } else {
 
     data_out <- data_out %>%
-      dplyr::arrange(!!rlang::sym(date_name), !!!rlang::syms(groups))
+      dplyr::arrange(!!!rlang::syms(groups), !!rlang::sym(date_name))
   }
 
   # Re-order the complete dataset to have the same column order as the input dataset.

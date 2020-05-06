@@ -710,7 +710,7 @@ plot.validation_error <- function(x, type = c("window", "horizon", "global"), me
 #'
 #' Plot forecast error at various levels of aggregation.
 #' @param x An object of class 'forecast_error' from \code{return_error()}.
-#' @param type Select plot type; \code{type = "window"} is the default plot.
+#' @param type Select plot type; \code{type = "global"} is the default plot.
 #' @param metric Select error metric to plot (e.g., "mae"); \code{attributes(x)$error_metrics[1]} is the default metric.
 #' @param models Optional. A vector of user-defined model names from \code{train_model()} to filter results.
 #' @param horizons Optional. A numeric vector to filter results by horizon.
@@ -722,7 +722,7 @@ plot.validation_error <- function(x, type = c("window", "horizon", "global"), me
 #' @param ... Not used.
 #' @return Forecast error plots of class 'ggplot'.
 #' @export
-plot.forecast_error <- function(x, type = c("window", "horizon", "global"), metric = NULL,
+plot.forecast_error <- function(x, type = c("global"), metric = NULL,
                                 facet = NULL, models = NULL, horizons = NULL, windows = NULL, group_filter = NULL, ...) { # nocov start
 
   #----------------------------------------------------------------------------
@@ -855,63 +855,6 @@ plot.forecast_error <- function(x, type = c("window", "horizon", "global"), metr
   x_axis_title <- paste(temp_1, temp_2, sep = "")
   x_axis_title <- paste(x_axis_title, collapse = " + ")
 
-  #----------------------------------------------------------------------------
-  # Create plots.
-  # if (type %in% c("window", "horizon")) {
-  #
-  #   p <- ggplot()
-  #
-  #   if (1 %in% horizons || nrow(data_plot) == 1 || (method == "multi_output" && any(c(facet_names %in% "horizon")))) {  # Use geom_point instead of geom_line to plot a 1-step-ahead forecast.
-  #
-  #     if (method == "direct") {
-  #
-  #       data_plot_temp <- data_plot[data_plot$model_forecast_horizon == 1, ]
-  #       data_plot_temp$index <- data_plot_temp$horizon
-  #       data_plot_temp$horizon <- NULL
-  #       names(data_plot_temp)[names(data_plot_temp) == "model_forecast_horizon"] <- "horizon"  # Rename for faceting.
-  #
-  #     } else if (method == "multi_output") {
-  #
-  #       data_plot_temp <- data_plot
-  #     }
-  #
-  #     p <- p + geom_point(data = data_plot_temp,
-  #                         aes(x = .data$index, y = .data$value,
-  #                             color = .data$ggplot_color, group = .data$ggplot_group))
-  #   }
-  #
-  #   if ((method == "direct" && !all(horizons == 1)) || (method == "multi_output" && nrow(data_plot) > 1 && !any(c(facet_names %in% "horizon")))) {  # Plot forecasts for model forecast horizons > 1.
-  #
-  #     if (method == "direct") {
-  #
-  #       data_plot_temp <- data_plot[data_plot$model_forecast_horizon != 1, ]
-  #       data_plot_temp$index <- data_plot_temp$horizon
-  #       data_plot_temp$horizon <- NULL
-  #       names(data_plot_temp)[names(data_plot_temp) == "model_forecast_horizon"] <- "horizon"  # Rename for faceting.
-  #
-  #     } else if (method == "multi_output") {
-  #
-  #       data_plot_temp <- data_plot
-  #     }
-  #
-  #     p <- p + geom_line(data = data_plot_temp,
-  #                        aes(x = .data$index, y = .data$value,
-  #                            color = .data$ggplot_color, group = .data$ggplot_group))
-  #   }
-  #
-  #   p <- p + scale_color_viridis_d()
-  #   p <- p + theme_bw() + theme(panel.spacing = unit(0, "lines"))
-  #   p <- p + facet_grid(facet, scales = "fixed")
-  #   p <- p + xlab(x_axis_title) + ylab(paste0("Forecast error metric (", error_metrics, ")")) + labs(color = x_axis_title)
-  #   if (type %in% c("window")) {
-  #     p <- p + ggtitle("Forecast Error by Validation Window and Model Forecast Horizon")
-  #   } else {
-  #     p <- p + ggtitle("Forecast Error by Model Forecast Horizon")
-  #   }
-  #
-  #   return(suppressWarnings(p))
-  # }
-
   if (type == "global") {
     data_plot$horizon <- "All"
   }
@@ -946,6 +889,5 @@ plot.forecast_error <- function(x, type = c("window", "horizon", "global"), metr
       }
 
     return(suppressWarnings(p))
-  # }
 } # nocov end
 

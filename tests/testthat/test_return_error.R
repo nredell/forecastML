@@ -126,7 +126,7 @@ test_that("the rmsse M5 competition metric is correct on validation data with wi
   data_error <- return_error(data_valid, data_test = data_seatbelts, test_indices = 1:nrow(data_seatbelts))
 
   all(
-    data_error$error_by_window$rmsse == rmsse
+    round(data_error$error_by_window$rmsse, 2) == round(rmsse, 2)
   )
 })
 #------------------------------------------------------------------------------
@@ -265,9 +265,9 @@ test_that("validation error, window_length = 0 and 1 horizon returns the same er
     x[, error_metrics]
   })
 
-  expect_mapequal(data_error[[1]], data_error[[2]])
-  expect_mapequal(data_error[[1]], data_error[[3]])
-  expect_mapequal(data_error[[2]], data_error[[3]])
+  expect_mapequal(round(data_error[[1]], 2), round(data_error[[2]], 2))
+  expect_mapequal(round(data_error[[1]], 2), round(data_error[[3]], 2))
+  expect_mapequal(round(data_error[[2]], 2), round(data_error[[3]], 2))
 })
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -317,10 +317,10 @@ test_that("test/forecast error, 1 horizon returns the 3 data.frames of error met
   data_error <- return_error(data_forecasts, data_test = data_test, test_indices = test_indices, aggregate = mean)
 
   all(
-    nrow(data_error[[1]]) == horizons,
-    nrow(data_error[[2]]) == horizons,
+    nrow(data_error[[1]]) == 1,
+    nrow(data_error[[2]]) == 1,
     nrow(data_error[[3]]) == 1,
-    mean(data_error[[1]]$rmsse) == data_error[[3]]$rmsse
+    round(mean(data_error[[1]]$rmsse), 2) == round(data_error[[3]]$rmsse, 2)
       )
 })
 #------------------------------------------------------------------------------
@@ -369,7 +369,8 @@ test_that("return_error returns correctly when the input is 1 model from combine
 
   all(
    length(data_error_combined) == 3,
-   nrow(data_error_combined[[2]]) == max(horizons)
+   nrow(data_error_combined[[2]]) == max(horizons),
+   nrow(data_error_combined[[3]]) == 1
   )
 })
 
