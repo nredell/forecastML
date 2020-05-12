@@ -10,7 +10,8 @@ train_model(
   model_name,
   model_function,
   ...,
-  use_future = FALSE
+  use_future = FALSE,
+  python = FALSE
 )
 }
 \arguments{
@@ -32,6 +33,8 @@ The models will train in parallel across either (1) model forecast horizons or (
 whichever is longer (i.e., \code{length(create_lagged_df())} or \code{nrow(create_windows())}). The user
 should run \code{future::plan(future::multiprocess)} or similar prior to this function to train these models
 in parallel.}
+
+\item{python}{Boolean. If \code{TRUE}, the \code{reticulate} package is used for model training.}
 }
 \value{
 An S3 object of class 'forecast_model': A nested list of trained models. Models can be accessed with

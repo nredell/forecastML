@@ -4,13 +4,7 @@
 \alias{fill_gaps}
 \title{Prepare a dataset for modeling by filling in temporal gaps in data collection}
 \usage{
-fill_gaps(
-  data,
-  date_col = 1L,
-  frequency,
-  groups = NULL,
-  static_features = NULL
-)
+fill_gaps(data, date_col = 1, frequency, groups = NULL, static_features = NULL)
 }
 \arguments{
 \item{data}{A data.frame or object coercible to a data.frame with, minimally, dates and the outcome being forecasted.}

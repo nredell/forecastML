@@ -18,6 +18,7 @@
 #' whichever is longer (i.e., \code{length(create_lagged_df())} or \code{nrow(create_windows())}). The user
 #' should run \code{future::plan(future::multiprocess)} or similar prior to this function to train these models
 #' in parallel.
+#' @param python Boolean. If \code{TRUE}, the \code{reticulate} package is used for model training.
 #' @return An S3 object of class 'forecast_model': A nested list of trained models. Models can be accessed with
 #' \code{my_trained_model$horizon_h$window_w$model} where 'h' gives the forecast horizon and 'w' gives
 #' the validation dataset window number from \code{create_windows()}.
@@ -40,7 +41,7 @@
 #' }
 #' @example /R/examples/example_train_model.R
 #' @export
-train_model <- function(lagged_df, windows, model_name, model_function, ..., use_future = FALSE) {
+train_model <- function(lagged_df, windows, model_name, model_function, ..., use_future = FALSE, python = FALSE) {
 
   if (missing(lagged_df) || !methods::is(lagged_df, "lagged_df")) {
     stop("The 'lagged_df' argument takes an object of class 'lagged_df' as input. Run create_lagged_df() first.")
@@ -105,6 +106,8 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
   # Seq along model forecast horizon > cross-validation windows.
   data_out <- lapply_across_horizons(lagged_df, function(data, future.seed, ...) {  # model forecast horizon.
 
+    horizon <- attributes(data)$horizons
+
     model_plus_valid_data <- lapply_across_val_windows(1:nrow(windows), function(i, future.seed, ...) {  # validation windows within model forecast horizon.
 
       window_length <- windows[i, "window_length"]
@@ -127,6 +130,16 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
       # trains on all input data in lagged_df.
       if (window_length == 0 && (windows[i, "start"] == data_start) && (windows[i, "stop"] == data_stop)) {
 
+        # Python data.frame preparation.
+        if (python) {
+
+          horizon <- as.integer(attributes(data)$horizons)
+
+          data <- reticulate::r_to_py(data)
+
+          reticulate::py_set_attr(data, "horizons", horizon)
+        }
+
         # Model training over all data.
         if (n_args == 0) {  # No user-defined model args passed in ...
 
@@ -145,14 +158,28 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
         validation_indices <- which(row_indices %in% valid_indices)
         attributes(data)$validation_indices <- validation_indices
 
+        data <- data[-(validation_indices), , drop = FALSE]
+
+        # Python data.frame preparation.
+        if (python) {
+
+          horizon <- as.integer(attributes(data)$horizons)
+          validation_indices <- as.integer(validation_indices - 1)  # Match Python's 0-based indexing.
+
+          data <- reticulate::r_to_py(data)
+
+          reticulate::py_set_attr(data, "horizons", horizon)
+          reticulate::py_set_attr(data, "validation_indices", paste0("range(", min(validation_indices), ", ", max(validation_indices), ", 1)"))
+        }
+
         if (n_args == 0) {  # No user-defined model args passed in ...
 
-          model <- try(model_function(data[-(validation_indices), , drop = FALSE]))
+          model <- try(model_function(data))
 
         } else {
 
           model <- try({
-              do.call(model_function, append(list(data[-(validation_indices), , drop = FALSE]), model_function_args))
+              do.call(model_function, append(list(data), model_function_args))
             })
           }
       }
@@ -166,9 +193,10 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
     }, future.seed = 1)  # End model training across nested cross-validation windows for the horizon in "data".
 
     names(model_plus_valid_data) <- paste0("window_", 1:nrow(windows))
-    attr(model_plus_valid_data, "horizon") <- attributes(data)$horizon
+    attr(model_plus_valid_data, "horizon") <- horizon
+
     model_plus_valid_data
-  }, future.seed = 1)  # End training across horizons.
+  }, future.seed = 1, future.packages = "reticulate")  # End training across horizons.
 
   attr(data_out, "model_name") <- model_name
   attr(data_out, "horizons") <- horizons
@@ -184,7 +212,7 @@ train_model <- function(lagged_df, windows, model_name, model_function, ..., use
   attr(data_out, "groups") <- attributes(lagged_df)$groups
   attr(data_out, "method") <- attributes(lagged_df)$method
   attr(data_out, "skeleton") <- skeleton
-
+  attr(data_out, "python") <- python
 
   class(data_out) <- c("forecast_model", class(data_out))
 
@@ -302,6 +330,8 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 
     prediction_fun <- prediction_function[[i]]
 
+    python <- attributes(model_list[[i]])$python
+
     data_horizon <- lapply(seq_along(model_list[[i]]), function(j) {
 
       data_win_num <- lapply(seq_along(model_list[[i]][[j]]), function(k) {
@@ -319,10 +349,26 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
           x_valid <- data[[j]][validation_indices, -(outcome_cols), drop = FALSE]
           y_valid <- data[[j]][validation_indices, outcome_cols, drop = FALSE]  # Actuals in function return.
 
-          attributes(x_valid)$validation_indices <- validation_indices
           attributes(x_valid)$horizons <- attributes(data[[j]])$horizons
+          attributes(x_valid)$validation_indices <- validation_indices
 
-          data_pred <- try(prediction_fun(data_results$model, x_valid))  # Nested cross-validation.
+          # Python data.frame preparation.
+          if (python) {
+
+            horizon <- as.integer(attributes(data[[j]])$horizons)
+            validation_indices <- as.integer(validation_indices - 1)  # Match Python's 0-based indexing.
+
+            py_x_valid <- reticulate::r_to_py(x_valid)
+
+            reticulate::py_set_attr(py_x_valid, "horizons", horizon)
+            reticulate::py_set_attr(py_x_valid, "validation_indices", paste0("range(", min(validation_indices), ", ", max(validation_indices), ", 1)"))
+
+            data_pred <- try(prediction_fun(data_results$model, py_x_valid))  # Nested cross-validation.
+
+          } else {
+
+            data_pred <- try(prediction_fun(data_results$model, x_valid))  # Nested cross-validation.
+          }
 
           if (methods::is(data_pred, "try-error")) {
             warning(paste0("Model '", attributes(model_list[[i]])$model_name, "' returned class 'try-error' for model ", j, " in validation window ", k))
@@ -341,7 +387,17 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 
           data_for_forecast <- data[[j]][, !names(data[[j]]) %in% c("index", "horizon"), drop = FALSE]  # Remove ID columns for predict().
 
-          data_pred <- try(prediction_fun(data_results$model, data_for_forecast))  # User-defined prediction function.
+          # Python data.frame preparation.
+          if (python) {
+
+            py_data_for_forecast <- reticulate::r_to_py(data_for_forecast)
+
+            data_pred <- try(prediction_fun(data_results$model, py_data_for_forecast))  # Nested cross-validation.
+
+          } else {
+
+            data_pred <- try(prediction_fun(data_results$model, data_for_forecast))  # User-defined prediction function.
+          }
 
           if (methods::is(data_pred, "try-error")) {
             warning(paste0("Model '", attributes(model_list[[i]])$model_name, "' returned class 'try-error' for model ", j, " in validation window ", k))
@@ -693,7 +749,7 @@ plot.training_results <- function(x,
 
   } else {
 
-    valid_indices <- if (is.null(valid_indices)) {unique(data$date_indices)} else {date_indices}
+    valid_indices <- if (is.null(valid_indices)) {unique(data$date_indices)} else {valid_indices}
   }
   #----------------------------------------------------------------------------
   data_plot <- data
