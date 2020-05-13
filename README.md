@@ -29,7 +29,7 @@ The following quote from Bergmeir et al.'s article nicely sums up the aim of thi
 
 * **[Forecasting with big data - Spark and H2O](https://github.com/nredell/forecastML/blob/master/notebooks/Forecasting%20with%20big%20data%20-%20Spark%20and%20H2O.ipynb)**
 
-* **Forecasting with Python - scikit-learn in parallel** (coming soon)
+* **[Forecasting with Python - scikit-learn in parallel](https://github.com/nredell/forecastML/blob/master/notebooks/python_sklearn_and_r_in_parallel/Forecasting%20with%20Python%20-%20scikit%20learn%20in%20parallel.ipynb)**
 
 User-contributed notebooks welcome!
 
