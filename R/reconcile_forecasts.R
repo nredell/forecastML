@@ -1,0 +1,346 @@
+#' Reconcile multiple temporal or hierarchical forecasts
+#'
+#' The purpose of forecast reconciliation is to produce a single coherent forecast
+#' from multiple forecasts produced at (a) different time horizons (e.g., monthly and quarterly)
+#' and/or (b) different levels of aggregation (e.g., classroom, school, and school district).
+#' After forecast reconciliation, the bottom-level or most disaggregated forecast can simply
+#' be summed up to produce all higher-level forecasts. At present, only temporal forecasts
+#' are supported for a single time series.
+#'
+#' @param forecasts A list of 2 or more dataframes with forecasts. Each dataframe must have
+#' a column named \code{index} of class \code{Date} or \code{POSIXt}. The column name of the
+#' forecast is defined in the \code{outcome} argument and must be the same across dataframes.
+#' Forecasts should be sorted from oldest (top) to newest (bottom). To produce correct forecast
+#' reconciliations, all forecasts at the lowest/disaggregated level should be present for all horizons
+#' contained in the forecasts with the higher levels of aggregation
+#' (e.g., 24 monthly forecasts for 2 annual forecasts or 21 daily forecasts for 3 weekly forecasts).
+#' @param frequency A character vector of \code{length(forecasts)} that identifies the date/time frequency
+#' of the forecast. Each string should work with \code{base::seq.Date(..., by = "frequency")} or
+#' \code{base::seq.POSIXt(..., by = "frequency")} e.g., '1 hour', '1 month', '7 days', '10 years' etc.
+#' @param outcome A string giving the column name of the forecast which should be common across \code{forecasts}.
+#' @param method One of \code{c("temporal", "hierarchical", "cross_temporal")}.
+#' @param keep_all Boolean. If \code{TRUE}, reconciled forecasts at all levels are returned. If \code{FALSE},
+#' only the bottom-level or most disaggregated forecast is returned which can be manually aggregated as needed.
+#' @return A \code{data.frame} of reconciled forecasts at either (a) the most disaggregated level or (b) all levels given in \code{forecasts}.
+#'
+#' @section Implementation:
+#'
+#'     \itemize{
+#'       \item \code{method = 'temporal'}: Forecasts are reconciled across forecast horizons.
+#'       }
+#'
+#'     \itemize{
+#'       \item \bold{Combination type}: Structural scaling with weights from temporal hierarchies Athanasopoulos et al. (2017).
+#'       }
+#'
+#' @section References:
+#'
+#' Athanasopoulos, G., Hyndman, R. J., Kourentzes, N., & Petropoulos, F. (2017).
+#' Forecasting with temporal hierarchies. European Journal of Operational Research, 262(1), 60-74.
+#' \url{https://robjhyndman.com/papers/temporalhierarchies.pdf}
+#'
+#' Hyndman, R. J., Ahmed, R. A., Athanasopoulos, G., & Shang, H. L. (2011).
+#' Optimal combination forecasts for hierarchical time series. Computational statistics & data analysis, 55(9), 2579-2589.
+#' \url{http://robjhyndman.com/papers/hierarchical}
+#'
+#' @example /R/examples/example_reconcile_forecasts.R
+#' @export
+reconcile_forecasts <- function(forecasts, frequency, outcome, method, keep_all = TRUE) {
+
+  n_forecasts <- length(forecasts)
+
+  if (n_forecasts < 2) {
+    stop("Forecast reconciliation requires a list of 2 or more forecasts.")
+  }
+
+  if (n_forecasts != length(frequency)) {
+    stop("The number of forecast horizon frequencies does not match the number of forecasts.")
+  }
+
+  if (length(outcome) != 1) {
+    stop("'outcome' should be a single column name identifying the forecasts in each dataset.")
+  }
+
+  outcome_in_dataset <- sapply(forecasts, function(x) {
+    outcome %in% names(x)
+  })
+
+  if (!all(outcome_in_dataset)) {
+    stop(paste0("'", outcome, "' is not a column name in all input forecasts; rename the forecasts to have a common name."))
+  }
+
+  # Coerce forecastML forecasts from combine_forecasts() to have an "index" column.
+  forecasts <- lapply(forecasts, function(x) {
+
+    if (methods::is(x, "forecastML")) {
+      names(x)[names(x) == "forecast_period"] <- "index"
+    }
+    x
+  })
+
+  index_in_dataset <- sapply(forecasts, function(x) {
+    "index" %in% names(x)
+  })
+
+  if (!all(index_in_dataset)) {
+    stop("'index' is not a column name in all input forecasts; rename the forecast date column 'index'.")
+  }
+
+  if (method != "temporal") {
+    stop("reconcile_forecasts() currently only supports temporal forecast reconciliation.")
+  }
+  #----------------------------------------------------------------------------
+  # Find the frequency of each forecast. The purpose is to re-order the forecasts
+  # from the highest to lowest forecast frequency (e.g., monthly > quarterly > annually).
+  # The end result doesn't need to be exact with respect to phenomena like leap years
+  # because this is simply for ordering the input forecasts.
+  day_diff <- sapply(seq_along(forecasts), function(i) {
+
+    # Normalize all date and date-time differences to days. This will always return day
+    # differences for "Date" classes; however, "POSIXt" classes may not respect the
+    # "units" argument and are coerced to numeric days.
+    date_diff <- diff(seq(min(forecasts[[i]]$index), by = frequency[i], length.out = 2), units = "days")
+
+    units <- attributes(date_diff)$units
+
+    date_diff <- as.numeric(date_diff)
+
+    if (units == "hours") {
+
+      date_diff <- date_diff / 24
+
+    } else if (units == "mins") {
+
+      date_diff <- date_diff / 3600
+
+    } else if (units == "secs") {
+
+      date_diff <- date_diff / 86400
+    }
+
+    date_diff
+  })
+
+  # Ordered from highest to lowest forecast horizon frequency (e.g., monthly > annually).
+  forecast_order <- order(day_diff)
+
+  forecasts <- forecasts[forecast_order]
+  frequency <- frequency[forecast_order]
+  #----------------------------------------------------------------------------
+  # Get information to work with both dates and datetimes.
+  is_datetime <- unlist(lapply(forecasts, function(x) {
+    methods::is(x$index, "POSIXt")
+  }))
+
+  # If there is a mix of dates and datetimes, coerce all indices into datetimes.
+  if (length(unique(is_datetime)) > 1) {
+
+    timezone <- unlist(lapply(which(is_datetime), function(i) {
+
+      timezone <- attributes(forecasts[[i]]$index)$tzone
+
+      if (timezone == "") {
+
+        timezone <- "UTC"
+
+      } else {
+
+        timezone
+      }
+    }))
+
+    timezone <- unique(timezone)[1]
+
+    forecasts <- lapply(forecasts, function(x) {
+
+      if (methods::is(x$index, "POSIXt")) {
+
+        attr(x$index, "tzone") <- timezone  # as.POSIXct() won't change the timezone attribute for POSIXt classes.
+
+      } else {
+
+        x$index <- as.POSIXct(x$index)
+        attr(x$index, "tzone") <- timezone
+      }
+
+      x
+    })
+  }
+  #-----------------------------------------------------------------"-----------
+  # Start and stop dates for the forecast periods for the lowest forecast frequency.
+  index_lf <- forecasts[[n_forecasts]]$index
+  index_lf_start <- index_lf
+
+  index_lf_stop <- lapply(seq_along(index_lf), function(i) {
+
+    seq(index_lf[i], by = frequency[n_forecasts], length.out = 2)[-1]
+  })
+
+  index_lf_stop <- do.call("c", index_lf_stop)
+
+  # Start and stop dates for the forecast periods for the highest forecast frequency.
+  # If the highest frequency forecast is a datetime and the lowest frequency forecast
+  # is a date, set both to datetimes for easier indexing.
+  if (length(unique(is_datetime)) > 1) {
+
+    index_start <- min(index_lf_start)
+    index_stop <- max(index_lf_stop)
+    attr(index_start, "tzone") <- timezone
+    attr(index_stop, "tzone") <- timezone
+
+  } else {
+
+    index_start <- min(index_lf_start)
+    index_stop <- max(index_lf_stop)
+  }
+
+  index_hf <- seq(index_start, index_stop, by = frequency[1])
+
+  # The anticipated forecast dates given the forecast start and stop dates for
+  # the lowest frequency forecast and the frequencies of each forecast in the hierarchy.
+  # The return value is a nested list of indices that specify the number of 1s that
+  # should be added to each row of the summation matrix.
+  forecast_dates <- lapply(1:n_forecasts, function(i) {
+
+    index <- forecasts[[i]]$index
+    index_start <- index
+
+    index_stop <- lapply(seq_along(index_start), function(j) {
+
+      seq(index_start[j], by = frequency[i], length.out = 2)[-1]
+    })
+
+    index_stop <- do.call("c", index_stop)
+
+    if (i == 1) {  # Highest frequency forecast.
+
+      date_indices <- lapply(seq_along(index_lf_start), function(j) {
+
+        index <- dplyr::intersect(which(index_hf >= index_lf_start[j]), which(index_hf < index_lf_stop[j]))
+        length(index)
+      })
+
+    } else {  # Forecasts with lower frequencies.
+
+      date_indices <- lapply(seq_along(index_start), function(j) {
+
+        index <- dplyr::intersect(which(index_hf >= index_start[j]), which(index_hf < index_stop[j]))
+        length(index)
+      })
+    }
+
+    date_indices <- unlist(date_indices)
+  })
+
+  # Number of columns in summation matrix. This is equal to the number of
+  # time steps for the highest frequency forecast horizon. This format supports
+  # asymmetric hierarchies like 29 and 30 days in a daily/monthly forecast
+  # reconciliation.
+  highest_freq <- sum(forecast_dates[[1]])
+
+  # Throw an error if any forecast in the hierarchy has too few or too many forecasts
+  # for the forecast frequency and date ranges given. At present, this only checks the
+  # accuracy of the lowest level forecast.
+  for (i in seq_along(forecasts)) {
+
+    if (i %in% 1) {
+
+      if (sum(forecast_dates[[i]]) != nrow(forecasts[[i]])) {
+        n_horizons <- sum(forecast_dates[[i]])
+        n_actual <- nrow(forecasts[[i]])
+        stop(paste0("For the forecast with frequency '", frequency[i], "', ", n_actual, " forecasts were present but ", n_horizons, " were expected."))
+      }
+    }
+  }
+  #----------------------------------------------------------------------------
+  # Stacked forecasts.
+  # Rows: From lowest (top) to highest (bottom) frequency; from oldest (top) to newest (bottom) dates.
+  # Columns: The number of repeated forecast cycles based on the number of lowest frequency forecasts.
+  forecast_matrix <- dplyr::bind_rows(rev(forecasts))
+  forecast_matrix <- matrix(forecast_matrix[, outcome], ncol = 1)
+  #----------------------------------------------------------------------------
+  # Summation matrix.
+  agg_matrices <- lapply(seq_along(forecast_dates)[-n_forecasts], function(i) {
+
+    agg_matrix <- matrix(0, nrow = length(forecast_dates[[i]]), ncol = highest_freq)
+
+    col_indices_stop <- cumsum(forecast_dates[[i]])
+    col_indices_start <- c(1, col_indices_stop[-length(col_indices_stop)] + 1)
+
+    col_indices <- purrr::map2(col_indices_start, col_indices_stop,  `:`)
+
+    for (i in seq_along(forecast_dates[[i]])) {
+
+      agg_matrix[i, col_indices[[i]]] <- 1
+    }
+
+    agg_matrix
+  })
+
+  agg_matrix <- do.call(rbind, agg_matrices)
+
+  bottom_matrix <- diag(highest_freq)
+
+  sum_matrix <- rbind(agg_matrix, bottom_matrix)
+  #----------------------------------------------------------------------------
+  # Structural weight matrix.
+  sum_matrix_weights <- c(unlist(forecast_dates[-n_forecasts]), rep(1, highest_freq))
+
+  weights <- matrix(0, ncol = length(sum_matrix_weights), nrow = length(sum_matrix_weights))
+  diag(weights) <- sum_matrix_weights
+  #----------------------------------------------------------------------------
+  # Matrix multiplication. To-do: add formulas' references from paper.
+  number_time_series <- nrow(sum_matrix)
+  number_time_series_bottom <- ncol(sum_matrix)  # Same as highest_freq
+  n_aggregations <- number_time_series - number_time_series_bottom
+
+  matrix_upper_tri_l <- diag(n_aggregations)
+  matrix_upper_tri_r <- sum_matrix[1:n_aggregations, , drop = FALSE]
+  matrix_upper_tri_r[matrix_upper_tri_r == 1] <- -1
+  matrix_upper_tri <- cbind(matrix_upper_tri_l, matrix_upper_tri_r)
+
+  matrix_j_l <- matrix(0, ncol = n_aggregations, nrow = number_time_series_bottom)
+  matrix_j_r <- diag(number_time_series_bottom)
+  matrix_j <- cbind(matrix_j_l, matrix_j_r)
+
+  matrix_rhs_lower <- matrix_upper_tri %*% forecast_matrix
+
+  matrix_lhs_lower <- matrix_upper_tri %*% weights %*% t(matrix_upper_tri)
+
+  linear_solution <- base::solve(matrix_lhs_lower, matrix_rhs_lower)
+
+  linear_solution <- matrix_j %*% forecast_matrix - (matrix_j %*% weights %*% t(matrix_upper_tri) %*% linear_solution)
+
+  data_forecasts_reconciled <- sum_matrix %*% linear_solution
+  #----------------------------------------------------------------------------
+  # Format forecast outputs to match the forecast inputs.
+
+  n_horizons <- rev(sapply(forecasts, nrow))
+  row_indices <- lapply(cumsum(n_horizons), function(x) {seq(1, x, by = 1)})
+
+  row_indices[seq_along(row_indices)[-1]] <- lapply(seq_along(row_indices)[-1], function(i) {
+
+    row_indices[[i]][!(row_indices[[i]] %in% row_indices[[i - 1]])]
+  })
+
+  row_indices <- rev(row_indices)
+
+  data_out <- lapply(1:n_forecasts, function(i) {
+
+    data_out <- data.frame("index" = forecasts[[i]]$index,
+                           "forecast" = data_forecasts_reconciled[row_indices[[i]], ])
+
+    names(data_out)[2] <- outcome  # Set the name of the forecast column to match the user input.
+
+    data_out
+  })
+
+  names(data_out) <- frequency
+
+  if (!keep_all) {  # Keep the bottom-level forecasts.
+
+    data_out <- data_out[[1]]
+  }
+
+  return(data_out)
+}

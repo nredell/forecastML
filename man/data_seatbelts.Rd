@@ -4,9 +4,7 @@
 \name{data_seatbelts}
 \alias{data_seatbelts}
 \title{Road Casualties in Great Britain 1969-84}
-\format{
-A data.frame with 192 rows and 8 columns
-}
+\format{A data.frame with 192 rows and 8 columns}
 \source{
 Harvey, A.C. (1989). Forecasting, Structural Time Series Models and the Kalman Filter. Cambridge University Press, pp. 519–523.
 
