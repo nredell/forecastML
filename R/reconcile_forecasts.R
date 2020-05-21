@@ -133,7 +133,7 @@ reconcile_forecasts <- function(forecasts, frequency, index, outcome, method, ke
   #----------------------------------------------------------------------------
   # Get information to work with both dates and datetimes.
   is_datetime <- unlist(lapply(forecasts, function(x) {
-    methods::is(x$index, "POSIXt")
+    methods::is(x[, index, drop = TRUE], "POSIXt")
   }))
 
   # If there is a mix of dates and datetimes, coerce all indices into datetimes.
@@ -141,7 +141,7 @@ reconcile_forecasts <- function(forecasts, frequency, index, outcome, method, ke
 
     timezone <- unlist(lapply(which(is_datetime), function(i) {
 
-      timezone <- attributes(forecasts[[i]]$index)$tzone
+      timezone <- attributes(forecasts[[i]][, index, drop = TRUE])$tzone
 
       if (timezone == "") {
 
@@ -157,14 +157,14 @@ reconcile_forecasts <- function(forecasts, frequency, index, outcome, method, ke
 
     forecasts <- lapply(forecasts, function(x) {
 
-      if (methods::is(x$index, "POSIXt")) {
+      if (methods::is(x[, index, drop = TRUE], "POSIXt")) {
 
-        attr(x$index, "tzone") <- timezone  # as.POSIXct() won't change the timezone attribute for POSIXt classes.
+        attr(x[, index], "tzone") <- timezone  # as.POSIXct() won't change the timezone attribute for POSIXt classes.
 
       } else {
 
-        x$index <- as.POSIXct(x$index)
-        attr(x$index, "tzone") <- timezone
+        x[, index] <- as.POSIXct(x[, index, drop = TRUE])
+        attr(x[, index], "tzone") <- timezone
       }
 
       x
