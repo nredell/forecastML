@@ -275,7 +275,7 @@ reconcile_forecasts <- function(forecasts, frequency, index, outcome, method, ke
   # Stacked forecasts.
   # Rows: From lowest (top) to highest (bottom) frequency; from oldest (top) to newest (bottom) dates.
   # Columns: The number of repeated forecast cycles based on the number of lowest frequency forecasts.
-  forecast_matrix <- dplyr::bind_rows(rev(forecasts))
+  forecast_matrix <- as.data.frame(dplyr::bind_rows(rev(forecasts)))
   forecast_matrix <- matrix(forecast_matrix[, outcome], ncol = 1)
   #----------------------------------------------------------------------------
   # Summation matrix.
