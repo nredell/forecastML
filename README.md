@@ -31,6 +31,8 @@ The following quote from Bergmeir et al.'s article nicely sums up the aim of thi
 
 * **[Forecasting with Python - scikit-learn in parallel](https://github.com/nredell/forecastML/blob/master/notebooks/python_sklearn_and_r_in_parallel/Forecasting%20with%20Python%20-%20scikit%20learn%20in%20parallel.ipynb)**
 
+* **[Forecast reconciliation across planning horizons - coherent weekly ML and monthly ARIMA forecasts](https://github.com/nredell/forecastML/blob/master/notebooks/forecast_reconciliation/Forecast%20reconciliation%20across%20planning%20horizons%20-%20coherent%20weekly%20ML%20and%20monthly%20ARIMA%20forecasts.ipynb)**
+
 User-contributed notebooks welcome!
 
 
