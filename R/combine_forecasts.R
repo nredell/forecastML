@@ -247,8 +247,33 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
   data_stop <- attributes(data_forecast)$data_stop
   metric <- attributes(data_forecast)$metric
   horizons <- unique(data_forecast$horizon)
+  prediction_intervals <- attributes(data_forecast)$prediction_intervals
+
+  outcome_name_pred <- paste0(outcome_name, "_pred")
+  outcome_name_pred_lower <- names(data_forecast)[grepl("_pred_lower", names(data_forecast))]
+  outcome_name_pred_upper <- names(data_forecast)[grepl("_pred_upper", names(data_forecast))]
 
   data_forecast <- tibble::as_tibble(data_forecast)
+
+  if (!is.null(prediction_intervals)) {
+
+    if (length(names(data_forecast)[grepl("_pred_", names(data_forecast))]) / 2 > length(prediction_intervals)) {
+
+      warning("User-defined prediction intervals will be ignored and replaced with those from calculate_intervals().")
+
+      interval_names_lower <- names(data_forecast)[grepl("_pred_lower_", names(data_forecast))]
+      interval_names_upper <- names(data_forecast)[grepl("_pred_upper_", names(data_forecast))]
+      interval_names_ci <- c(interval_names_lower, interval_names_upper)
+      interval_names_all <- c(outcome_name_pred_lower, outcome_name_pred_upper)
+
+      interval_names_user <- interval_names_all[!interval_names_all %in% interval_names_ci]
+
+      data_forecast <- data_forecast[, !names(data_forecast) %in% interval_names_user, drop = FALSE]
+
+      outcome_name_pred_lower <- interval_names_lower
+      outcome_name_pred_upper <- interval_names_upper
+    }
+  }
 
   if (!is.null(outcome_levels) && !is.null(groups) && !is.null(data_actual)) {
     stop("Plotting forecasts from grouped time series with an actuals dataset is not currently supported.")
@@ -258,7 +283,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
   #----------------------------------------------------------------------------
   # For factor outcomes, is the prediction a factor level or probability?
   if (!is.null(outcome_levels)) {
-    factor_level <- if (any(names(data_forecast) %in% paste0(outcome_name, "_pred"))) {TRUE} else {FALSE}
+    factor_level <- if (any(names(data_forecast) %in% outcome_name_pred)) {TRUE} else {FALSE}
     factor_prob <- !factor_level
   }
   #----------------------------------------------------------------------------
@@ -346,18 +371,18 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
 
         # If the plotting data.frame has both lower and upper forecasts plot these bounds.
         # We'll add the shading in a lower ggplot layer so the point forecasts are on top in the final plot.
-        if (all(any(grepl("_pred_lower", names(data_forecast))), any(grepl("_pred_upper", names(data_forecast))))) {
+        if (all(length(outcome_name_pred_lower) > 0, length(outcome_name_pred_upper) > 0)) {
 
           # geom_ribbon() does not work with a single data point when forecast bounds are plotted.
           p <- p + geom_linerange(data = data_forecast,
-                                  aes(x = .data$index, ymin = eval(parse(text = paste0(outcome_name, "_pred_lower"))),
-                                      ymax = eval(parse(text = paste0(outcome_name, "_pred_upper"))),
+                                  aes(x = .data$index, ymin = eval(parse(text = outcome_name_pred_lower)),
+                                      ymax = eval(parse(text = outcome_name_pred_upper)),
                                       color = .data$ggplot_color, group = .data$ggplot_group), alpha = .25, size = 3, show.legend = FALSE)
 
         }
 
         p <- p + geom_point(data = data_forecast,
-                            aes(x = .data$index, y = eval(parse(text = paste0(outcome_name, "_pred"))),
+                            aes(x = .data$index, y = eval(parse(text = outcome_name_pred)),
                                 color = .data$ggplot_color, group = .data$ggplot_group))
 
       }  # End forecast horizon of 1.
@@ -366,7 +391,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
 
         #----------------------------------------------------------------------------------
         # If the plotting data.frame has both lower and upper forecasts, plot these bounds.
-        if (all(any(grepl("_pred_lower", names(data_forecast))), any(grepl("_pred_upper", names(data_forecast))))) {
+        if (all(length(outcome_name_pred_lower) > 0, length(outcome_name_pred_upper) > 0)) {
 
           # For geom_ribbon(), rows need to be added to the plotting dataset to remove gaps in the colored
           # ribbons so that they touch each other when changing from one model forecast horizon to the next.
@@ -382,12 +407,29 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
 
             data_fill <- dplyr::bind_rows(data_forecast, data_fill)
 
-            p <- p + geom_ribbon(data = data_fill,
-                                 aes(x = .data$index, ymin = eval(parse(text = paste0(outcome_name, "_pred_lower"))),
-                                     ymax = eval(parse(text = paste0(outcome_name, "_pred_upper"))),
-                                     color = ordered(.data$model_forecast_horizon),
-                                     fill = ordered(.data$model_forecast_horizon)),
-                                 linetype = 0, alpha = .25, show.legend = FALSE)
+            data_fill_lower <- data_fill[, names(data_fill)[!names(data_fill) %in% outcome_name_pred_upper]]
+            data_fill_upper <- data_fill[, names(data_fill)[!names(data_fill) %in% outcome_name_pred_lower]]
+
+            data_fill_lower <- tidyr::pivot_longer(data_fill_lower, cols = outcome_name_pred_lower, names_to = ".interval", values_to = ".lower")
+            data_fill_upper <- tidyr::pivot_longer(data_fill_upper, cols = rev((outcome_name_pred_upper)), names_to = ".interval", values_to = ".upper")
+
+            data_fill <- data_fill_lower
+            data_fill$.upper <- data_fill_upper$.upper
+
+            if (!is.null(prediction_intervals)) {
+
+              data_fill$prediction_intervals <- factor(data_fill$.interval, levels = unique(data_fill$.interval), labels = rev(prediction_intervals), ordered = TRUE)
+
+              p <- p + geom_ribbon(data = data_fill, aes(x = .data$index, ymin = .data$.lower, ymax = .data$.upper,
+                                                         fill = .data$prediction_intervals), linetype = 0, show.legend = TRUE)
+
+            } else {
+
+              p <- p + geom_ribbon(data = data_fill,
+                                   aes(x = .data$index, ymin = .data$.lower, ymax = .data$.upper,
+                                       fill = ordered(.data$model_forecast_horizon)),
+                                   linetype = 0, alpha = .25, show.legend = FALSE)
+            }
 
           } else {  # Grouped time series.
 
@@ -401,8 +443,8 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
             data_fill <- dplyr::bind_rows(data_forecast, data_fill)
 
             p <- p + geom_ribbon(data = data_fill,
-                                 aes(x = .data$index, ymin = eval(parse(text = paste0(outcome_name, "_pred_lower"))),
-                                     ymax = eval(parse(text = paste0(outcome_name, "_pred_upper"))),
+                                 aes(x = .data$index, ymin = eval(parse(text = outcome_name_pred_lower)),
+                                     ymax = eval(parse(text = outcome_name_pred_upper)),
                                      color = .data$ggplot_group,
                                      fill = .data$ggplot_group),
                                  linetype = 0, alpha = .25, show.legend = FALSE)
@@ -412,22 +454,43 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
 
         if (is.null(groups)) {  # Single time series.
 
-          p <- p + geom_line(data = data_forecast,
-                             aes(x = .data$index, y = eval(parse(text = paste0(outcome_name, "_pred"))),
-                                 color = ordered(.data$model_forecast_horizon), group = .data$ggplot_group))
+          if (is.null(prediction_intervals)) {
 
-          p <- p + geom_point(data = data_forecast,
-                              aes(x = .data$index, y = eval(parse(text = paste0(outcome_name, "_pred"))),
-                                  color = ordered(.data$model_forecast_horizon), group = .data$ggplot_group), color = "black")
+            p <- p + geom_line(data = data_forecast,
+                               aes(x = .data$index, y = eval(parse(text = outcome_name_pred)),
+                                   color = ordered(.data$model_forecast_horizon), group = .data$ggplot_group))
+
+            p <- p + geom_point(data = data_forecast,
+                                aes(x = .data$index, y = eval(parse(text = outcome_name_pred)),
+                                    color = ordered(.data$model_forecast_horizon), group = .data$ggplot_group), color = "black")
+
+          } else {
+
+            p <- p + geom_line(data = data_forecast,
+                               aes(x = .data$index, y = eval(parse(text = outcome_name_pred)),
+                                   group = .data$ggplot_group), size = 1.2, color = "white", show.legend = FALSE)
+
+            p <- p + geom_line(data = data_forecast,
+                               aes(x = .data$index, y = eval(parse(text = outcome_name_pred)),
+                               group = .data$ggplot_group), color = "black", show.legend = FALSE)
+
+            p <- p + geom_point(data = data_forecast,
+                                aes(x = .data$index, y = eval(parse(text = outcome_name_pred)),
+                                    group = .data$ggplot_group), size = 3, color = "white", show.legend = FALSE)
+
+            p <- p + geom_point(data = data_forecast,
+                                aes(x = .data$index, y = eval(parse(text = outcome_name_pred)),
+                                    group = .data$ggplot_group), color = "black", show.legend = FALSE)
+          }
 
         } else {  # Grouped time series.
 
           p <- p + geom_line(data = data_forecast,
-                             aes(x = .data$index, y = eval(parse(text = paste0(outcome_name, "_pred"))),
+                             aes(x = .data$index, y = eval(parse(text = outcome_name_pred)),
                                  color = .data$ggplot_color, group = .data$ggplot_group))
 
           p <- p + geom_point(data = data_forecast,
-                              aes(x = .data$index, y = eval(parse(text = paste0(outcome_name, "_pred"))),
+                              aes(x = .data$index, y = eval(parse(text = outcome_name_pred)),
                                   color = .data$ggplot_color, group = .data$ggplot_group))
         }
       }  # End plot forecasts for model forecast horizons > 1.
@@ -571,7 +634,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
 
         # Standardize names for plotting and before any concatenation with data_actual.
         names(data_plot)[names(data_plot) == "forecast_period"] <- "index"
-        names(data_plot)[names(data_plot) == paste0(outcome_name, "_pred")] <- "outcome"
+        names(data_plot)[names(data_plot) == outcome_name_pred] <- "outcome"
         data_plot$value <- 1
         data_plot$actual_or_forecast <- "forecast"
         data_plot$time_series_type <- "model_forecast"
@@ -615,9 +678,18 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
 
   if (is.null(outcome_levels)) {  # Numeric outcome.
 
-    p <- p + xlab("Dataset index") + ylab("Outcome") +
-      labs(color = x_axis_title, fill = NULL) +
-      ggtitle("H-Step-Ahead Model Forecasts")
+    if (is.null(prediction_intervals)) {
+
+      p <- p + xlab("Dataset index") + ylab("Outcome") +
+        labs(color = x_axis_title, fill = NULL) +
+        ggtitle("H-Step-Ahead Model Forecasts")
+
+    } else {
+
+      p <- p + xlab("Dataset index") + ylab("Outcome") +
+        labs(color = x_axis_title, fill = "Level") +
+        ggtitle("H-Step-Ahead Model Forecasts")
+    }
 
   } else {  # Factor ouctome.
 

@@ -38,39 +38,47 @@ User-contributed notebooks welcome!
 
 ## Lightning Example
 
+* Requires `packageVersion("forecastML")` >= v0.9.1
+
 ``` r
-library(forecastML)
 library(glmnet)
+library(forecastML)
 
 data("data_seatbelts", package = "forecastML")
 
 data_train <- forecastML::create_lagged_df(data_seatbelts, type = "train", method = "direct",
-                                           outcome_col = 1, lookback = 1:15, horizon = 1:12)
+                                           outcome_col = 1, lookback = 1:15, horizons = 1:12)
 
 windows <- forecastML::create_windows(data_train, window_length = 0)
 
-model_fun <- function(data) {
+model_fn <- function(data) {
   x <- as.matrix(data[, -1, drop = FALSE])
   y <- as.matrix(data[, 1, drop = FALSE])
   model <- glmnet::cv.glmnet(x, y)
 }
 
-model_results <- forecastML::train_model(data_train, windows, model_name = "LASSO", model_function = model_fun)
+model_results <- forecastML::train_model(data_train, windows, model_name = "LASSO", model_function = model_fn)
 
-prediction_fun <- function(model, data_features) {
-  data_pred <- data.frame("y_pred" = predict(model, as.matrix(data_features)),
-                          "y_pred_lower" = predict(model, as.matrix(data_features)) - 30,
-                          "y_pred_upper" = predict(model, as.matrix(data_features)) + 30)
+predict_fn <- function(model, data) {
+  data_pred <- as.data.frame(predict(model, as.matrix(data)))
 }
 
-data_forecast <- forecastML::create_lagged_df(data_seatbelts, type = "forecast", method = "direct",
-                                              outcome_col = 1, lookback = 1:15, horizon = 1:12)
+data_fit <- predict(model_results, prediction_function = list(predict_fn), data = data_train)
 
-data_forecasts <- predict(model_results, prediction_function = list(prediction_fun), data = data_forecast)
+residuals <- residuals(data_fit)
+
+data_forecast <- forecastML::create_lagged_df(data_seatbelts, type = "forecast", method = "direct",
+                                              outcome_col = 1, lookback = 1:15, horizons = 1:12)
+
+data_forecasts <- predict(model_results, prediction_function = list(predict_fn), data = data_forecast)
 
 data_forecasts <- forecastML::combine_forecasts(data_forecasts)
 
-plot(data_forecasts, data_actual = data_seatbelts[-(1:100), ], actual_indices = (1:nrow(data_seatbelts))[-(1:100)])
+set.seed(224)
+data_forecasts <- forecastML::calculate_intervals(data_forecasts, residuals, 
+                                                  levels = seq(.5, .95, .05), times = 200)
+
+plot(data_forecasts, data_seatbelts[-(1:160), ], (1:nrow(data_seatbelts))[-(1:160)])
 ```
 ![](./tools/lightning_example.png)
 

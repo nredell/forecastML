@@ -32,6 +32,7 @@ Collate:
     'return_hyper.R'
     'train_model.R'
     'reconcile_forecasts.R'
+    'calculate_intervals.R'
     'data_seatbelts.R'
     'data_buoy.R'
     'data_buoy_gaps.R'
