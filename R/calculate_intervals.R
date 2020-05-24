@@ -1,6 +1,6 @@
 #' Calculate bootstrap prediction intervals for forecasts
 #'
-#' The residuals from model training/fit are sampled i.i.d for (a) each direct forecast
+#' The residuals from model training/fit are sampled i.i.d. for (a) each direct forecast
 #' horizon for a single time series and (b) each combination of direct forecast horizon and
 #' group for multiple time series.
 #'
@@ -17,7 +17,7 @@
 #' return the 0.25 and .975 quantiles of the bootstrapped forecast distribution at each forecast horizon.
 #' @param times Integer. The number of bootstrap samples.
 #' @param weights Not implemented.
-#' @keep_samples Boolean. If \code{TRUE}, a data.frame of \code{times} bootstrapped forecasts is returned
+#' @param keep_samples Boolean. If \code{TRUE}, a data.frame of \code{times} bootstrapped forecasts is returned
 #' in addition to the calculated forecast prediction intervals. The samples are in the list slot named 'samples'.
 #' @return If \code{forecasts} is an object of class 'forecast_results', a \code{forecast_results} object
 #' with a new column for each lower- and upper-bound forecast in \code{levels}. If \code{forecasts} is a
@@ -30,13 +30,13 @@ calculate_intervals <- function(forecasts, residuals, index, outcome, keys = NUL
                                 levels = c(.95), times = 100L, weights = NULL, keep_samples = FALSE) {
 
   #----------------------------------------------------------------------------
-  outcome_levels <- attributes(forecasts)$outcome_levels
-
-  if (!is.null(outcome_levels)) {
-    stop("Bootstrap prediction intervals are not currently available for factor outcomes.")
-  }
-
   if (methods::is(forecasts, "forecast_results")) {
+
+    outcome_levels <- attributes(forecasts)$outcome_levels
+
+    if (!is.null(outcome_levels)) {
+      stop("Bootstrap prediction intervals are not currently available for factor outcomes.")
+    }
 
     names(forecasts)[names(forecasts) == "forecast_period"] <- "index"
 
