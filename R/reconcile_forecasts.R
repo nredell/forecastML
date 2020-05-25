@@ -185,12 +185,12 @@ reconcile_forecasts <- function(forecasts, frequency, index, outcome, method, ke
   #----------------------------------------------------------------------------
   # Remove and store any higher frequency forecasts that don't fall within the start
   # and stop dates of the lowest frequency forecast which are the reconciliation bookends
-  # so to speak. These out-of-bounds forecasts will be returned but will not be reconciled.
+  # so to speak. These out-of-bounds forecasts can be returned but will not be reconciled.
   forecasts_out_of_bounds <- vector("list", n_forecasts)
-  for (i in seq_along(n_forecasts)) {
+  for (i in seq_len(n_forecasts)) {
 
     early_forecasts <- which(forecasts[[i]][, index, drop = TRUE] < min(index_lf_start))
-    late_forecasts <- which(forecasts[[i]][, index, drop = TRUE] > max(index_lf_stop))
+    late_forecasts <- which(forecasts[[i]][, index, drop = TRUE] >= max(index_lf_stop))
 
     forecasts_out_of_bounds[[i]] <- forecasts[[i]][c(early_forecasts, late_forecasts), ]  # Keep the unreconcilable forecasts.
 
@@ -223,7 +223,7 @@ reconcile_forecasts <- function(forecasts, frequency, index, outcome, method, ke
   # To-do: Expand to check intermediate levels of the hierarchy.
   n_forecasts_missing_at_start <- length(seq(index_lf_start[1], index_hf[1], by = frequency[1])) - 1
 
-  n_forecasts_missing_at_end <- length(seq(max(forecasts[[i]][, index, drop = TRUE]), max(index_stop) - 1, by = frequency[1])) - 1
+  n_forecasts_missing_at_end <- length(seq(max(forecasts[[1]][, index, drop = TRUE]), max(index_stop) - 1, by = frequency[1])) - 1
 
   if (any(c(n_forecasts_missing_at_start > 0, n_forecasts_missing_at_end > 0))) {
     stop(paste0("For the '", frequency[1], "' forecast, ", n_forecasts_missing_at_start, " forecasts were missing at the start of the forecast date range and ", n_forecasts_missing_at_end,  " forecasts were missing at the end of the forecast date range.
