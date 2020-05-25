@@ -50,7 +50,16 @@ calculate_intervals <- function(forecasts, residuals, index = NULL, outcome = NU
 
     groups <- attributes(data_residuals)$groups
 
-    keys <- c(groups, "model_forecast_horizon")
+    if (any(unique(forecasts$model) %in% unique(residuals$model))) {
+
+      keys <- c("model", groups, "model_forecast_horizon")
+
+    } else {
+
+      keys <- c(groups, "model_forecast_horizon")
+
+      data_residuals$model <- NULL
+    }
   }
   #----------------------------------------------------------------------------
   if (is.vector(data_residuals)) {

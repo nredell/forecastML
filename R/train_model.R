@@ -608,18 +608,31 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 # Residuals method.
+residuals <- function (x, ...) {
+  UseMethod("residuals", x)
+}
+
 residuals.training_results <- function(training_results) {
 
   outcome_name <- attributes(training_results)$outcome_name
   prediction_name <- paste0(outcome_name, "_pred")
   outcome_levels <- attributes(training_results)$outcome_levels
   groups <- attributes(training_results)$groups
+  has_dates <- !is.null(attributes(training_results)$frequency)
 
   if (is.null(outcome_levels)) {  # Numeric outcomes.
 
     training_results$residuals <- training_results[, outcome_name] - training_results[, prediction_name]
 
-    training_results <- training_results[, c(groups, "model_forecast_horizon", "valid_indices", "residuals")]
+    if (has_dates) {
+
+      training_results <- training_results[, c("model", groups, "model_forecast_horizon", "date_indices", "residuals")]
+
+    } else {
+
+      training_results <- training_results[, c("model", groups, "model_forecast_horizon", "valid_indices", "residuals")]
+
+    }
   }
   #----------------------------------------------------------------------------
   # For factor outcomes, is the prediction a factor level or probability?
@@ -633,7 +646,15 @@ residuals.training_results <- function(training_results) {
       # Binary accuracy/residual. A residual of 1 is an incorrect classification.
       training_results$residuals <- ifelse(as.character(training_results[, outcome_name, drop = TRUE]) != as.character(training_results[, paste0(outcome_name, "_pred"), drop = TRUE]), 1, 0)
 
-      training_results <- training_results[, c(groups, "model_forecast_horizon", "valid_indices", "residuals")]
+      if (has_dates) {
+
+        training_results <- training_results[, c("model", groups, "model_forecast_horizon", "date_indices", "residuals")]
+
+      } else {
+
+        training_results <- training_results[, c("model", groups, "model_forecast_horizon", "valid_indices", "residuals")]
+
+      }
     }
 
     if (factor_prob) {
@@ -647,10 +668,26 @@ residuals.training_results <- function(training_results) {
 
       names(training_results)[outcome_col:ncol(training_results)] <- paste0(names(training_results[, outcome_col:ncol(training_results)]), "_residuals")
 
-      training_results <- training_results[, c(groups, "model_forecast_horizon", "valid_indices", names(training_results)[outcome_col:ncol(training_results)])]
+      if (has_dates) {
+
+        training_results <- training_results[, c("model", groups, "model_forecast_horizon", "date_indices", names(training_results)[outcome_col:ncol(training_results)])]
+
+      } else {
+
+        training_results <- training_results[, c("model", groups, "model_forecast_horizon", "valid_indices", names(training_results)[outcome_col:ncol(training_results)])]
+
+      }
     }
   }
-  names(training_results)[names(training_results) == "valid_indices"] <- "index"
+
+  if (has_dates) {
+
+    names(training_results)[names(training_results) == "date_indices"] <- "index"
+
+  } else {
+
+    names(training_results)[names(training_results) == "valid_indices"] <- "index"
+  }
 
   attr(training_results, "groups") <- groups
 
