@@ -608,11 +608,6 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 # Residuals method.
-
-residuals <- function (x, ...) {
-  UseMethod("residuals", x)
-}
-
 residuals.training_results <- function(training_results) {
 
   outcome_name <- attributes(training_results)$outcome_name
@@ -656,6 +651,8 @@ residuals.training_results <- function(training_results) {
     }
   }
   names(training_results)[names(training_results) == "valid_indices"] <- "index"
+
+  attr(training_results, "groups") <- groups
 
   return(training_results)
 }

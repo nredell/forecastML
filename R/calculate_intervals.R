@@ -26,8 +26,10 @@
 #'
 #' @example /R/examples/example_calculate_intervals.R
 #' @export
-calculate_intervals <- function(forecasts, residuals, index, outcome, keys = NULL,
+calculate_intervals <- function(forecasts, residuals, index = NULL, outcome = NULL, keys = NULL,
                                 levels = c(.95), times = 100L, weights = NULL, keep_samples = FALSE) {
+
+  data_residuals <- residuals
 
   #----------------------------------------------------------------------------
   if (methods::is(forecasts, "forecast_results")) {
@@ -44,58 +46,60 @@ calculate_intervals <- function(forecasts, residuals, index, outcome, keys = NUL
     outcome <- paste0(attributes(forecasts)$outcome_name, "_pred")
   }
 
-  if (methods::is(residuals, "training_results")) {
+  if (methods::is(data_residuals, "training_results")) {
 
-    groups <- attributes(residuals)$groups
+    groups <- attributes(data_residuals)$groups
 
     keys <- c(groups, "model_forecast_horizon")
   }
   #----------------------------------------------------------------------------
-  if (is.vector(residuals)) {
+  if (is.vector(data_residuals)) {
 
-    residuals <- data.frame("residuals" = residuals)
+    data_residuals <- data.frame("residuals" = data_residuals)
 
   } else {
 
-    residuals_name <- names(residuals)[!names(residuals) %in% c(keys, index, outcome)]
+    residuals_name <- names(data_residuals)[!names(data_residuals) %in% c(keys, index, outcome)]
 
     if (length(residuals_name) > 1) {
       stop(paste0("There are extra columns in 'residuals' beyond 'index', 'outcome', 'keys', and the column of residuals.
-                  Enter (a) a vector of residuals or, if there are multiple time series, (b) a 2-column data.frame with keys and residuals."))
+                  Enter (a) a vector of residuals or, if there are multiple time series, (b) a data.frame with only keys and residuals."))
     }
 
-    names(residuals)[names(residuals) == residuals_name] <- "residuals"
+    names(data_residuals)[which(names(data_residuals) == residuals_name)] <- "residuals"
   }
   #----------------------------------------------------------------------------
   if (!is.null(keys)) {
 
     forecasts_merge <- forecasts %>%
+      dplyr::filter(!is.na(!!outcome)) %>%
       dplyr::group_by(!!!rlang::syms(keys)) %>%
       dplyr::mutate(".n_samples" = dplyr::n(),
                     ".sample" = 1:dplyr::n())
 
-    residuals <- dplyr::left_join(residuals, forecasts_merge[, c(keys, ".n_samples")], by = keys)
+    data_residuals <- dplyr::left_join(data_residuals, forecasts_merge[, c(keys, ".n_samples")], by = keys)
   }
   #----------------------------------------------------------------------------
   forecast_sim <- lapply(seq_len(times), function(i) {
 
     if (!is.null(keys)) {
 
-      residuals <- residuals %>%
+      data_residuals <- data_residuals %>%
+        dplyr::filter(!is.na(residuals)) %>%
         dplyr::group_by(!!!rlang::syms(keys)) %>%
         dplyr::group_modify(.f = function(., ...) {
           data.frame("residuals" = base::sample(.$residuals, .$.n_samples, replace = TRUE))
         }, keep = TRUE) %>%
         dplyr::mutate(".sample" = 1:dplyr::n())
 
-      forecasts <- dplyr::left_join(forecasts_merge, residuals, by = c(keys, ".sample"))
+      forecasts <- dplyr::left_join(forecasts_merge, data_residuals, by = c(keys, ".sample"))
 
       forecasts$.n_samples <- NULL
       forecasts$.sample <- NULL
 
     } else {
 
-      forecasts$residuals <- base::sample(residuals$residuals, nrow(forecasts), replace = TRUE)
+      forecasts$residuals <- base::sample(data_residuals$residuals[!is.na(data_residuals$residuals)], nrow(forecasts), replace = TRUE)
     }
 
     forecasts[, outcome] <- forecasts[, outcome] + forecasts[, "residuals"]

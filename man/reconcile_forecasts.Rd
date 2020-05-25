@@ -76,7 +76,7 @@ Optimal combination forecasts for hierarchical time series. Computational statis
 
 \examples{
 #------------------------------------------------------------------------------
-# Example 1: 2 forecasts, daily/monthly, 2 forecast periods at the most aggregated level.
+# Example 1: 2 forecasts, daily/monthly, 2 forecast periods at highest aggregation.
 freq <- c("1 day", "1 month")
 
 data_1_day <- data.frame("index" = seq(as.Date("2020-1-1"), as.Date("2020-2-29"), by = freq[1]),
@@ -89,7 +89,7 @@ forecasts_reconciled <- reconcile_forecasts(list(data_1_day, data_1_month), freq
                                             index = "index", outcome = "forecast",
                                             method = "temporal")
 #------------------------------------------------------------------------------
-# Example 2: 3 forecasts, monthly/4-monthly/annually, 1 forecast period at the most aggregated level.
+# Example 2: 3 forecasts, monthly/4-monthly/annually, 1 forecast period at highest aggregation.
 freq <- c("1 month", "4 months", "1 year")
 
 data_1_month <- data.frame("index" = seq(as.Date("2020-1-1"), as.Date("2020-12-1"), by = freq[1]),
@@ -105,7 +105,7 @@ forecasts_reconciled <- reconcile_forecasts(list(data_1_month, data_4_months, da
                                             index = "index", outcome = "forecast",
                                             method = "temporal")
 #------------------------------------------------------------------------------
-# Example 3: 2 forecasts, weekly/monthly, 2 forecast periods at the most aggregated level.
+# Example 3: 2 forecasts, weekly/monthly, 2 forecast periods at highest aggregation.
 freq <- c("1 week", "1 month")
 
 data_1_week <- data.frame("index" = seq(as.Date("2020-1-1"), as.Date("2020-3-1"), by = freq[1]),
@@ -118,7 +118,7 @@ forecasts_reconciled <- reconcile_forecasts(list(data_1_week, data_1_month), fre
                                             index = "index", outcome = "forecast",
                                             method = "temporal")
 #------------------------------------------------------------------------------
-# Example 4: 2 forecasts, hourly/daily, 3 forecast periods at the most aggregated level.
+# Example 4: 2 forecasts, hourly/daily, 3 forecast periods at highest aggregation.
 freq <- c("1 hour", "1 day")
 timezone <- "UTC"
 

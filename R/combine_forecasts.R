@@ -442,12 +442,39 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
 
             data_fill <- dplyr::bind_rows(data_forecast, data_fill)
 
-            p <- p + geom_ribbon(data = data_fill,
-                                 aes(x = .data$index, ymin = eval(parse(text = outcome_name_pred_lower)),
-                                     ymax = eval(parse(text = outcome_name_pred_upper)),
-                                     color = .data$ggplot_group,
-                                     fill = .data$ggplot_group),
-                                 linetype = 0, alpha = .25, show.legend = FALSE)
+            data_fill_lower <- data_fill[, names(data_fill)[!names(data_fill) %in% outcome_name_pred_upper]]
+            data_fill_upper <- data_fill[, names(data_fill)[!names(data_fill) %in% outcome_name_pred_lower]]
+
+            data_fill_lower <- tidyr::pivot_longer(data_fill_lower, cols = outcome_name_pred_lower, names_to = ".interval", values_to = ".lower")
+            data_fill_upper <- tidyr::pivot_longer(data_fill_upper, cols = rev((outcome_name_pred_upper)), names_to = ".interval", values_to = ".upper")
+
+            data_fill <- data_fill_lower
+            data_fill$.upper <- data_fill_upper$.upper
+
+            if (!is.null(prediction_intervals)) {
+
+              data_fill$prediction_intervals <- as.numeric(as.character(factor(data_fill$.interval, levels = unique(data_fill$.interval), labels = rev(prediction_intervals), ordered = TRUE)))
+
+              for (i in seq_along(prediction_intervals)) {
+
+                p <- p + geom_ribbon(data = data_fill[data_fill$prediction_intervals == prediction_intervals[i], ],
+                                     aes(x = .data$index, ymin = .data$.lower,
+                                         ymax = .data$.upper,
+                                         color = .data$ggplot_group,
+                                         fill = .data$ggplot_group),
+                                     alpha = .25,
+                                     linetype = 0, show.legend = FALSE)
+              }
+
+            } else {
+
+              p <- p + geom_ribbon(data = data_fill,
+                                   aes(x = .data$index, ymin = .data$.lower,
+                                       ymax = .data$.upper,
+                                       color = .data$ggplot_group,
+                                       fill = .data$ggplot_group),
+                                   linetype = 0, alpha = .25, show.legend = FALSE)
+            }
           }
         }  # End plotting lower and upper forecast bounds.
         #----------------------------------------------------------------------
@@ -487,7 +514,15 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
 
           p <- p + geom_line(data = data_forecast,
                              aes(x = .data$index, y = eval(parse(text = outcome_name_pred)),
+                                 group = .data$ggplot_color), size = 1.2, color = "white", show.legend = FALSE)
+
+          p <- p + geom_line(data = data_forecast,
+                             aes(x = .data$index, y = eval(parse(text = outcome_name_pred)),
                                  color = .data$ggplot_color, group = .data$ggplot_group))
+
+          p <- p + geom_point(data = data_forecast,
+                              aes(x = .data$index, y = eval(parse(text = outcome_name_pred)),
+                                  group = .data$ggplot_color), size = 3, color = "white", show.legend = FALSE)
 
           p <- p + geom_point(data = data_forecast,
                               aes(x = .data$index, y = eval(parse(text = outcome_name_pred)),
