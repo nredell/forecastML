@@ -622,23 +622,23 @@ residuals <- function (object, ...) {
 #' @export
 residuals.training_results <- function(object, ...) {
 
-  outcome_name <- attributes(training_results)$outcome_name
+  outcome_name <- attributes(object)$outcome_name
   prediction_name <- paste0(outcome_name, "_pred")
-  outcome_levels <- attributes(training_results)$outcome_levels
-  groups <- attributes(training_results)$groups
-  has_dates <- !is.null(attributes(training_results)$frequency)
+  outcome_levels <- attributes(object)$outcome_levels
+  groups <- attributes(object)$groups
+  has_dates <- !is.null(attributes(object)$frequency)
 
   if (is.null(outcome_levels)) {  # Numeric outcomes.
 
-    training_results$residuals <- training_results[, outcome_name] - training_results[, prediction_name]
+    object$residuals <- object[, outcome_name] - object[, prediction_name]
 
     if (has_dates) {
 
-      training_results <- training_results[, c("model", groups, "model_forecast_horizon", "date_indices", "residuals")]
+      object <- object[, c("model", groups, "model_forecast_horizon", "date_indices", "residuals")]
 
     } else {
 
-      training_results <- training_results[, c("model", groups, "model_forecast_horizon", "valid_indices", "residuals")]
+      object <- object[, c("model", groups, "model_forecast_horizon", "valid_indices", "residuals")]
 
     }
   }
@@ -646,43 +646,43 @@ residuals.training_results <- function(object, ...) {
   # For factor outcomes, is the prediction a factor level or probability?
   if (!is.null(outcome_levels)) {
 
-    factor_level <- if (any(names(training_results) %in% paste0(outcome_name, "_pred"))) {TRUE} else {FALSE}
+    factor_level <- if (any(names(object) %in% paste0(outcome_name, "_pred"))) {TRUE} else {FALSE}
     factor_prob <- !factor_level
 
     if (factor_level) {
 
       # Binary accuracy/residual. A residual of 1 is an incorrect classification.
-      training_results$residuals <- ifelse(as.character(training_results[, outcome_name, drop = TRUE]) != as.character(training_results[, paste0(outcome_name, "_pred"), drop = TRUE]), 1, 0)
+      object$residuals <- ifelse(as.character(object[, outcome_name, drop = TRUE]) != as.character(object[, paste0(outcome_name, "_pred"), drop = TRUE]), 1, 0)
 
       if (has_dates) {
 
-        training_results <- training_results[, c("model", groups, "model_forecast_horizon", "date_indices", "residuals")]
+        object <- object[, c("model", groups, "model_forecast_horizon", "date_indices", "residuals")]
 
       } else {
 
-        training_results <- training_results[, c("model", groups, "model_forecast_horizon", "valid_indices", "residuals")]
+        object <- object[, c("model", groups, "model_forecast_horizon", "valid_indices", "residuals")]
 
       }
     }
 
     if (factor_prob) {
 
-      outcome_col <- which(names(training_results) == outcome_name) + 1
+      outcome_col <- which(names(object) == outcome_name) + 1
 
-      training_results[, outcome_col:ncol(training_results)][] <- lapply(training_results[, outcome_col:ncol(training_results)], function(x) {
+      object[, outcome_col:ncol(object)][] <- lapply(object[, outcome_col:ncol(object)], function(x) {
 
         residuals <- 1 - x
       })
 
-      names(training_results)[outcome_col:ncol(training_results)] <- paste0(names(training_results[, outcome_col:ncol(training_results)]), "_residuals")
+      names(object)[outcome_col:ncol(object)] <- paste0(names(object[, outcome_col:ncol(object)]), "_residuals")
 
       if (has_dates) {
 
-        training_results <- training_results[, c("model", groups, "model_forecast_horizon", "date_indices", names(training_results)[outcome_col:ncol(training_results)])]
+        object <- object[, c("model", groups, "model_forecast_horizon", "date_indices", names(object)[outcome_col:ncol(object)])]
 
       } else {
 
-        training_results <- training_results[, c("model", groups, "model_forecast_horizon", "valid_indices", names(training_results)[outcome_col:ncol(training_results)])]
+        object <- object[, c("model", groups, "model_forecast_horizon", "valid_indices", names(object)[outcome_col:ncol(object)])]
 
       }
     }
@@ -690,17 +690,17 @@ residuals.training_results <- function(object, ...) {
 
   if (has_dates) {
 
-    names(training_results)[names(training_results) == "date_indices"] <- "index"
+    names(object)[names(object) == "date_indices"] <- "index"
 
   } else {
 
-    names(training_results)[names(training_results) == "valid_indices"] <- "index"
+    names(object)[names(object) == "valid_indices"] <- "index"
   }
 
-  attr(training_results, "groups") <- groups
-  class(training_results) <- c("training_residuals", "data.frame")
+  attr(object, "groups") <- groups
+  class(object) <- c("training_residuals", "data.frame")
 
-  return(training_results)
+  return(object)
 }
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
