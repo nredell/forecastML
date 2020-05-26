@@ -611,15 +611,16 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 
 #' Return model residuals
 #'
-#' @param x An object of class 'training_results' from running \code{predict()} on a training dataset.
+#' @param object An object of class 'training_results' from running \code{predict()} on a training dataset.
 #' @param ... Not used.
 #' @return A data.frame of model residuals of class 'training_residuals'.
 #' @export
-residuals <- function (x, ...) {
-  UseMethod("residuals", x)
+residuals <- function (object, ...) {
+  UseMethod("residuals", object)
 }
 
-residuals.training_results <- function(training_results) {
+#' @export
+residuals.training_results <- function(object, ...) {
 
   outcome_name <- attributes(training_results)$outcome_name
   prediction_name <- paste0(outcome_name, "_pred")

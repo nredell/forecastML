@@ -4,10 +4,10 @@
 \alias{residuals}
 \title{Return model residuals}
 \usage{
-residuals(x, ...)
+residuals(object, ...)
 }
 \arguments{
-\item{x}{An object of class 'training_results' from running \code{predict()} on a training dataset.}
+\item{object}{An object of class 'training_results' from running \code{predict()} on a training dataset.}
 
 \item{...}{Not used.}
 }
