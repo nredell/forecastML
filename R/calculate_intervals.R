@@ -50,7 +50,7 @@ calculate_intervals <- function(forecasts, residuals, index = NULL, outcome = NU
 
     groups <- attributes(data_residuals)$groups
 
-    if (any(unique(forecasts$model) %in% unique(residuals$model))) {
+    if (any(unique(forecasts$model) %in% unique(data_residuals$model))) {
 
       keys <- c("model", groups, "model_forecast_horizon")
 
@@ -87,6 +87,10 @@ calculate_intervals <- function(forecasts, residuals, index = NULL, outcome = NU
                     ".sample" = 1:dplyr::n())
 
     data_residuals <- dplyr::left_join(data_residuals, forecasts_merge[, c(keys, ".n_samples")], by = keys)
+
+    data_residuals <- data_residuals %>%
+      dplyr::filter(!is.na(.n_samples)) %>%
+      dplyr::filter(!is.na(residuals))
   }
   #----------------------------------------------------------------------------
   forecast_sim <- lapply(seq_len(times), function(i) {
@@ -94,7 +98,6 @@ calculate_intervals <- function(forecasts, residuals, index = NULL, outcome = NU
     if (!is.null(keys)) {
 
       data_residuals <- data_residuals %>%
-        dplyr::filter(!is.na(residuals)) %>%
         dplyr::group_by(!!!rlang::syms(keys)) %>%
         dplyr::group_modify(.f = function(., ...) {
           data.frame("residuals" = base::sample(.$residuals, .$.n_samples, replace = TRUE))
