@@ -46,7 +46,7 @@ calculate_intervals <- function(forecasts, residuals, index = NULL, outcome = NU
     outcome <- paste0(attributes(forecasts)$outcome_name, "_pred")
   }
 
-  if (methods::is(data_residuals, "training_results")) {
+  if (methods::is(data_residuals, "training_residuals")) {
 
     groups <- attributes(data_residuals)$groups
 

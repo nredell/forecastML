@@ -608,6 +608,13 @@ predict.forecast_model <- function(..., prediction_function = list(NULL), data) 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 # Residuals method.
+
+#' Return model residuals
+#'
+#' @param x An object of class 'training_results' from running \code{predict()} on a training dataset.
+#' @param ... Not used.
+#' @return A data.frame of model residuals of class 'training_residuals'.
+#' @export
 residuals <- function (x, ...) {
   UseMethod("residuals", x)
 }
@@ -690,6 +697,7 @@ residuals.training_results <- function(training_results) {
   }
 
   attr(training_results, "groups") <- groups
+  class(training_results) <- c("training_residuals", "data.frame")
 
   return(training_results)
 }
