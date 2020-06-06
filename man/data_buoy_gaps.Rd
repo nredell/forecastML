@@ -4,7 +4,8 @@
 \name{data_buoy_gaps}
 \alias{data_buoy_gaps}
 \title{NOAA buoy weather data}
-\format{A data.frame with 23,646 rows and 9 columns:
+\format{
+A data.frame with 23,646 rows and 9 columns:
 \describe{
   \item{date}{date}
   \item{wind_spd}{average daily wind speed in kts}
@@ -15,7 +16,8 @@
   \item{year}{calendar year}
   \item{air_temperature}{air temperature in degrees Fahrenheit}
   \item{sea_surface_temperature}{water temperature in degrees Fahrenheit}
-}}
+}
+}
 \source{
 \url{http://www.ndbc.noaa.gov/}
 }

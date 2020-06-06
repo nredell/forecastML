@@ -9,6 +9,7 @@ reconcile_forecasts(
   frequency,
   index,
   outcome,
+  keys = NULL,
   method,
   keep_all = TRUE,
   keep_non_reconciled = FALSE
@@ -16,12 +17,9 @@ reconcile_forecasts(
 }
 \arguments{
 \item{forecasts}{A list of 2 or more dataframes with forecasts. Each dataframe must have
-a column named \code{index} of class \code{Date} or \code{POSIXt}. The column name of the
-forecast is defined in the \code{outcome} argument and must be the same across dataframes.
-Forecasts should be sorted from oldest (top) to newest (bottom). To produce correct forecast
-reconciliations, all forecasts at the lowest/disaggregated level should be present for all horizons
-contained in the forecasts with the higher levels of aggregation
-(e.g., 24 monthly forecasts for 2 annual forecasts or 21 daily forecasts for 3 weekly forecasts).}
+a date column named \code{index} of class \code{Date} or \code{POSIXt} and a forecast column named
+\code{outcome} of class \code{numeric}.
+Forecasts should be sorted from oldest (top) to newest (bottom).}
 
 \item{frequency}{A character vector of \code{length(forecasts)} that identifies the date/time frequency
 of the forecast. Each string should work with \code{base::seq.Date(..., by = "frequency")} or
@@ -31,34 +29,49 @@ of the forecast. Each string should work with \code{base::seq.Date(..., by = "fr
 
 \item{outcome}{A string giving the column name of the forecast which should be common across \code{forecasts}.}
 
-\item{method}{One of \code{c("temporal", "hierarchical", "cross_temporal")}.}
+\item{keys}{Optional. For forecast reconciliation across groups, a \code{unique()} vector of column names listing all of the keys that
+identify a distinct time series across the datasets in \code{forecasts}. If not specified, all columns that are not
+in \code{index} or \code{outcome} are treated as grouping keys for each dataset in \code{forecasts}.}
 
-\item{keep_all}{Boolean. If \code{TRUE}, reconciled forecasts at all levels are returned. If \code{FALSE},
-only the bottom-level or most disaggregated forecast is returned which can be manually aggregated as needed.}
+\item{method}{One of \code{c("temporal", "group")}. See the Implementation section for details.}
 
-\item{keep_non_reconciled}{Boolean. If \code{TRUE}, any additional higher frequency forecasts that fell outside of the
-date range of the lowest frequency forecast are returned with their same forecast value from \code{forecasts}.}
+\item{keep_all}{Boolean. For \code{method = "temporal"}. If \code{TRUE}, reconciled forecasts at all levels are returned.
+If \code{FALSE}, only the bottom-level or most disaggregated forecast is returned which can be manually aggregated as needed.}
+
+\item{keep_non_reconciled}{Boolean. For \code{method = "temporal"}. If \code{TRUE}, any additional higher frequency forecasts
+that fell outside of the date range of the lowest frequency forecast are returned with their same forecast value from \code{forecasts}.}
 }
 \value{
-A \code{data.frame} of reconciled forecasts at either (a) the most disaggregated level or (b) all levels given in \code{forecasts}.
+A \code{data.frame} of reconciled forecasts.
 }
 \description{
 The purpose of forecast reconciliation is to produce a single coherent forecast
 from multiple forecasts produced at (a) different time horizons (e.g., monthly and quarterly)
 and/or (b) different levels of aggregation (e.g., classroom, school, and school district).
 After forecast reconciliation, the bottom-level or most disaggregated forecast can simply
-be summed up to produce all higher-level forecasts. At present, only temporal forecasts
-are supported for a single time series.
+be summed up to produce all higher-level forecasts.
 }
 \section{Implementation}{
 
 
     \itemize{
-      \item \code{method = 'temporal'}: Forecasts are reconciled across forecast horizons.
-      }
+      \item \bold{method = 'temporal'}: Forecasts are reconciled across forecast horizons.
+        \itemize{
+          \item Structural scaling with weights from temporal hierarchies from Athanasopoulos et al. (2017).
+          \item To produce correct forecast reconciliations, all forecasts at the lowest/disaggregated
+          level should be present for all horizons contained in the forecasts with the higher levels of aggregation
+          (e.g., 24 monthly forecasts for 2 annual forecasts or 21 daily forecasts for 3 weekly forecasts).
+          }
 
-    \itemize{
-      \item \bold{Combination type}: Structural scaling with weights from temporal hierarchies Athanasopoulos et al. (2017).
+      \item \bold{method = 'group'}: Forecasts are reconciled across groups independently at each forecast horizon.
+        \itemize{
+          \item Structural scaling from Hyndman et al. (2011).
+          \item A key column is not needed for the forecast at the highest level of aggregation.
+          \item Having input forecasts at each level of aggregation is not a requirement.
+          For example, forecasts by nation, state, and city could be reconciled with only 2 input
+          forecasts: 1 for nation (highest aggregation) and 1 for the combination of nation by state by
+          city (lowest/no aggregation) without the 2 intermediate-level forecasts at the state and city levels.
+          }
       }
 }
 
@@ -76,7 +89,7 @@ Optimal combination forecasts for hierarchical time series. Computational statis
 
 \examples{
 #------------------------------------------------------------------------------
-# Example 1: 2 forecasts, daily/monthly, 2 forecast periods at highest aggregation.
+# Temporal example 1: 2 forecasts, daily/monthly, 2 forecast periods at highest aggregation.
 freq <- c("1 day", "1 month")
 
 data_1_day <- data.frame("index" = seq(as.Date("2020-1-1"), as.Date("2020-2-29"), by = freq[1]),
@@ -89,7 +102,7 @@ forecasts_reconciled <- reconcile_forecasts(list(data_1_day, data_1_month), freq
                                             index = "index", outcome = "forecast",
                                             method = "temporal")
 #------------------------------------------------------------------------------
-# Example 2: 3 forecasts, monthly/4-monthly/annually, 1 forecast period at highest aggregation.
+# Temporal example 2: 3 forecasts, monthly/4-monthly/annually, 1 forecast period at highest aggregation.
 freq <- c("1 month", "4 months", "1 year")
 
 data_1_month <- data.frame("index" = seq(as.Date("2020-1-1"), as.Date("2020-12-1"), by = freq[1]),
@@ -105,7 +118,7 @@ forecasts_reconciled <- reconcile_forecasts(list(data_1_month, data_4_months, da
                                             index = "index", outcome = "forecast",
                                             method = "temporal")
 #------------------------------------------------------------------------------
-# Example 3: 2 forecasts, weekly/monthly, 2 forecast periods at highest aggregation.
+# Temporal example 3: 2 forecasts, weekly/monthly, 2 forecast periods at highest aggregation.
 freq <- c("1 week", "1 month")
 
 data_1_week <- data.frame("index" = seq(as.Date("2020-1-1"), as.Date("2020-3-1"), by = freq[1]),
@@ -118,7 +131,7 @@ forecasts_reconciled <- reconcile_forecasts(list(data_1_week, data_1_month), fre
                                             index = "index", outcome = "forecast",
                                             method = "temporal")
 #------------------------------------------------------------------------------
-# Example 4: 2 forecasts, hourly/daily, 3 forecast periods at highest aggregation.
+# Temporal example 4: 2 forecasts, hourly/daily, 3 forecast periods at highest aggregation.
 freq <- c("1 hour", "1 day")
 timezone <- "UTC"
 
@@ -133,4 +146,50 @@ data_1_day <- data.frame("index" = seq(as.Date("2020-1-1"), as.Date("2020-1-3"),
 forecasts_reconciled <- reconcile_forecasts(list(data_1_hour, data_1_day), freq,
                                             index = "index", outcome = "forecast",
                                             method = "temporal")
+#------------------------------------------------------------------------------
+# Grouped example 1: 2 forecasts, completely nested/hierarchical.
+freq <- c("1 month")
+
+dates <- seq(as.Date("2020-1-1"), as.Date("2020-3-1"), by = freq)
+
+data_total <- data.frame("index" = dates,
+                         "forecast" = c(50, 100, 75))
+
+data_state <- data.frame("index" = rep(dates, 2),
+                         "state" = c(rep("IL", length(dates)), rep("WI", length(dates))),
+                         "forecast" = c(20, 60, 40, 25, 40, 50))
+
+forecasts <- list("total" = data_total, "state" = data_state)
+
+forecasts_reconciled <- reconcile_forecasts(forecasts, freq,
+                                            index = "index", outcome = "forecast",
+                                            method = "group")
+#------------------------------------------------------------------------------
+# Grouped example 2: 4 forecasts, non-nested.
+freq <- c("1 month")
+
+dates <- seq(as.Date("2020-1-1"), as.Date("2020-3-1"), by = freq)
+
+data_total <- data.frame("index" = dates,
+                         "forecast" = c(50, 100, 75))
+
+data_state <- data.frame("index" = rep(dates, 2),
+                         "state" = c(rep("IL", length(dates)), rep("WI", length(dates))),
+                         "forecast" = c(20, 60, 40, 25, 40, 50))
+
+data_sex <- data.frame("index" = rep(dates, 2),
+                       "sex" = c(rep("M", length(dates)), rep("F", length(dates))),
+                       "forecast" = c(25, 45, 40, 35, 40, 20))
+
+data_state_sex <- data.frame("index" = rep(dates, 4),
+                             "state" = c(rep("IL", length(dates)*2), rep("WI", length(dates)*2)),
+                             "sex" = c(rep("M", 3), rep("F", 3), rep("M", 3), rep("F", 3)),
+                             "forecast" = c(5, 15, 10, 30, 10, 10, 25, 30, 20, 10, 10, 15))
+
+forecasts <- list("total" = data_total, "state" = data_state,
+                  "sex" = data_sex, "state_sex" = data_state_sex)
+
+forecasts_reconciled <- reconcile_forecasts(forecasts, freq,
+                                            index = "index", outcome = "forecast",
+                                            method = "group")
 }

@@ -89,7 +89,7 @@ calculate_intervals <- function(forecasts, residuals, index = NULL, outcome = NU
     data_residuals <- dplyr::left_join(data_residuals, forecasts_merge[, c(keys, ".n_samples")], by = keys)
 
     data_residuals <- data_residuals %>%
-      dplyr::filter(!is.na(.n_samples)) %>%
+      dplyr::filter(!is.na(.data$.n_samples)) %>%
       dplyr::filter(!is.na(residuals))
   }
   #----------------------------------------------------------------------------
