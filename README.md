@@ -78,7 +78,6 @@ set.seed(224)
 data_forecasts <- forecastML::calculate_intervals(data_forecasts, residuals, 
                                                   levels = seq(.5, .95, .05), times = 200)
 
-plot(data_forecasts, data_seatbelts[-(1:160), ], (1:nrow(data_seatbelts))[-(1:160)])
 plot(data_forecasts, data_seatbelts[-(1:160), ], (1:nrow(data_seatbelts))[-(1:160)], interval_alpha = seq(.1, .2, length.out = 10))
 ```
 ![](./tools/lightning_example.png)
