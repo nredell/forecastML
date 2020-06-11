@@ -257,17 +257,6 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
   outcome_name_pred_lower <- names(data_forecast)[grepl("_pred_lower", names(data_forecast))]
   outcome_name_pred_upper <- names(data_forecast)[grepl("_pred_upper", names(data_forecast))]
   #----------------------------------------------------------------------------
-  # Plot aesthetic arguments
-  if (is.null(interval_fill)) {
-
-    interval_fill <- rep("purple", length(prediction_intervals))
-  }
-
-  if (is.null(interval_alpha)) {
-
-    interval_alpha <- seq(.5, 1, length.out = length(prediction_intervals))
-  }
-  #----------------------------------------------------------------------------
   data_forecast <- tibble::as_tibble(data_forecast)
 
   if (!is.null(prediction_intervals)) {
@@ -292,6 +281,17 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
 
   if (!is.null(outcome_levels) && !is.null(groups) && !is.null(data_actual)) {
     stop("Plotting forecasts from grouped time series with an actuals dataset is not currently supported.")
+  }
+  #----------------------------------------------------------------------------
+  # Plot aesthetic arguments
+  if (is.null(interval_fill) && !is.null(outcome_name_pred_lower)) {
+
+    interval_fill <- rep("purple", length(outcome_name_pred_lower))
+  }
+
+  if (is.null(interval_alpha) && !is.null(outcome_name_pred_lower)) {
+
+    interval_alpha <- seq(.5, 1, length.out = length(outcome_name_pred_lower))
   }
   #----------------------------------------------------------------------------
   names(data_forecast)[names(data_forecast) == "forecast_period"] <- "index"  # For code uniformity.
@@ -431,7 +431,16 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
             data_fill <- data_fill_lower
             data_fill$.upper <- data_fill_upper$.upper
 
-            data_fill$prediction_intervals <- factor(data_fill$.interval, levels = unique(data_fill$.interval), labels = rev(prediction_intervals), ordered = TRUE)
+            if (is.null(prediction_intervals)) {
+
+              prediction_intervals <- length(outcome_name_pred_lower)
+
+              data_fill$prediction_intervals <- factor(prediction_intervals, ordered = TRUE)
+
+            } else {
+
+              data_fill$prediction_intervals <- factor(data_fill$.interval, levels = unique(data_fill$.interval), labels = rev(prediction_intervals), ordered = TRUE)
+            }
 
             for (i in seq_along(prediction_intervals)) {
 
