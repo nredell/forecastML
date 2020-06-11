@@ -230,12 +230,16 @@ combine_forecasts <- function(..., type = c("horizon", "error"), aggregate = sta
 #' @param group_filter Optional. A string for filtering plot results for grouped time-series (e.g., \code{"group_col_1 == 'A'"});
 #' passed to \code{dplyr::filter()} internally.
 #' @param drop_facet Optional. Boolean. If actuals are given when forecasting factors, the plot facet with 'actual' data can be dropped.
+#' @param interval_fill A character vector of color names or hex codes to fill the prediction intervals. For intervals with
+#' multiple levels, the first color corresponds to the fill with the widest interval.
+#' @param interval_alpha A numeric vector of alpha values to shade the prediction intervals. For intervals with
+#' multiple levels, the first value corresponds to the shading with the widest interval.
 #' @param ... Not used.
 #' @return Forecast plot of class 'ggplot'.
 #' @export
 plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet = ~ model,
                             models = NULL, group_filter = NULL,
-                            drop_facet = FALSE, ...) { # nocov start
+                            drop_facet = FALSE, interval_fill = NULL, interval_alpha = NULL, ...) { # nocov start
 
   #----------------------------------------------------------------------------
   data_forecast <- x
@@ -252,7 +256,18 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
   outcome_name_pred <- paste0(outcome_name, "_pred")
   outcome_name_pred_lower <- names(data_forecast)[grepl("_pred_lower", names(data_forecast))]
   outcome_name_pred_upper <- names(data_forecast)[grepl("_pred_upper", names(data_forecast))]
+  #----------------------------------------------------------------------------
+  # Plot aesthetic arguments
+  if (is.null(interval_fill)) {
 
+    interval_fill <- rep("purple", length(prediction_intervals))
+  }
+
+  if (is.null(interval_alpha)) {
+
+    interval_alpha <- seq(.5, 1, length.out = length(prediction_intervals))
+  }
+  #----------------------------------------------------------------------------
   data_forecast <- tibble::as_tibble(data_forecast)
 
   if (!is.null(prediction_intervals)) {
@@ -416,20 +431,23 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
             data_fill <- data_fill_lower
             data_fill$.upper <- data_fill_upper$.upper
 
-            if (!is.null(prediction_intervals)) {
+            data_fill$prediction_intervals <- factor(data_fill$.interval, levels = unique(data_fill$.interval), labels = rev(prediction_intervals), ordered = TRUE)
 
-              data_fill$prediction_intervals <- factor(data_fill$.interval, levels = unique(data_fill$.interval), labels = rev(prediction_intervals), ordered = TRUE)
+            for (i in seq_along(prediction_intervals)) {
 
-              p <- p + geom_ribbon(data = data_fill, aes(x = .data$index, ymin = .data$.lower, ymax = .data$.upper,
-                                                         fill = .data$prediction_intervals), linetype = 0, show.legend = TRUE)
-
-            } else {
-
-              p <- p + geom_ribbon(data = data_fill,
-                                   aes(x = .data$index, ymin = .data$.lower, ymax = .data$.upper,
-                                       fill = ordered(.data$model_forecast_horizon)),
-                                   linetype = 0, alpha = .25, show.legend = FALSE)
+              p <- p + geom_ribbon(data = data_fill[as.numeric(as.character(data_fill$prediction_intervals)) == rev(prediction_intervals)[i], ],
+                                   aes(x = .data$index,
+                                       ymin = .data$.lower,
+                                       ymax = .data$.upper,
+                                       fill = .data$prediction_intervals,
+                                       alpha = .data$prediction_intervals
+                                       ),
+                                   linetype = 0)
             }
+
+            p <- p + scale_fill_manual(values = rev(interval_fill))
+
+            p <- p + scale_alpha_manual(values = rev(interval_alpha))
 
           } else {  # Grouped time series.
 
@@ -722,7 +740,7 @@ plot.forecastML <- function(x, data_actual = NULL, actual_indices = NULL, facet 
     } else {
 
       p <- p + xlab("Dataset index") + ylab("Outcome") +
-        labs(color = x_axis_title, fill = "Level") +
+        labs(color = x_axis_title, fill = "Level", alpha = "Level") +
         ggtitle("H-Step-Ahead Model Forecasts")
     }
 

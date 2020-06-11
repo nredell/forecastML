@@ -12,6 +12,8 @@
   models = NULL,
   group_filter = NULL,
   drop_facet = FALSE,
+  interval_fill = NULL,
+  interval_alpha = NULL,
   ...
 )
 }
@@ -34,6 +36,12 @@ passed to \code{ggplot2::facet_grid()} internally (e.g., \code{~ model}, \code{m
 passed to \code{dplyr::filter()} internally.}
 
 \item{drop_facet}{Optional. Boolean. If actuals are given when forecasting factors, the plot facet with 'actual' data can be dropped.}
+
+\item{interval_fill}{A character vector of color names or hex codes to fill the prediction intervals. For intervals with
+multiple levels, the first color corresponds to the fill with the widest interval.}
+
+\item{interval_alpha}{A numeric vector of alpha values to shade the prediction intervals. For intervals with
+multiple levels, the first value corresponds to the shading with the widest interval.}
 
 \item{...}{Not used.}
 }
